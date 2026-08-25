@@ -1170,16 +1170,34 @@ made explicitly by the user first.
 **Verified this phase**: `flutter analyze` and `flutter test` clean across
 the whole project; a real `flutter build apk --release` succeeds and the
 resulting manifest has both the `INTERNET` permission and the
-`networkSecurityConfig` reference. **Still not verified — genuinely
-blocked, not skipped**: everything that needs a live Android
-device/emulator — a real cleartext connection against a real test server, an
-offline venta/cliente/movimiento actually queuing and draining through a
-live conflict into `PendientesErrorScreen`, tapping REINTENTAR/DESCARTAR on
-a real queued error, the 2 `PosScreen` overflow fixes' on-device screenshot,
-and the software-keyboard `LoginScreen` scroll fix. All of these were
-already-known gaps from earlier in this session (see the emulator section
-above) except the new `PendientesErrorScreen` UI itself, which is new this
-phase and has had zero manual interaction of any kind — code-reviewed and
-`flutter analyze`-clean only. Next session with a working device/emulator
-should prioritize these over any new feature work.
+`networkSecurityConfig` reference.
+
+**Verified in a later session, real Android emulator (Pixel_C_API_33)**:
+the full offline queue + recovery flow, end to end, against a real backend
+and Postgres. Cut network for real (`adb shell svc wifi disable` + `svc data
+disable`, confirmed via a failed `ping 10.0.2.2`, not just a UI toggle),
+completed a cash sale — got the optimistic "Venta completada." snackbar,
+cart cleared — and confirmed it actually persisted locally by reading the
+raw Isar file (`run-as cat` on `app_flutter/default.isar`, `grep`-ed for the
+product/payment-method strings). Restored network for real (ping succeeded
+again) and watched `ConnectivityBadge` correctly flip Sin conexión →
+Conectado. The queued item did **not** auto-drain on that reconnection —
+not a `SyncEngineNotifier` bug: an earlier attempt (interrupted by a
+force-stop/relaunch done mid-investigation) had already failed and left the
+item marked with `mensajeError`, which is exactly the documented "business
+failure — mark and don't auto-retry" behavior, working as designed. Opened
+`PendientesErrorScreen` (tapping the connectivity badge), saw the item
+listed with its error message, tapped REINTENTAR — the sale synced
+immediately, `correlationId` present, `estado: COMPLETADA` confirmed via
+`psql`. First real click-test of `PendientesErrorScreen` and of REINTENTAR
+against a live queued item — previously code-reviewed only. The
+software-keyboard `LoginScreen` scroll fix was also confirmed in this same
+session: the login card stayed correctly scrolled above the real Gboard
+keyboard.
+
+**Still not verified**: DESCARTAR on a real queued error (only REINTENTAR
+was exercised), the 2 `PosScreen` overflow fixes' on-device screenshot, and
+a real cleartext connection against a genuine (non-`10.0.2.2`) test server.
+Next session with a working device/emulator should prioritize these over
+any new feature work.
 

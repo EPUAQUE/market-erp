@@ -7,10 +7,27 @@ electrónica (FEL Guatemala) de forma centralizada. Construido con Vue 3,
 TypeScript estricto y un sistema de diseño propio. Marca **Market** · sin
 dependencias del ecosistema Prime.
 
-> ⚠️ Al arrancar, los datos son ficticios y las operaciones de escritura están
-> simuladas mediante MSW hasta conectar el backend real (ver sección "Mocks →
-> API real"). El sistema completo tiene dos frentes: este backoffice (Vue) y
-> un POS de tienda aparte (Flutter, `market-flutter`) que consume la misma API.
+> Este backoffice consume el backend real (`market-backend`, Java/Spring Boot) —
+> no usa datos simulados ni mocks en tiempo de ejecución. El sistema completo
+> tiene dos frentes: este backoffice (Vue) y un POS de tienda aparte (Flutter,
+> `market-flutter`) que consume la misma API.
+
+## Este proyecto es parte de un monorepo
+
+Este repositorio vive dentro de [`market-erp`](https://github.com/EPUAQUE/market-erp)
+junto a `market-backend` y `market-flutter`, como carpetas hermanas — el
+`docker-compose.yml` de `market-backend` referencia `../market-backoffice`
+como build context, así que ambos deben mantener esa estructura relativa:
+
+```
+market-erp/
+  market-backend/       (Dockerfile, docker-compose.yml, pom.xml, src/, deploy/)
+  market-backoffice/    (este repo)
+  market-flutter/
+```
+
+Clonar el monorepo completo, no este directorio suelto, si el objetivo es
+levantar el sistema con Docker Compose (ver `market-backend/deploy/README.md`).
 
 ## Módulos
 
@@ -35,28 +52,28 @@ dependencias del ecosistema Prime.
 17. **Notificaciones** — alertas y avisos (vencimientos, stock, etc.).
 18. **Facturación Electrónica FEL** — integración con certificador FEL Guatemala.
 19. **Dashboard** — indicadores de negocio en tiempo real.
-20. **Reportes** — exportación (Excel/CSV/PDF) de ventas, inventario y
-    rentabilidad.
+20. **Reportes** — exportación CSV de ventas y compras.
 
 Este backoffice cubre la administración transversal (multi-tienda); el POS de
 Flutter cubre la operación diaria de venta/caja dentro de una sola tienda.
 
 ## Stack tecnológico
 
-| Área        | Tecnología                                                                           |
-| ----------- | ------------------------------------------------------------------------------------ |
-| Base        | Vue 3.5 · Vite 5 · TypeScript estricto · pnpm                                        |
-| Estado      | Pinia (+ persistedstate) · TanStack Query                                            |
-| Ruteo       | Vue Router (lazy + guards por permiso)                                               |
-| UI          | Tailwind CSS · Radix Vue · Material Symbols · Lucide · Floating Vue · Vue Sonner     |
-| Datos       | TanStack Table · Axios · **Decimal.js** · date-fns · Maska                           |
-| Gráficos    | Apache ECharts · vue-echarts                                                         |
-| Formularios | VeeValidate · Zod                                                                    |
-| Exportación | SheetJS (xlsx) · jsPDF + autotable · FileSaver                                       |
-| i18n        | vue-i18n (es predeterminado, en secundario)                                          |
-| Calidad     | ESLint · Prettier · Vitest · Vue Test Utils · Playwright · MSW · Husky · lint-staged |
+| Área     | Tecnología                                    |
+| -------- | ---------------------------------------------- |
+| Base     | Vue 3.5 · Vite 6 · TypeScript estricto · pnpm  |
+| Estado   | Pinia                                          |
+| Ruteo    | Vue Router (lazy + guards por permiso)         |
+| UI       | Tailwind CSS 3 (sistema de diseño propio, sin librería de componentes) |
+| Datos    | Axios                                          |
+| Gráficos | Chart.js · vue-chartjs                         |
 
-No se utiliza **PrimeVue / PrimeFaces / PrimeIcons** ni ninguna librería Prime.
+Sin librería de tablas/formularios/exportación de terceros — tablas, formularios
+y validación son Vue simple (`ref`/`computed`/`watch`) por módulo, no una capa
+compartida tipo TanStack/VeeValidate. Sin i18n (texto en español directo en los
+templates) y sin suite de pruebas automatizadas todavía (no hay ESLint,
+Prettier, Vitest ni Playwright configurados en este repo). No se utiliza
+**PrimeVue / PrimeFaces / PrimeIcons** ni ninguna librería Prime.
 
 ## Requisitos
 
@@ -69,73 +86,61 @@ No se utiliza **PrimeVue / PrimeFaces / PrimeIcons** ni ninguna librería Prime.
 pnpm install
 ```
 
-MSW instala su service worker en `public/mockServiceWorker.js` (ya incluido).
-
 ## Variables de entorno
 
-Copiar `.env.example` a `.env`:
+Copiar `.env.example` a `.env` (o usar el `.env.development` ya incluido, con
+los mismos valores por defecto):
 
-| Variable            | Descripción                                                      |
-| ------------------- | ---------------------------------------------------------------- |
-| `VITE_API_BASE_URL` | URL base del backend (por defecto `/api`, interceptado por MSW). |
-| `VITE_ENABLE_MOCKS` | `true` activa MSW; `false` para conectar una API real.           |
-| `VITE_APP_NAME`     | Nombre visible de la app.                                        |
+| Variable           | Descripción                                                            |
+| ------------------ | ----------------------------------------------------------------------- |
+| `VITE_API_BASE_URL` | URL base del backend real (obligatoria — sin esto la app no arranca). |
+| `VITE_API_TIMEOUT`  | Timeout de las peticiones HTTP en ms (default `15000`).               |
 
 ## Scripts
 
 ```bash
 pnpm dev            # Servidor de desarrollo
-pnpm build          # Typecheck + build de producción
+pnpm build          # vue-tsc -b + build de producción
 pnpm preview        # Previsualizar el build
-pnpm typecheck      # vue-tsc sin emitir
-pnpm lint           # ESLint
-pnpm format         # Prettier
-pnpm test           # Vitest (unitarias)
-pnpm test:coverage  # Cobertura
-pnpm test:e2e       # Playwright
+pnpm typecheck      # vue-tsc -b --noEmit
 ```
 
-## Credenciales de demostración
+## Credenciales
 
-Contraseña para todas las cuentas: **`demo1234`**
-
-| Rol                  | Correo                 |
-| --------------------- | ---------------------- |
-| Administrador         | `admin@market.demo`     |
-| Encargado de tienda   | `encargado@market.demo` |
-| Cajero / vendedor     | `cajero@market.demo`    |
-| Auditor / inventario  | `auditor@market.demo`   |
+No hay cuentas de demostración locales — este backoffice autentica contra el
+backend real. El primer usuario ADMIN se siembra desde `market-backend`
+(`SEED_ADMIN_USERNAME`/`SEED_ADMIN_PASSWORD`); ver
+`market-backend/deploy/README.md` § "Primer admin" para el procedimiento
+completo en un deploy nuevo.
 
 ## Arquitectura
 
 Organización por dominios bajo `src/`:
 
 ```
-components/  common · charts · tables · forms · layout
-composables/ config/ constants/ i18n/ layouts/ mocks/
-models(types)/ router/ services/ stores/ styles/ utils/ views/
+components/common · components/layout
+composables/ config/ router/ services/ stores/ styles/ types/ views/
+views/admin/ (los 21 módulos) · views/LoginView.vue · views/ForbiddenView.vue
 ```
 
-- **Servicios** (`src/services`) encapsulan Axios; interceptores añaden
-  `X-Correlation-Id`, `Authorization` y normalizan errores + sesión expirada.
-- **Stores** (Pinia) mantienen estado con `loading`/`error`; persisten solo
-  tema, idioma, preferencias de tabla, estado del sidebar, tienda/sucursal y
-  período.
-- **MSW** (`src/mocks`) simula latencia, paginación, filtros y errores.
+- **Servicios** (`src/services`, uno por módulo + `services/http/`) encapsulan
+  Axios; `ApiClient` centraliza el manejo de sesión expirada/refresh (ver
+  "Manejo de permisos" abajo).
+- **Composables** (`src/composables`, un `use<Módulo>.ts` por módulo) son la
+  única capa de estado por vista — `ref`/`computed`/`watch` simple, sin store
+  de Pinia por módulo ni librería de fetching (TanStack Query y similares no
+  están en uso).
+- **Stores** (Pinia: `auth`, `user`, `permissions`) son puramente en memoria —
+  sin plugin de persistencia; recargar la página pierde la sesión por diseño,
+  igual que el access token (ver abajo).
+- Tablas, formularios y validación son Vue simple por vista, no una capa
+  compartida — no hay librería de tablas/formularios en el proyecto.
 
 ## Sistema de diseño
 
 Tokens semánticos en `src/styles/tokens.css` (canales RGB) + `tailwind.config.ts`.
 Incluye tokens para superficies, texto, estados de negocio (ventas, mermas,
 stock bajo, en tránsito, riesgo…) y gráficos, con variantes **claro/oscuro**.
-
-## Manejo monetario
-
-Todo cálculo usa **Decimal.js** (`src/utils/money.ts`) — nunca floats nativos.
-El formato se centraliza en `src/utils/format.ts`: `formatCurrency`,
-`formatAccountingCurrency` (negativos entre paréntesis), `formatCompactCurrency`,
-`formatPercentage`, `formatDate`, etc. Cifras con números tabulares y alineadas
-a la derecha.
 
 ## Manejo de permisos
 
@@ -152,32 +157,26 @@ usa un **refresh token** opaco y rotatorio gestionado por el backend — el fron
 nunca lo lee ni lo parsea, solo dispara `POST /api/v1/auth/refresh` cuando el
 access token expira.
 
-## Mocks → API real
-
-1. Poner `VITE_ENABLE_MOCKS=false` y `VITE_API_BASE_URL` a la URL real.
-2. Implementar en el backend los endpoints de `src/mocks/handlers.ts`.
-3. Los servicios y stores no cambian: consumen la misma capa HTTP.
-
 ## Decisiones técnicas
 
-- Vite 5 + vue-tsc por compatibilidad estable del ecosistema.
-- ECharts con importaciones específicas (`src/plugins/echarts.ts`) para tree-shaking.
-- Sparklines en SVG propio para no cargar ECharts en cada tarjeta KPI.
+- Vite 6 + vue-tsc, sin librerías de terceros para tablas/formularios/gráficos
+  más allá de Chart.js — mantiene el bundle chico y evita atarse a un sistema
+  de componentes ajeno al diseño propio de Market.
 - Tokens en canales RGB para permitir opacidad Tailwind (`rgb(var(--x) / <alpha>)`).
 
-## Limitaciones conocidas (al arrancar la plantilla)
+## Limitaciones conocidas
 
-- Datos y escritura simulados (MSW) hasta conectar el backend real.
-- Algunos módulos secundarios (compras avanzadas, trazabilidad de lotes,
-  proyecciones de demanda) se entregan como **vistas de acceso** integradas
-  a la capa de datos, listas para su desarrollo detallado.
-- La exportación a PDF es una simulación con jsPDF hasta integrarse con el
-  backend real.
+- Sin suite de pruebas automatizadas (unitarias ni e2e) todavía.
+- Sin i18n — texto en español hardcodeado en los templates.
+- Exportación limitada a CSV hecho a mano (`Reportes` — ventas/compras); sin
+  Excel ni PDF (no hay librerías de exportación instaladas).
 
 ## Mejoras futuras
 
-- Vistas detalladas completas de inventario y punto de venta.
-- Paginación/orden/filtrado 100 % del lado del servidor y virtualización de tablas.
+- Paginación real del lado del servidor ya cubre Ventas, Cuentas por Cobrar,
+  Traslados, Productos, Inventario y Caja — extenderla al resto de módulos
+  (hoy paginan/filtran del lado del cliente sobre el arreglo completo).
+- Orden/filtrado del lado del servidor y virtualización de tablas grandes.
 - Flujos de aprobación multinivel (compras) y adjuntos reales.
-- Cobertura de pruebas E2E por módulo.
+- Suite de pruebas (unitarias y E2E) — hoy no hay ninguna.
 </content>

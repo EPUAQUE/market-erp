@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="productos-001-producto" author="market-backend">
+        <createTable tableName="producto">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="codigo_interno" type="VARCHAR(40)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_producto_codigo_interno"/>
+            </column>
+            <column name="codigo_barras" type="VARCHAR(40)">
+                <constraints unique="true" uniqueConstraintName="ux_producto_codigo_barras"/>
+            </column>
+            <column name="nombre" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descripcion" type="VARCHAR(1000)"/>
+            <column name="categoria_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="marca_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unidad_medida_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="imagen_url" type="VARCHAR(500)"/>
+            <column name="activo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="producto" baseColumnNames="categoria_id"
+                referencedTableName="categoria" referencedColumnNames="id"
+                constraintName="fk_producto_categoria" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="producto" baseColumnNames="marca_id"
+                referencedTableName="marca" referencedColumnNames="id"
+                constraintName="fk_producto_marca" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="producto" baseColumnNames="unidad_medida_id"
+                referencedTableName="unidad_medida" referencedColumnNames="id"
+                constraintName="fk_producto_unidad_medida" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="productos-001-producto-tienda" author="market-backend">
+        <createTable tableName="producto_tienda">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="producto_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="precio_venta" type="NUMERIC(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="stock_minimo" type="NUMERIC(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="stock_maximo" type="NUMERIC(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permitir_venta" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permitir_ingreso" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="producto_tienda" baseColumnNames="producto_id"
+                referencedTableName="producto" referencedColumnNames="id"
+                constraintName="fk_producto_tienda_producto" onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="producto_tienda" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_producto_tienda_tienda" onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="producto_tienda" columnNames="producto_id, tienda_id"
+                constraintName="ux_producto_tienda"/>
+    </changeSet>
+
+    <changeSet id="productos-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="PRODUCTOS_VER"/>
+            <column name="descripcion" value="Listar productos y su configuración por tienda"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="PRODUCTOS_CREAR"/>
+            <column name="descripcion" value="Crear productos"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="PRODUCTOS_EDITAR"/>
+            <column name="descripcion" value="Editar productos y su configuración por tienda"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PRODUCTOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PRODUCTOS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PRODUCTOS_EDITAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

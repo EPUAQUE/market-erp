@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="categorias-001-categoria" author="market-backend">
+        <createTable tableName="categoria">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nombre" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_categoria_nombre"/>
+            </column>
+            <column name="imagen" type="VARCHAR(500)"/>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="categorias-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="CATEGORIAS_VER"/>
+            <column name="descripcion" value="Listar categorías"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CATEGORIAS_CREAR"/>
+            <column name="descripcion" value="Crear categorías"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CATEGORIAS_EDITAR"/>
+            <column name="descripcion" value="Editar y activar/desactivar categorías"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CATEGORIAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CATEGORIAS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CATEGORIAS_EDITAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,33 @@
+# Desarrollo local (mvn spring-boot:run / IDE) — nunca usar para desplegar. Todos los
+# valores tienen default de conveniencia; sobreescribibles por variable de entorno
+# igual que en los demás perfiles.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/market}
+    username: ${DB_USERNAME:market}
+    password: ${DB_PASSWORD:market}
+
+app:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:market-backend}
+      audience: ${JWT_AUDIENCE:market-clients}
+      access-token-ttl: ${JWT_ACCESS_TTL:PT10M}
+      clock-skew: ${JWT_CLOCK_SKEW:PT30S}
+      active-kid: dev-2026-01
+      keys:
+        - kid: dev-2026-01
+          # Fuera de src/main/resources a propósito — nunca queda empacado en el jar.
+          # Ver local-dev/certs/README.md.
+          private-key-location: ${JWT_PRIVATE_KEY_LOCATION:file:./local-dev/certs/dev-private.pem}
+          public-key-location: ${JWT_PUBLIC_KEY_LOCATION:file:./local-dev/certs/dev-public.pem}
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  seed:
+    enabled: ${SEED_ENABLED:true}
+    admin-username: ${SEED_ADMIN_USERNAME:admin}
+    admin-password: ${SEED_ADMIN_PASSWORD:Admin1234!Seguro}
+
+logging:
+  level:
+    com.ais.marketbackend: DEBUG

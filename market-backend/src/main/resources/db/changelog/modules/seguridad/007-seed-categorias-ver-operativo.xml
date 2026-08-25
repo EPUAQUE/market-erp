@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- CATEGORIAS_VER solo estaba seedeado para ADMIN (categorias/001-categoria.xml).
+         El filtro de categorías del POS (market-flutter) necesita GET /categorias para
+         CAJERO y ENCARGADO_TIENDA también — sin esto, un vendedor real recibiría 403 al
+         abrir el POS. -->
+    <changeSet id="seguridad-007-cajero-categorias-ver" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CATEGORIAS_VER')"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="seguridad-007-encargado-categorias-ver" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CATEGORIAS_VER')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

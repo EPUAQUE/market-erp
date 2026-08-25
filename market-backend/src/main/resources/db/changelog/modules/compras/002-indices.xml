@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Sin índice propio hasta ahora; el listado por tienda filtra por tienda_id
+         en cada solicitud (ver auditoría Fase 8). -->
+    <changeSet id="compras-002-indice-tienda-estado-fecha" author="market-backend">
+        <createIndex tableName="compra" indexName="ix_compra_tienda_estado_fecha">
+            <column name="tienda_id"/>
+            <column name="estado"/>
+            <column name="fecha"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

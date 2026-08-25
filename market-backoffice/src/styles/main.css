@@ -1,0 +1,127 @@
+@import './tokens.css';
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: rgb(var(--mk-bg));
+  color: rgb(var(--mk-text));
+  font-feature-settings: 'tnum' 1;
+}
+
+@layer components {
+  .mk-bg {
+    background-color: rgb(var(--mk-bg));
+  }
+
+  /* Botones */
+  .mk-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold
+      transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .mk-btn:focus-visible {
+    outline: 2px solid rgb(var(--mk-primary));
+    outline-offset: 2px;
+  }
+  .mk-btn-primary {
+    background-color: rgb(var(--mk-primary));
+    color: rgb(var(--mk-primary-ink));
+  }
+  .mk-btn-primary:hover:not(:disabled) {
+    background-color: rgb(var(--mk-primary) / 0.88);
+  }
+  .mk-btn-outline {
+    @apply border bg-transparent;
+    border-color: rgb(var(--mk-primary));
+    color: rgb(var(--mk-primary));
+  }
+  .mk-btn-outline:hover:not(:disabled) {
+    background-color: rgb(var(--mk-primary) / 0.08);
+  }
+  .mk-btn-ghost {
+    @apply bg-transparent;
+    color: rgb(var(--mk-text-muted));
+  }
+  .mk-btn-ghost:hover:not(:disabled) {
+    background-color: rgb(var(--mk-surface-2));
+    color: rgb(var(--mk-text));
+  }
+  .mk-btn-danger {
+    background-color: rgb(var(--mk-danger));
+    color: white;
+  }
+  .mk-btn-danger:hover:not(:disabled) {
+    background-color: rgb(var(--mk-danger) / 0.88);
+  }
+
+  /* Tarjetas */
+  .mk-card {
+    background-color: rgb(var(--mk-surface));
+    @apply rounded-mk border shadow-mk;
+    border-color: rgb(var(--mk-border));
+  }
+
+  /* Inputs */
+  .mk-input {
+    background-color: rgb(var(--mk-surface));
+    color: rgb(var(--mk-text));
+  }
+  .mk-input::placeholder {
+    color: rgb(var(--mk-text-muted));
+  }
+  .mk-input:focus {
+    outline: 2px solid rgb(var(--mk-primary) / 0.45);
+    outline-offset: 1px;
+    border-color: rgb(var(--mk-primary));
+  }
+
+  .mk-num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mk-scroll-x {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Badges de estado — etiquetas suaves, sin colores saturados */
+  .mk-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap;
+  }
+  .mk-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background-color: currentColor;
+  }
+  .mk-badge-success {
+    background-color: rgb(var(--mk-success) / 0.12);
+    color: rgb(var(--mk-success));
+  }
+  .mk-badge-pending {
+    background-color: rgb(var(--mk-pending) / 0.16);
+    color: rgb(180 130 20);
+  }
+  .mk-badge-overdue {
+    background-color: rgb(var(--mk-overdue) / 0.14);
+    color: rgb(var(--mk-overdue));
+  }
+  .mk-badge-danger {
+    background-color: rgb(var(--mk-danger) / 0.12);
+    color: rgb(var(--mk-danger));
+  }
+  .mk-badge-info {
+    background-color: rgb(var(--mk-info) / 0.12);
+    color: rgb(var(--mk-info));
+  }
+  .mk-badge-neutral {
+    background-color: rgb(var(--mk-text-muted) / 0.12);
+    color: rgb(var(--mk-text-muted));
+  }
+}

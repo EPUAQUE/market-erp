@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="fel-001-documento-fel" author="market-backend">
+        <createTable tableName="documento_fel">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="venta_id" type="BIGINT">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_documento_fel_venta"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="serie" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="numero" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uuid" type="VARCHAR(60)"/>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_emision" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_certificacion" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="motivo_anulacion" type="VARCHAR(255)"/>
+            <column name="mensaje_error" type="VARCHAR(255)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="documento_fel" baseColumnNames="venta_id"
+                referencedTableName="venta" referencedColumnNames="id"
+                constraintName="fk_documento_fel_venta" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="documento_fel" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_documento_fel_tienda" onDelete="RESTRICT"/>
+
+        <addUniqueConstraint
+                tableName="documento_fel" columnNames="tienda_id, serie, numero"
+                constraintName="ux_documento_fel_tienda_serie_numero"/>
+    </changeSet>
+
+    <changeSet id="fel-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="FEL_VER"/>
+            <column name="descripcion" value="Ver documentos FEL de una tienda"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="FEL_EMITIR"/>
+            <column name="descripcion" value="Emitir o reintentar la certificación de un documento FEL"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="FEL_ANULAR"/>
+            <column name="descripcion" value="Anular un documento FEL certificado"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'FEL_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'FEL_EMITIR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'FEL_ANULAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

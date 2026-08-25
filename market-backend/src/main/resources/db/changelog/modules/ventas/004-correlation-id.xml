@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Nullable, sin default: mismo patrón que metodo_pago/limite_credito —
+         ventas ya existentes nunca tuvieron un correlationId real. Único
+         (NULLs no cuentan para la restricción UNIQUE en Postgres, así que
+         múltiples ventas sin correlationId conviven sin problema) para que
+         un reintento de sincronización con el mismo id no pueda crear una
+         venta duplicada — ver VentaServiceImpl.crear(). -->
+    <changeSet id="ventas-004-correlation-id" author="market-backend">
+        <addColumn tableName="venta">
+            <column name="correlation_id" type="VARCHAR(100)"/>
+        </addColumn>
+        <addUniqueConstraint
+                tableName="venta" columnNames="correlation_id"
+                constraintName="ux_venta_correlation_id"/>
+    </changeSet>
+</databaseChangeLog>

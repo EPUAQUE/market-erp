@@ -1,0 +1,31 @@
+:root {
+  /* Marca — verde petróleo: sidebar, encabezados de marca */
+  --mk-brand: 15 76 92; /* #0F4C5C */
+  --mk-brand-ink: 255 255 255;
+
+  /* Acción principal — verde esmeralda: botones, estados activos */
+  --mk-primary: 46 139 87; /* #2E8B57 */
+  --mk-primary-ink: 255 255 255;
+
+  /* Acento — ámbar: alertas, indicadores, elementos destacados */
+  --mk-accent: 217 164 65; /* #D9A441 */
+  --mk-accent-ink: 46 32 8;
+
+  /* Superficies */
+  --mk-bg: 248 250 252; /* #F8FAFC */
+  --mk-surface: 255 255 255; /* #FFFFFF */
+  --mk-surface-2: 241 245 249; /* superficie secundaria (cabeceras de tabla, hover) */
+
+  /* Texto */
+  --mk-text: 31 41 55; /* #1F2937 */
+  --mk-text-muted: 107 114 128; /* #6B7280 */
+
+  --mk-border: 226 232 240;
+
+  /* Estados semánticos */
+  --mk-success: 59 170 104; /* #3BAA68 — Activo */
+  --mk-pending: 244 185 66; /* #F4B942 — Pendiente */
+  --mk-overdue: 224 138 63; /* Vencido (naranja) */
+  --mk-danger: 220 107 107; /* #DC6B6B — Error */
+  --mk-info: 100 116 139; /* Informativo (azul grisáceo) */
+}

@@ -1,0 +1,118 @@
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue'
+import { useNotificaciones } from '@/composables/useNotificaciones'
+import { useTiendas } from '@/composables/useTiendas'
+import { usePermissionsStore } from '@/stores/permissions.store'
+import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import type { TipoNotificacion } from '@/types/notificacion'
+
+const { items, listLoading, listError, generarLoading, cargar, generar, marcarLeida } = useNotificaciones()
+const { items: tiendas, cargar: cargarTiendas } = useTiendas()
+const permissions = usePermissionsStore()
+
+const tiendaId = ref<number | null>(null)
+
+const ETIQUETAS_TIPO: Record<TipoNotificacion, string> = {
+  CUENTA_POR_PAGAR_VENCIDA: 'Cuenta por pagar vencida',
+  CUENTA_POR_COBRAR_VENCIDA: 'Cuenta por cobrar vencida',
+  GASTO_PROGRAMADO_VENCIDO: 'Gasto programado vencido',
+  STOCK_BAJO: 'Stock bajo',
+}
+
+const itemsOrdenados = computed(() =>
+  [...items.value].sort((a, b) => {
+    if (a.leida !== b.leida) return a.leida ? 1 : -1
+    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+  }),
+)
+
+watch(tiendaId, (id) => {
+  if (id !== null) cargar(id)
+})
+
+async function onGenerar() {
+  if (tiendaId.value !== null) await generar(tiendaId.value)
+}
+
+onMounted(async () => {
+  await cargarTiendas()
+  if (tiendas.value.length > 0) tiendaId.value = tiendas.value[0].id
+})
+</script>
+
+<template>
+  <div class="mx-auto max-w-4xl space-y-6 p-6">
+    <header class="space-y-1">
+      <h1 class="text-xl font-semibold">Notificaciones</h1>
+      <p class="text-sm text-mk-text/70">
+        Alertas generadas a partir de cuentas vencidas, gastos programados vencidos y stock bajo.
+      </p>
+    </header>
+
+    <div class="flex items-center justify-between gap-3">
+      <select v-model="tiendaId" class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm">
+        <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
+      </select>
+      <button
+        v-if="permissions.can('NOTIFICACIONES_GENERAR')"
+        type="button"
+        :disabled="generarLoading"
+        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        @click="onGenerar"
+      >
+        {{ generarLoading ? 'Generando…' : 'Generar notificaciones' }}
+      </button>
+    </div>
+
+    <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-mk-border bg-mk-surface">
+          <tr>
+            <th class="px-4 py-2 font-medium">Tipo</th>
+            <th class="px-4 py-2 font-medium">Mensaje</th>
+            <th class="px-4 py-2 font-medium">Fecha</th>
+            <th class="px-4 py-2 font-medium">Leída</th>
+            <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="listLoading">
+            <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
+          </tr>
+          <tr v-else-if="listError">
+            <td colspan="5" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
+          </tr>
+          <tr v-else-if="itemsOrdenados.length === 0">
+            <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Sin notificaciones.</td>
+          </tr>
+          <tr
+            v-for="notificacion in itemsOrdenados"
+            :key="notificacion.id"
+            class="border-b border-mk-border last:border-0"
+            :class="{ 'text-mk-text/50': notificacion.leida }"
+          >
+            <td class="px-4 py-2">{{ ETIQUETAS_TIPO[notificacion.tipo] }}</td>
+            <td class="px-4 py-2">{{ notificacion.mensaje }}</td>
+            <td class="px-4 py-2">{{ new Date(notificacion.fecha).toLocaleString() }}</td>
+            <td class="px-4 py-2">
+              <EstadoBadge
+                :variant="notificacion.leida ? 'neutral' : 'info'"
+                :label="notificacion.leida ? 'Leída' : 'Nueva'"
+              />
+            </td>
+            <td class="px-4 py-2">
+              <button
+                v-if="!notificacion.leida && permissions.can('NOTIFICACIONES_MARCAR_LEIDA')"
+                type="button"
+                class="text-mk-primary hover:underline"
+                @click="tiendaId !== null && marcarLeida(tiendaId, notificacion)"
+              >
+                Marcar leída
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>

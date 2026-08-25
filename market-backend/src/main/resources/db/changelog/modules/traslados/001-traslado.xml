@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="traslados-001-traslado" author="market-backend">
+        <createTable tableName="traslado">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tienda_origen_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tienda_destino_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="traslado" baseColumnNames="tienda_origen_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_traslado_tienda_origen" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="traslado" baseColumnNames="tienda_destino_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_traslado_tienda_destino" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="traslados-001-linea-traslado" author="market-backend">
+        <createTable tableName="linea_traslado">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="traslado_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="producto_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cantidad" type="NUMERIC(12,3)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="linea_traslado" baseColumnNames="traslado_id"
+                referencedTableName="traslado" referencedColumnNames="id"
+                constraintName="fk_linea_traslado_traslado" onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="linea_traslado" baseColumnNames="producto_id"
+                referencedTableName="producto" referencedColumnNames="id"
+                constraintName="fk_linea_traslado_producto" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="traslados-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="TRASLADOS_VER"/>
+            <column name="descripcion" value="Ver traslados de inventario entre tiendas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="TRASLADOS_CREAR"/>
+            <column name="descripcion" value="Crear traslados en borrador"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="TRASLADOS_COMPLETAR"/>
+            <column name="descripcion" value="Completar un traslado y mover el inventario entre tiendas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="TRASLADOS_ANULAR"/>
+            <column name="descripcion" value="Anular un traslado en borrador"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_COMPLETAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_ANULAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

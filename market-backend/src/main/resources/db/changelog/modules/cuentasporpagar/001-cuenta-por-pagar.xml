@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="cuentasporpagar-001-cuenta-por-pagar" author="market-backend">
+        <createTable tableName="cuenta_por_pagar">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="compra_id" type="BIGINT">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_cuenta_por_pagar_compra"/>
+            </column>
+            <column name="proveedor_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_emision" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_vencimiento" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto_original" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="saldo_pendiente" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="cuenta_por_pagar" baseColumnNames="compra_id"
+                referencedTableName="compra" referencedColumnNames="id"
+                constraintName="fk_cuenta_por_pagar_compra" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="cuenta_por_pagar" baseColumnNames="proveedor_id"
+                referencedTableName="proveedor" referencedColumnNames="id"
+                constraintName="fk_cuenta_por_pagar_proveedor" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="cuenta_por_pagar" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_cuenta_por_pagar_tienda" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="cuentasporpagar-001-pago" author="market-backend">
+        <createTable tableName="pago">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="cuenta_por_pagar_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="pago" baseColumnNames="cuenta_por_pagar_id"
+                referencedTableName="cuenta_por_pagar" referencedColumnNames="id"
+                constraintName="fk_pago_cuenta_por_pagar" onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="cuentasporpagar-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="CUENTAS_POR_PAGAR_VER"/>
+            <column name="descripcion" value="Ver cuentas por pagar a proveedores"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CUENTAS_POR_PAGAR_PAGAR"/>
+            <column name="descripcion" value="Registrar abonos a una cuenta por pagar"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CUENTAS_POR_PAGAR_ANULAR"/>
+            <column name="descripcion" value="Anular una cuenta por pagar sin abonos"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_PAGAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_ANULAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="gastosprogramados-001-gasto-programado" author="market-backend">
+        <createTable tableName="gasto_programado">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="concepto" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="frecuencia" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="proxima_fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="gasto_programado" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_gasto_programado_tienda" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="gastosprogramados-001-pago-gasto-programado" author="market-backend">
+        <createTable tableName="pago_gasto_programado">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="gasto_programado_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="pago_gasto_programado" baseColumnNames="gasto_programado_id"
+                referencedTableName="gasto_programado" referencedColumnNames="id"
+                constraintName="fk_pago_gasto_programado_gasto" onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="gastosprogramados-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="GASTOS_PROGRAMADOS_VER"/>
+            <column name="descripcion" value="Ver gastos programados de una tienda"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="GASTOS_PROGRAMADOS_CREAR"/>
+            <column name="descripcion" value="Crear un gasto programado"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="GASTOS_PROGRAMADOS_EDITAR"/>
+            <column name="descripcion" value="Editar, activar o desactivar un gasto programado"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="GASTOS_PROGRAMADOS_GENERAR_PAGO"/>
+            <column name="descripcion" value="Generar el pago del ciclo vencido de un gasto programado"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_EDITAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_GENERAR_PAGO')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Sin índice propio hasta ahora; el listado filtra por tienda de origen y de
+         destino en memoria tras traer todo el historial (ver auditoría Fase 8). -->
+    <changeSet id="traslados-002-indice-tienda-origen-destino" author="market-backend">
+        <createIndex tableName="traslado" indexName="ix_traslado_tienda_origen">
+            <column name="tienda_origen_id"/>
+        </createIndex>
+        <createIndex tableName="traslado" indexName="ix_traslado_tienda_destino">
+            <column name="tienda_destino_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

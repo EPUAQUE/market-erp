@@ -1,0 +1,8 @@
+target
+docs
+*.md
+*.log
+.git
+.idea
+.mvn
+bash.exe.stackdump

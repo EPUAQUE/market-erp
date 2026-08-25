@@ -1,0 +1,13 @@
+package com.ais.marketbackend.seguridad.domain.service;
+
+public enum TipoEventoAuditoria {
+    LOGIN_EXITOSO,
+    LOGIN_FALLIDO,
+    RATE_LIMIT_ALCANZADO,
+    REFRESH_EXITOSO,
+    REFRESH_FALLIDO,
+    REFRESH_REUTILIZADO,
+    LOGOUT,
+    USUARIO_CREADO,
+    TIENDA_ASIGNADA
+}

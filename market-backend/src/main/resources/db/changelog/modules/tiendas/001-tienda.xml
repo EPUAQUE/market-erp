@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="tiendas-001-tienda" author="market-backend">
+        <createTable tableName="tienda">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="codigo" type="VARCHAR(20)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_tienda_codigo"/>
+            </column>
+            <column name="nombre" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="direccion" type="VARCHAR(255)"/>
+            <column name="telefono" type="VARCHAR(30)"/>
+            <column name="correo" type="VARCHAR(150)"/>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!--
+        Seed de una tienda real: el usuario ADMIN de desarrollo (AdminUserSeeder, en
+        Seguridad) ya se asigna a tienda_id=1 antes de que este módulo existiera. Con
+        esta fila esa asignación queda respaldada por un registro real en vez de un
+        placeholder, y la FK que sigue puede aplicarse sin romper datos existentes.
+    -->
+    <changeSet id="tiendas-001-seed-central" author="market-backend">
+        <insert tableName="tienda">
+            <column name="codigo" value="CENTRAL"/>
+            <column name="nombre" value="Tienda Central"/>
+            <column name="estado" value="ACTIVA"/>
+        </insert>
+    </changeSet>
+
+    <!--
+        Ahora que el módulo Tiendas existe y es dueño de la tabla `tienda`, se agrega
+        la FK que `seguridad` dejó pendiente en 003-usuario-tienda.xml.
+    -->
+    <changeSet id="tiendas-001-fk-usuario-tienda" author="market-backend">
+        <addForeignKeyConstraint
+                baseTableName="usuario_tienda" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_usuario_tienda_tienda" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="tiendas-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="TIENDAS_VER"/>
+            <column name="descripcion" value="Listar tiendas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="TIENDAS_CREAR"/>
+            <column name="descripcion" value="Crear tiendas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="TIENDAS_EDITAR"/>
+            <column name="descripcion" value="Editar y activar/desactivar tiendas"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TIENDAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TIENDAS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TIENDAS_EDITAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

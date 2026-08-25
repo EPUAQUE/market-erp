@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="ventas-001-venta" author="market-backend">
+        <createTable tableName="venta">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="cliente_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="venta" baseColumnNames="cliente_id"
+                referencedTableName="cliente" referencedColumnNames="id"
+                constraintName="fk_venta_cliente" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="venta" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_venta_tienda" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="ventas-001-linea-venta" author="market-backend">
+        <createTable tableName="linea_venta">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="venta_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="producto_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cantidad" type="NUMERIC(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="precio_unitario" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="linea_venta" baseColumnNames="venta_id"
+                referencedTableName="venta" referencedColumnNames="id"
+                constraintName="fk_linea_venta_venta" onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="linea_venta" baseColumnNames="producto_id"
+                referencedTableName="producto" referencedColumnNames="id"
+                constraintName="fk_linea_venta_producto" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="ventas-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="VENTAS_VER"/>
+            <column name="descripcion" value="Ver ventas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="VENTAS_CREAR"/>
+            <column name="descripcion" value="Crear ventas en borrador"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="VENTAS_COMPLETAR"/>
+            <column name="descripcion" value="Completar una venta y registrar su salida de inventario"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="VENTAS_ANULAR"/>
+            <column name="descripcion" value="Anular una venta en borrador"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_COMPLETAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_ANULAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

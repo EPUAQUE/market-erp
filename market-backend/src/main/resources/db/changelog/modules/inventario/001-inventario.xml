@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="inventario-001-inventario" author="market-backend">
+        <createTable tableName="inventario">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="producto_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="existencia_actual" type="NUMERIC(12,3)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="costo_promedio_actual" type="NUMERIC(12,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="inventario" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_inventario_tienda" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="inventario" baseColumnNames="producto_id"
+                referencedTableName="producto" referencedColumnNames="id"
+                constraintName="fk_inventario_producto" onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="inventario" columnNames="tienda_id, producto_id"
+                constraintName="ux_inventario_tienda_producto"/>
+    </changeSet>
+
+    <changeSet id="inventario-001-movimiento-inventario" author="market-backend">
+        <createTable tableName="movimiento_inventario">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="producto_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cantidad" type="NUMERIC(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="costo_unitario" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_movimiento" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="movimiento_inventario" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_movimiento_inventario_tienda" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="movimiento_inventario" baseColumnNames="producto_id"
+                referencedTableName="producto" referencedColumnNames="id"
+                constraintName="fk_movimiento_inventario_producto" onDelete="RESTRICT"/>
+        <createIndex tableName="movimiento_inventario" indexName="ix_movimiento_inventario_tienda_producto">
+            <column name="tienda_id"/>
+            <column name="producto_id"/>
+            <column name="fecha"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="inventario-001-movimiento-inventario-append-only" author="market-backend">
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION prevent_movimiento_inventario_mutation() RETURNS trigger AS $$
+            BEGIN
+                RAISE EXCEPTION 'movimiento_inventario es append-only: no se permite UPDATE ni DELETE';
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER trg_movimiento_inventario_append_only
+            BEFORE UPDATE OR DELETE ON movimiento_inventario
+            FOR EACH ROW EXECUTE FUNCTION prevent_movimiento_inventario_mutation();
+        </sql>
+        <rollback>
+            <sql>
+                DROP TRIGGER IF EXISTS trg_movimiento_inventario_append_only ON movimiento_inventario;
+                DROP FUNCTION IF EXISTS prevent_movimiento_inventario_mutation();
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="inventario-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="INVENTARIO_VER"/>
+            <column name="descripcion" value="Ver existencia, costo promedio y kardex de inventario"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="INVENTARIO_AJUSTAR"/>
+            <column name="descripcion" value="Registrar movimientos manuales de inventario (ajustes)"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_AJUSTAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

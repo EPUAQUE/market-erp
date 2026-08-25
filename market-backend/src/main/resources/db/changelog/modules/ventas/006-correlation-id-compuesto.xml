@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- La restricción única global de 004-correlation-id.xml era el bug que
+         esta fase corrige: dos tiendas legítimas nunca podían reutilizar el
+         mismo correlationId, y una colisión no verificaba tienda/vendedor
+         antes de devolver la venta encontrada (riesgo de fuga entre
+         tiendas). La compuesta preserva la misma semántica de NULLs de
+         Postgres: múltiples ventas sin correlationId (todo el tráfico
+         online-directo) conviven sin problema porque basta que una sola
+         columna sea NULL para que la fila quede fuera de la restricción. -->
+    <changeSet id="ventas-006-correlation-id-compuesto" author="market-backend">
+        <dropUniqueConstraint tableName="venta" constraintName="ux_venta_correlation_id"/>
+        <addUniqueConstraint
+                tableName="venta" columnNames="tienda_id, vendedor_id, correlation_id"
+                constraintName="ux_venta_tienda_vendedor_correlation_id"/>
+    </changeSet>
+</databaseChangeLog>

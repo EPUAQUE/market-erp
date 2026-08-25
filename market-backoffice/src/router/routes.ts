@@ -1,0 +1,162 @@
+import type { RouteRecordRaw } from 'vue-router'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    permission?: string
+    title?: string
+  }
+}
+
+export const routes: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/LoginView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/forbidden',
+    name: 'forbidden',
+    component: () => import('@/views/ForbiddenView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/',
+    component: () => import('@/components/layout/AdminLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      { path: '', name: 'app-home', redirect: '/dashboard' },
+      {
+        path: 'dashboard',
+        name: 'dashboard',
+        component: () => import('@/views/admin/DashboardView.vue'),
+        meta: { requiresAuth: true, permission: 'DASHBOARD_VER', title: 'Dashboard' },
+      },
+      {
+        path: 'usuarios',
+        name: 'usuarios',
+        component: () => import('@/views/admin/UsuariosView.vue'),
+        meta: { requiresAuth: true, permission: 'USUARIOS_VER', title: 'Usuarios' },
+      },
+      {
+        path: 'tiendas',
+        name: 'tiendas',
+        component: () => import('@/views/admin/TiendasView.vue'),
+        meta: { requiresAuth: true, permission: 'TIENDAS_VER', title: 'Tiendas' },
+      },
+      {
+        path: 'unidades-medida',
+        name: 'unidades-medida',
+        component: () => import('@/views/admin/UnidadesMedidaView.vue'),
+        meta: { requiresAuth: true, permission: 'UNIDADES_MEDIDA_VER', title: 'Unidades de Medida' },
+      },
+      {
+        path: 'categorias',
+        name: 'categorias',
+        component: () => import('@/views/admin/CategoriasView.vue'),
+        meta: { requiresAuth: true, permission: 'CATEGORIAS_VER', title: 'Categorías' },
+      },
+      {
+        path: 'marcas',
+        name: 'marcas',
+        component: () => import('@/views/admin/MarcasView.vue'),
+        meta: { requiresAuth: true, permission: 'MARCAS_VER', title: 'Marcas' },
+      },
+      {
+        path: 'productos',
+        name: 'productos',
+        component: () => import('@/views/admin/ProductosView.vue'),
+        meta: { requiresAuth: true, permission: 'PRODUCTOS_VER', title: 'Productos' },
+      },
+      {
+        path: 'productos/:productoId/tiendas',
+        name: 'producto-tiendas',
+        component: () => import('@/views/admin/ProductoTiendasView.vue'),
+        meta: { requiresAuth: true, permission: 'PRODUCTOS_VER', title: 'Producto por Tienda' },
+      },
+      {
+        path: 'inventario',
+        name: 'inventario',
+        component: () => import('@/views/admin/InventarioView.vue'),
+        meta: { requiresAuth: true, permission: 'INVENTARIO_VER', title: 'Inventario' },
+      },
+      {
+        path: 'proveedores',
+        name: 'proveedores',
+        component: () => import('@/views/admin/ProveedoresView.vue'),
+        meta: { requiresAuth: true, permission: 'PROVEEDORES_VER', title: 'Proveedores' },
+      },
+      {
+        path: 'compras',
+        name: 'compras',
+        component: () => import('@/views/admin/ComprasView.vue'),
+        meta: { requiresAuth: true, permission: 'COMPRAS_VER', title: 'Compras' },
+      },
+      {
+        path: 'cuentas-por-pagar',
+        name: 'cuentas-por-pagar',
+        component: () => import('@/views/admin/CuentasPorPagarView.vue'),
+        meta: { requiresAuth: true, permission: 'CUENTAS_POR_PAGAR_VER', title: 'Cuentas por Pagar' },
+      },
+      {
+        path: 'clientes',
+        name: 'clientes',
+        component: () => import('@/views/admin/ClientesView.vue'),
+        meta: { requiresAuth: true, permission: 'CLIENTES_VER', title: 'Clientes' },
+      },
+      {
+        path: 'ventas',
+        name: 'ventas',
+        component: () => import('@/views/admin/VentasView.vue'),
+        meta: { requiresAuth: true, permission: 'VENTAS_VER', title: 'Ventas' },
+      },
+      {
+        path: 'cuentas-por-cobrar',
+        name: 'cuentas-por-cobrar',
+        component: () => import('@/views/admin/CuentasPorCobrarView.vue'),
+        meta: { requiresAuth: true, permission: 'CUENTAS_POR_COBRAR_VER', title: 'Cuentas por Cobrar' },
+      },
+      {
+        path: 'caja',
+        name: 'caja',
+        component: () => import('@/views/admin/CajaView.vue'),
+        meta: { requiresAuth: true, permission: 'CAJA_VER', title: 'Caja' },
+      },
+      {
+        path: 'traslados',
+        name: 'traslados',
+        component: () => import('@/views/admin/TrasladosView.vue'),
+        meta: { requiresAuth: true, permission: 'TRASLADOS_VER', title: 'Traslados' },
+      },
+      {
+        path: 'gastos-programados',
+        name: 'gastos-programados',
+        component: () => import('@/views/admin/GastosProgramadosView.vue'),
+        meta: { requiresAuth: true, permission: 'GASTOS_PROGRAMADOS_VER', title: 'Gastos Programados' },
+      },
+      {
+        path: 'notificaciones',
+        name: 'notificaciones',
+        component: () => import('@/views/admin/NotificacionesView.vue'),
+        meta: { requiresAuth: true, permission: 'NOTIFICACIONES_VER', title: 'Notificaciones' },
+      },
+      {
+        path: 'reportes',
+        name: 'reportes',
+        component: () => import('@/views/admin/ReportesView.vue'),
+        meta: { requiresAuth: true, permission: 'REPORTES_VER', title: 'Reportes' },
+      },
+      {
+        path: 'fel',
+        name: 'fel',
+        component: () => import('@/views/admin/FelView.vue'),
+        meta: { requiresAuth: true, permission: 'FEL_VER', title: 'Facturación Electrónica' },
+      },
+    ],
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
+]

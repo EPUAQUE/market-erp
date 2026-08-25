@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Opcional (nullable, sin default): clientes existentes quedan sin límite
+         definido en vez de fabricar uno — ver Cliente.java. -->
+    <changeSet id="clientes-002-limite-credito" author="market-backend">
+        <addColumn tableName="cliente">
+            <column name="limite_credito" type="NUMERIC(14,4)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Hasta ahora ENCARGADO_TIENDA y CAJERO solo tenían DASHBOARD_VER (y
+         ENCARGADO_TIENDA, PRODUCTOS_VER) — cada módulo seedeaba permisos para
+         ADMIN pero ninguno completó el resto de roles operativos. Este
+         changelog corrige eso de una vez para ambos roles, siguiendo la
+         matriz de permisos documentada en market-flutter (POS): CAJERO es hoy
+         el rol funcional del "Vendedor" del brief (no existe un rol VENDEDOR
+         separado todavía), ENCARGADO_TIENDA es superset de CAJERO. -->
+
+    <changeSet id="seguridad-006-cajero-operativo" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'DASHBOARD_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PRODUCTOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_COMPLETAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_COBRAR_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_COBRAR_COBRAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'CAJERO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_VER')"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="seguridad-006-encargado-operativo" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_COMPLETAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_ANULAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_EDITAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_COBRAR_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_COBRAR_COBRAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_COBRAR_ANULAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_AJUSTAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_ABRIR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_CERRAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CAJA_REGISTRAR_MOVIMIENTO')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_COMPLETAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_ANULAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

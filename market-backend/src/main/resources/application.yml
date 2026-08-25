@@ -1,0 +1,75 @@
+# Solo valores comunes y NO sensibles a todo perfil. Cada perfil
+# (application-{local,test,prod}.yml) aporta lo que difiere por entorno —
+# credenciales de base de datos, llaves JWT, orígenes CORS, semilla de admin.
+# Sin perfil activo, este archivo por sí solo no arranca la app (spring.datasource.url
+# no tiene default aquí a propósito) — ver ProdSafetyGuard y docs/plan-mejoras.md
+# Fase 1.
+spring:
+  application:
+    name: market-backend
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Solo /actuator/health queda expuesto — SecurityConfig ya permite esa única
+        # ruta sin autenticar; cualquier otro endpoint de Actuator quedaría detrás de
+        # JWT igualmente, pero limitar la exposición evita que exista siquiera.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  security:
+    refresh-token:
+      ttl: ${REFRESH_TOKEN_TTL:P30D}
+      cleanup-interval: ${REFRESH_TOKEN_CLEANUP_INTERVAL:PT1H}
+    argon2:
+      salt-length: 16
+      hash-length: 32
+      parallelism: 1
+      memory-kib: 19456
+      iterations: 2
+    password-policy:
+      min-length: 12
+      max-length: 64
+    rate-limit:
+      login:
+        capacity: 5
+        refill-tokens: 5
+        refill-period: PT1M
+    network:
+      trusted-proxies: ${TRUSTED_PROXIES:}
+    cors:
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: Authorization,Content-Type,X-Correlation-Id
+  seed:
+    # Sin perfil activo (o en prod) NUNCA se siembra un admin por accidente — solo
+    # application-local.yml / application-test.yml lo activan explícitamente.
+    enabled: ${SEED_ENABLED:false}
+  negocio:
+    # Zona horaria usada para calcular cortes de "hoy"/"mes" en el dashboard.
+    zona-horaria: ${BUSINESS_TIMEZONE:America/Guatemala}
+
+logging:
+  level:
+    com.ais.marketbackend: INFO

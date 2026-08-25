@@ -1,0 +1,34 @@
+# Producción — sin defaults reales para nada sensible. Los `${VAR:}` de abajo usan
+# default vacío (string vacío), NUNCA un valor de desarrollo — un `${VAR}` sin ningún
+# default (ni siquiera vacío) NO falla el arranque como cabría esperar: un
+# placeholder sin resolver se enlaza tal cual como texto literal ("${VAR}"), no lanza
+# excepción (comprobado empíricamente, ver docs/plan-mejoras.md Fase 1). El default
+# vacío + `@NotBlank`/`@NotEmpty` en SeguridadProperties (`@Validated`) es lo que de
+# verdad hace fallar el arranque si falta la variable. Además de esto, ProdSafetyGuard
+# rechaza el arranque si app.seed.enabled=true, si la contraseña de admin sembrada
+# coincide con la conocida de desarrollo, o si alguna llave JWT apunta a un
+# certificado "dev-*".
+spring:
+  datasource:
+    url: ${DB_URL:}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+
+app:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:}
+      audience: ${JWT_AUDIENCE:}
+      access-token-ttl: ${JWT_ACCESS_TTL:PT10M}
+      clock-skew: ${JWT_CLOCK_SKEW:PT30S}
+      active-kid: ${JWT_ACTIVE_KID:prod-1}
+      keys:
+        - kid: ${JWT_ACTIVE_KID:prod-1}
+          private-key-location: ${JWT_PRIVATE_KEY_LOCATION:}
+          public-key-location: ${JWT_PUBLIC_KEY_LOCATION:}
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  seed:
+    enabled: ${SEED_ENABLED:false}
+    admin-username: ${SEED_ADMIN_USERNAME:}
+    admin-password: ${SEED_ADMIN_PASSWORD:}

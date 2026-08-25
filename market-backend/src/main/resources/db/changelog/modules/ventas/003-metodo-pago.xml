@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Nullable, sin default: a diferencia de vendedor_id (002-venta-vendedor.xml),
+         este módulo sí tenía ventas antes de este campo — su método de pago real
+         nunca se registró y no hay forma honesta de reconstruirlo, así que quedan
+         en null en vez de fabricar un valor. Toda venta nueva sí lo exige
+         (ver Venta.nueva() / CrearVentaRequest). -->
+    <changeSet id="ventas-003-metodo-pago" author="market-backend">
+        <addColumn tableName="venta">
+            <column name="metodo_pago" type="VARCHAR(20)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

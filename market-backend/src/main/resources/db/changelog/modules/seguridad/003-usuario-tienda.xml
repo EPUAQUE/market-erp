@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        tienda_id nace como BIGINT plano, sin FK: en este changelog la tabla `tienda`
+        (propiedad del módulo Tiendas) aún no existe. La FK se agrega después, en
+        tiendas/001-tienda.xml, una vez que ese módulo publica su changelog.
+    -->
+    <changeSet id="seguridad-003-usuario-tienda" author="market-backend">
+        <createTable tableName="usuario_tienda">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="usuario_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rol_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="usuario_tienda" baseColumnNames="usuario_id"
+                referencedTableName="usuario" referencedColumnNames="id"
+                constraintName="fk_usuario_tienda_usuario" onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="usuario_tienda" baseColumnNames="rol_id"
+                referencedTableName="rol" referencedColumnNames="id"
+                constraintName="fk_usuario_tienda_rol" onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="usuario_tienda" columnNames="usuario_id, tienda_id"
+                constraintName="ux_usuario_tienda"/>
+    </changeSet>
+</databaseChangeLog>

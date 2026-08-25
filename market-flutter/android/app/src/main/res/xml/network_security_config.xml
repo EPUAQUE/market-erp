@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permite cleartext (HTTP, no HTTPS) SOLO para el/los dominios/IPs listados abajo —
+  nunca cleartextTrafficPermitted="true" a nivel de <base-config> (eso lo permitiría
+  para CUALQUIER host). Existe porque el deploy de market-backend hoy no tiene TLS
+  (ver market-backend/deploy/README.md, "Pendiente: TLS/reverse proxy") — Android 9+
+  (API 28+) bloquea cleartext por defecto para toda la app si no se declara esta
+  excepción explícita.
+
+  ANTES DE CADA BUILD contra un servidor real: reemplazar el/los valores de
+  <domain> de abajo por el dominio o IP real del servidor de pruebas (nunca dejar
+  "test-server.local" — es un placeholder, no resuelve a nada).
+
+  REVERTIR esta excepción (borrar este archivo y la referencia en AndroidManifest.xml)
+  en cuanto el deploy tenga TLS real — ver market-backend/deploy/README.md.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Placeholder — reemplazar por el dominio/IP real antes de compilar. -->
+        <domain includeSubdomains="false">test-server.local</domain>
+        <!-- Emulador Android: 10.0.2.2 es el alias de loopback del host visto desde
+             el emulador (ver market-flutter/CLAUDE.md, "Android emulator"). -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

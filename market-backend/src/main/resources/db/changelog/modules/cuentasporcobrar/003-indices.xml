@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Sin índice propio hasta ahora; el dashboard y el listado por tienda filtran
+         por tienda_id + estado en cada solicitud (ver auditoría Fase 8). -->
+    <changeSet id="cuentasporcobrar-003-indice-tienda-estado" author="market-backend">
+        <createIndex tableName="cuenta_por_cobrar" indexName="ix_cuenta_por_cobrar_tienda_estado">
+            <column name="tienda_id"/>
+            <column name="estado"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

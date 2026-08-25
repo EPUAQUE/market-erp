@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="notificaciones-001-notificacion" author="market-backend">
+        <createTable tableName="notificacion">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="referencia_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mensaje" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leida" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_lectura" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="notificacion" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_notificacion_tienda" onDelete="RESTRICT"/>
+
+        <createIndex tableName="notificacion" indexName="ix_notificacion_tienda_tipo_referencia_leida">
+            <column name="tienda_id"/>
+            <column name="tipo"/>
+            <column name="referencia_id"/>
+            <column name="leida"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="notificaciones-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="NOTIFICACIONES_VER"/>
+            <column name="descripcion" value="Ver notificaciones de una tienda"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="NOTIFICACIONES_GENERAR"/>
+            <column name="descripcion" value="Escanear otros módulos y generar notificaciones nuevas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="NOTIFICACIONES_MARCAR_LEIDA"/>
+            <column name="descripcion" value="Marcar una notificación como leída"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'NOTIFICACIONES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'NOTIFICACIONES_GENERAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'NOTIFICACIONES_MARCAR_LEIDA')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

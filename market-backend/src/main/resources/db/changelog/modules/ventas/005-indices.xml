@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        `venta` no tenía ningún índice propio (las FK de PostgreSQL no crean índice
+        automático en la columna referenciante). Todo listado filtra por tienda y,
+        en memoria, por estado/rango de fecha (VentaServiceImpl.listarPorTienda,
+        DashboardServiceImpl) — este índice soporta esa consulta directamente en BD.
+    -->
+    <changeSet id="ventas-005-indice-tienda-estado-fecha" author="market-backend">
+        <createIndex tableName="venta" indexName="ix_venta_tienda_estado_fecha">
+            <column name="tienda_id"/>
+            <column name="estado"/>
+            <column name="fecha"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

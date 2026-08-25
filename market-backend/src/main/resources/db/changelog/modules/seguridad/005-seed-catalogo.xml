@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        Catálogo base propiedad de Seguridad: roles de negocio y los permisos que
+        el propio módulo Seguridad expone (gestión de usuarios). Otros módulos
+        agregarán sus propios permisos y se los asignarán a estos roles en sus
+        propias migraciones — no se listan aquí por adelantado.
+    -->
+    <changeSet id="seguridad-005-seed-roles" author="market-backend">
+        <insert tableName="rol">
+            <column name="nombre" value="ADMIN"/>
+            <column name="alcance_global" valueBoolean="true"/>
+        </insert>
+        <insert tableName="rol">
+            <column name="nombre" value="ENCARGADO_TIENDA"/>
+            <column name="alcance_global" valueBoolean="false"/>
+        </insert>
+        <insert tableName="rol">
+            <column name="nombre" value="CAJERO"/>
+            <column name="alcance_global" valueBoolean="false"/>
+        </insert>
+        <insert tableName="rol">
+            <column name="nombre" value="AUDITOR"/>
+            <column name="alcance_global" valueBoolean="false"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="seguridad-005-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="USUARIOS_VER"/>
+            <column name="descripcion" value="Listar usuarios"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="USUARIOS_CREAR"/>
+            <column name="descripcion" value="Crear usuarios"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="USUARIOS_ASIGNAR_TIENDA"/>
+            <column name="descripcion" value="Asignar tienda y rol a un usuario"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="seguridad-005-seed-rol-permiso-admin" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'USUARIOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'USUARIOS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'USUARIOS_ASIGNAR_TIENDA')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

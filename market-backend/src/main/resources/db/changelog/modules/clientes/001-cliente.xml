@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="clientes-001-cliente" author="market-backend">
+        <createTable tableName="cliente">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nit" type="VARCHAR(20)">
+                <constraints unique="true" uniqueConstraintName="ux_cliente_nit"/>
+            </column>
+            <column name="nombre" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="direccion" type="VARCHAR(255)"/>
+            <column name="telefono" type="VARCHAR(30)"/>
+            <column name="correo" type="VARCHAR(150)"/>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!--
+        Cliente de Consumidor Final (CF): sin NIT, para ventas al detalle que no
+        requieren identificación fiscal del comprador (FEL Guatemala). Ventas lo
+        usará como cliente por defecto cuando no se identifique uno específico.
+    -->
+    <changeSet id="clientes-001-seed-consumidor-final" author="market-backend">
+        <insert tableName="cliente">
+            <column name="nombre" value="Consumidor Final"/>
+            <column name="estado" value="ACTIVO"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="clientes-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="CLIENTES_VER"/>
+            <column name="descripcion" value="Listar clientes"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CLIENTES_CREAR"/>
+            <column name="descripcion" value="Crear clientes"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CLIENTES_EDITAR"/>
+            <column name="descripcion" value="Editar y activar/desactivar clientes"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_EDITAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

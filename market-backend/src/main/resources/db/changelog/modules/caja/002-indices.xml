@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Sin índice propio hasta ahora; obtenerAbierta/listarPorTienda filtran por
+         tienda_id (+ estado) en cada solicitud (ver auditoría Fase 8). -->
+    <changeSet id="caja-002-indice-tienda-estado" author="market-backend">
+        <createIndex tableName="caja_sesion" indexName="ix_caja_sesion_tienda_estado">
+            <column name="tienda_id"/>
+            <column name="estado"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

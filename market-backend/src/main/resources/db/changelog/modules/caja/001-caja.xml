@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="caja-001-caja-sesion" author="market-backend">
+        <createTable tableName="caja_sesion">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_apertura" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_cierre" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="monto_inicial" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto_final_contado" type="NUMERIC(12,4)"/>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="caja_sesion" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_caja_sesion_tienda" onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="caja-001-movimiento-caja" author="market-backend">
+        <createTable tableName="movimiento_caja">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="caja_sesion_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="concepto" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto" type="NUMERIC(12,4)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="movimiento_caja" baseColumnNames="caja_sesion_id"
+                referencedTableName="caja_sesion" referencedColumnNames="id"
+                constraintName="fk_movimiento_caja_caja_sesion" onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="caja-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="CAJA_VER"/>
+            <column name="descripcion" value="Ver sesiones de caja e historial de movimientos"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CAJA_ABRIR"/>
+            <column name="descripcion" value="Abrir una sesión de caja"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CAJA_REGISTRAR_MOVIMIENTO"/>
+            <column name="descripcion" value="Registrar ingresos/egresos manuales en la caja abierta"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="CAJA_CERRAR"/>
+            <column name="descripcion" value="Cerrar la sesión de caja abierta"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_ABRIR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_REGISTRAR_MOVIMIENTO')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_CERRAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

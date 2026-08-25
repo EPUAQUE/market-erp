@@ -1,0 +1,42 @@
+# Monorepo: market-backend (Java/Maven) + market-backoffice (Vue/Vite) +
+# market-flutter (Flutter POS). Reglas comunes acá; cada proyecto puede tener
+# su propio .gitignore anidado además de este (ej. market-flutter/.gitignore,
+# generado por el propio `flutter create`).
+
+# --- Secretos: nunca al repositorio ---
+.env
+.env.local
+# Excepción explícita: .env.example y .env.development de market-backoffice no
+# tienen secretos (mismos valores no sensibles que .env.example) — se
+# mantienen fuera de esta regla por el patrón .env de arriba siendo exacto,
+# no un glob, así que ya no los toca.
+market-backend/deploy/certs/*.pem
+market-backend/deploy/backups/
+
+# --- IDE / editor / sesión local ---
+.idea/
+.vscode/
+.claude/
+*.iml
+
+# --- SO ---
+.DS_Store
+Thumbs.db
+
+# --- Logs y crashes sueltos (sesiones de desarrollo, no artefactos del proyecto) ---
+*.log
+*.stackdump
+
+# --- market-backend (Maven) ---
+market-backend/target/
+
+# --- market-backoffice (pnpm/Vite) ---
+market-backoffice/node_modules/
+market-backoffice/dist/
+market-backoffice/tsconfig.tsbuildinfo
+
+# --- market-flutter ---
+# Reglas específicas de Flutter/Dart ya cubiertas por market-flutter/.gitignore
+# (generado por `flutter create`, no se toca) — acá solo lo que ese archivo no
+# cubre.
+market-flutter/build/

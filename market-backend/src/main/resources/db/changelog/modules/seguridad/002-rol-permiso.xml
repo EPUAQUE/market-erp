@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="seguridad-002-rol" author="market-backend">
+        <createTable tableName="rol">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nombre" type="VARCHAR(60)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_rol_nombre"/>
+            </column>
+            <column name="alcance_global" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="seguridad-002-permiso" author="market-backend">
+        <createTable tableName="permiso">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="codigo" type="VARCHAR(60)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_permiso_codigo"/>
+            </column>
+            <column name="descripcion" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="seguridad-002-rol-permiso" author="market-backend">
+        <createTable tableName="rol_permiso">
+            <column name="rol_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permiso_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rol_permiso" columnNames="rol_id, permiso_id" constraintName="pk_rol_permiso"/>
+        <addForeignKeyConstraint
+                baseTableName="rol_permiso" baseColumnNames="rol_id"
+                referencedTableName="rol" referencedColumnNames="id"
+                constraintName="fk_rol_permiso_rol" onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="rol_permiso" baseColumnNames="permiso_id"
+                referencedTableName="permiso" referencedColumnNames="id"
+                constraintName="fk_rol_permiso_permiso" onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        vendedor_id = el usuario autenticado que registró la venta (extraído del
+        JWT en VentaController, no un campo de formulario). Habilita el dashboard
+        del rol Vendedor (metas, ranking, ventas propias) — ver
+        ARCHITECTURE.md / especificación de dashboards. NOT NULL directo porque
+        el módulo de Ventas no tenía datos previos a este cambio.
+    -->
+    <changeSet id="ventas-002-vendedor-id" author="market-backend">
+        <addColumn tableName="venta">
+            <column name="vendedor_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint
+                baseTableName="venta" baseColumnNames="vendedor_id"
+                referencedTableName="usuario" referencedColumnNames="id"
+                constraintName="fk_venta_vendedor" onDelete="RESTRICT"/>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- El Encargado de Tienda ve su propio dashboard, con el mismo alcance de tienda
+         que ya aplican sus demás permisos (RequiresPermission + tienda-scope). -->
+    <changeSet id="dashboard-002-encargado-ver" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'DASHBOARD_VER')"/>
+        </insert>
+    </changeSet>
+
+    <!-- Utilidad/margen es información financiera sensible: solo ADMIN la ve.
+         El Encargado recibe el mismo endpoint de resumen sin esos dos campos. -->
+    <changeSet id="dashboard-002-seed-permiso-financiero" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="DASHBOARD_FINANCIERO_VER"/>
+            <column name="descripcion" value="Ver utilidad y margen en el dashboard de una tienda"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'DASHBOARD_FINANCIERO_VER')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

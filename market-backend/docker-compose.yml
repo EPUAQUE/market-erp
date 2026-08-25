@@ -1,0 +1,99 @@
+# Rotación de logs: el driver json-file de Docker no rota por defecto — sin
+# esto, stdout de cada contenedor puede crecer sin límite y llenar el disco
+# del servidor con el tiempo. Aplicado a todos los servicios vía ancla YAML.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # Fase 1 (docs/plan-mejoras.md): este es el deploy productivo del repo —
+      # application-prod.yml exige explícitamente cada variable de abajo (sin
+      # default) y ProdSafetyGuard rechaza el arranque si SEED_ENABLED=true o si
+      # alguna llave JWT apunta a un certificado "dev-*".
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # Par de llaves propio de este ambiente — nunca el de dev
+      # (local-dev/certs, ni siquiera empacado en el jar). Ver deploy/certs/README.md.
+      JWT_PRIVATE_KEY_LOCATION: file:/certs/prod-private.pem
+      JWT_PUBLIC_KEY_LOCATION: file:/certs/prod-public.pem
+      JWT_ISSUER: ${JWT_ISSUER:-market-backend}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-market-clients}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+      SEED_ENABLED: ${SEED_ENABLED:-false}
+      SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Guatemala}
+    volumes:
+      - ./deploy/certs:/certs:ro
+
+  backoffice:
+    build:
+      context: ../market-backoffice
+      args:
+        # Vite empaca esto en el bundle en build-time — debe ser la URL
+        # PÚBLICA del backend (la que el navegador del usuario resuelve),
+        # nunca "backend" (el nombre del servicio, solo resoluble dentro de
+        # la red de docker compose). Tiene que coincidir con un origin
+        # listado en CORS_ALLOWED_ORIGINS. Ver deploy/README.md.
+        VITE_API_BASE_URL: ${BACKOFFICE_API_BASE_URL}
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      - backend
+    ports:
+      - "8081:80"
+
+  backup:
+    build: ./deploy/backup
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      # Bind mount a una carpeta del host (no un volumen con nombre) a
+      # propósito: el respaldo debe sobrevivir aunque se borre el volumen
+      # pgdata (ej. "docker compose down -v" por error), no depender de la
+      # misma capa de almacenamiento que intenta proteger.
+      - ./deploy/backups:/backups
+
+volumes:
+  pgdata:

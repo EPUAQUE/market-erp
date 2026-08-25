@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <include file="db/changelog/modules/seguridad/001-usuario.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/002-rol-permiso.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/003-usuario-tienda.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/004-refresh-token.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/005-seed-catalogo.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/tiendas/001-tienda.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/unidadesmedida/001-unidad-medida.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/categorias/001-categoria.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/marcas/001-marca.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/productos/001-producto.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/inventario/001-inventario.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/proveedores/001-proveedor.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/compras/001-compra.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/compras/002-indices.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/cuentasporpagar/001-cuenta-por-pagar.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/clientes/001-cliente.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/clientes/002-limite-credito.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/ventas/001-venta.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/ventas/002-venta-vendedor.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/ventas/003-metodo-pago.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/ventas/004-correlation-id.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/ventas/005-indices.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/ventas/006-correlation-id-compuesto.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/cuentasporcobrar/001-cuenta-por-cobrar.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/cuentasporcobrar/002-metodo-pago-cobro.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/cuentasporcobrar/003-indices.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/caja/001-caja.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/caja/002-indices.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/traslados/001-traslado.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/traslados/002-indices.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/gastosprogramados/001-gasto-programado.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/notificaciones/001-notificacion.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/dashboard/001-dashboard.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/dashboard/002-dashboard-encargado.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/reportes/001-reportes.xml" relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/modules/fel/001-documento-fel.xml" relativeToChangelogFile="false"/>
+
+    <!-- Va al final: referencia permisos sembrados por todos los módulos de arriba. -->
+    <include file="db/changelog/modules/seguridad/006-seed-roles-operativos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/007-seed-categorias-ver-operativo.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/008-refresh-token-index-expira-en.xml" relativeToChangelogFile="false"/>
+</databaseChangeLog>

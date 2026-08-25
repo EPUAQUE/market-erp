@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        Soporta la tarea de limpieza (RefreshTokenCleanupScheduler): DELETE ... WHERE
+        expira_en < :antesDe corre periódicamente y sin este índice haría un seq scan
+        completo de la tabla en cada ejecución.
+    -->
+    <changeSet id="seguridad-008-refresh-token-index-expira-en" author="market-backend">
+        <createIndex indexName="ix_refresh_token_expira_en" tableName="refresh_token">
+            <column name="expira_en"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

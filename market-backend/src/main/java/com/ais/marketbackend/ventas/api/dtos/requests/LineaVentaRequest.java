@@ -1,0 +1,18 @@
+package com.ais.marketbackend.ventas.api.dtos.requests;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import java.math.BigDecimal;
+
+public record LineaVentaRequest(
+        @NotNull(message = "El producto es obligatorio") Long productoId,
+
+        @NotNull(message = "La cantidad es obligatoria")
+        @Positive(message = "La cantidad debe ser mayor que cero")
+        BigDecimal cantidad,
+
+        @NotNull(message = "El precio unitario es obligatorio")
+        @DecimalMin(value = "0", message = "El precio unitario no puede ser negativo")
+        BigDecimal precioUnitario) {
+}

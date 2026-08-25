@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Nullable, sin default: igual que ventas/003-metodo-pago.xml — los
+         cobros ya existentes nunca registraron su canal real, no hay forma
+         honesta de reconstruirlo. Todo cobro nuevo sí lo exige (ver
+         RegistrarCobroRequest). -->
+    <changeSet id="cuentasporcobrar-002-metodo-pago-cobro" author="market-backend">
+        <addColumn tableName="cobro">
+            <column name="metodo_pago" type="VARCHAR(20)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

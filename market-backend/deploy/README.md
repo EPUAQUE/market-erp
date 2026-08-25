@@ -12,6 +12,40 @@ rechaza el arranque en `prod` si `SEED_ENABLED=true`, si falta cualquier
 secreto requerido, o si una llave JWT apunta a un certificado `dev-*`
 (ver `docs/plan-mejoras.md`, Fase 1).
 
+TLS es vía **Caddy** (`deploy/Caddyfile`), con certificado automático de
+Let's Encrypt — un solo dominio público, ruteado por path: `/` va al
+backoffice, `/api/*` va al backend. Backend y backoffice ya no exponen
+puerto directo a internet (solo `127.0.0.1` en la VM, para `curl` de
+verificación) — todo el tráfico público entra por Caddy en 80/443.
+
+## DNS
+
+Antes de levantar `caddy`, apuntar un registro **A** del dominio a la IP
+pública (externa) de la VM. Confirmar que ya propagó antes del siguiente
+paso:
+```
+dig +short tu-dominio.com
+```
+Debe devolver la IP de la VM. Si Caddy arranca antes de que el DNS
+propague, el challenge ACME de Let's Encrypt falla — solo hay que esperar
+a que propague y Caddy reintenta solo (no hace falta reiniciar el
+contenedor a mano, aunque un `docker compose restart caddy` no hace daño
+si se quiere forzar un reintento inmediato).
+
+## Firewall de GCP
+
+Abrir **80** (challenge ACME + redirect a HTTPS) y **443** (tráfico real)
+en las reglas de firewall de la VM — por ejemplo:
+```
+gcloud compute firewall-rules create allow-http-https \
+  --allow=tcp:80,tcp:443 \
+  --target-tags=<tag-de-la-vm> \
+  --direction=INGRESS
+```
+(o el equivalente desde la consola web: VPC network → Firewall). **8080 y
+8081 ya no necesitan regla pública** — quedan atados a `127.0.0.1` en el
+`docker-compose.yml`.
+
 ## En el servidor
 
 1. Instalar Docker + el plugin de Compose (`docker compose version` debe
@@ -22,30 +56,41 @@ secreto requerido, o si una llave JWT apunta a un certificado `dev-*`
    como hermanos:
    ```
    market-erp/
-     market-backend/      (Dockerfile, docker-compose.yml, pom.xml, src/, deploy/certs/)
+     market-backend/      (Dockerfile, docker-compose.yml, pom.xml, src/, deploy/certs/, deploy/Caddyfile)
      market-backoffice/   (Dockerfile, nginx.conf, package.json, src/, ...)
    ```
    Incluir `deploy/certs/` completa (con las llaves `prod-*.pem` ya
    generadas — no regenerarlas en el servidor a menos que se quiera
    rotarlas).
 3. En `market-backend/`, copiar `.env.example` a `.env` y llenar los
-   valores reales: contraseña de Postgres, `CORS_ALLOWED_ORIGINS` (debe
-   incluir el origin público del backoffice), `BACKOFFICE_API_BASE_URL`
-   (la URL pública del backend, la que el navegador va a resolver — nunca
-   `backend`, ese nombre solo existe dentro de la red de docker compose),
-   contraseña del admin. Dejar `SEED_ENABLED=false` (o quitar la línea —
-   ese es el default si se omite): `docker-compose.yml` arranca el backend
-   con `SPRING_PROFILES_ACTIVE=prod`, y bajo ese perfil `ProdSafetyGuard`
-   **rechaza el arranque si `SEED_ENABLED=true`** — ni siquiera en el primer
-   deploy (ver "Primer admin" abajo, es un paso aparte).
+   valores reales: `DOMAIN` (el dominio real, ya apuntado por DNS —
+   `CORS_ALLOWED_ORIGINS` y la URL base del backoffice se derivan de este
+   valor solos, no hay que repetirlo en otra variable), contraseña de
+   Postgres, contraseña del admin. Dejar `SEED_ENABLED=false` (o quitar la
+   línea — ese es el default si se omite): `docker-compose.yml` arranca el
+   backend con `SPRING_PROFILES_ACTIVE=prod`, y bajo ese perfil
+   `ProdSafetyGuard` **rechaza el arranque si `SEED_ENABLED=true`** — ni
+   siquiera en el primer deploy (ver "Primer admin" abajo, es un paso
+   aparte).
 4. `docker compose up -d --build` (desde `market-backend/`).
 5. Verificar:
    - `docker compose logs backend --tail 50` termina con
      `Started MarketBackendApplication`.
-   - `curl http://localhost:8080/actuator/health` devuelve
+   - `docker compose logs caddy --tail 50` — sin errores de ACME/TLS (la
+     primera emisión de certificado puede tardar unos segundos a un par de
+     minutos).
+   - `curl http://localhost:8080/actuator/health` (desde la VM) devuelve
      `{"status":"UP",...}`.
-   - `curl http://localhost:8081/` devuelve el `index.html` del
-     backoffice.
+   - `curl http://localhost:8081/` (desde la VM) devuelve el `index.html`
+     del backoffice.
+   - `curl -i https://tu-dominio.com/api/v1/auth/login -X POST -H "Content-Type: application/json" -d '{}'`
+     (desde donde sea) devuelve `400`/`401` de la API real — no el
+     `index.html` del backoffice — confirmando que Caddy sí está enrutando
+     `/api/*` al backend con certificado válido. (`/actuator/health` no
+     está expuesto públicamente a propósito — sigue siendo solo
+     `127.0.0.1`, ver "Monitoreo" abajo.)
+   - `curl -I https://tu-dominio.com/` devuelve `200` con el `index.html`
+     del backoffice.
 
 ### Primer admin (una sola vez, base de datos vacía)
 
@@ -152,26 +197,23 @@ para que no crezcan sin límite y llenen el disco del servidor con el tiempo.
 
 `GET /actuator/health` está expuesto sin autenticar (único endpoint de Actuator
 habilitado — `management.endpoints.web.exposure.include: health` en
-`application.yml`) para health checks de infraestructura (load balancer, `docker
-compose healthcheck`, Kubernetes). Responde `{"status":"UP",...}` sin detalle
-interno (`show-details: never`) — nunca revela la URL de la base de datos ni el
-estado de sus componentes a un caller sin JWT. Cualquier otra ruta de Actuator
+`application.yml`) para health checks de infraestructura (`docker compose
+healthcheck`, un script de monitoreo corriendo en la propia VM). Responde
+`{"status":"UP",...}` sin detalle interno (`show-details: never`) — nunca
+revela la URL de la base de datos ni el estado de sus componentes a un
+caller sin JWT. Solo alcanzable en `127.0.0.1:8080` (no pasa por Caddy, no
+está expuesto a internet — ver arriba). Cualquier otra ruta de Actuator
 (`/actuator/metrics`, `/actuator/env`, etc.) exige el mismo JWT que el resto de la
 API y hoy no está expuesta de todas formas (`exposure.include` solo lista
 `health`).
 
 ## Pendiente, fuera de este alcance
 
-- **TLS / reverse proxy**: el backend queda en `8080` y el backoffice en
-  `8081`, ambos sin TLS. Para HTTPS real (necesario para que el navegador
-  no bloquee por mixed-content) hace falta un proxy delante (Caddy, Nginx,
-  o el load balancer de GCP) — no incluido aquí. Si se agrega, recordar
-  que `BACKOFFICE_API_BASE_URL` y `CORS_ALLOWED_ORIGINS` deben usar las
-  URLs públicas finales (con `https://` y el dominio real), no
-  `localhost`.
-- **Firewall de GCP**: abrir los puertos que correspondan (8080 y 8081, o
-  443/80 si se agrega el proxy) en las reglas de firewall de la VM.
 - **market-flutter web**: este deploy no incluye el cliente Flutter web
   (el POS) — solo backend + backoffice. Si también se necesita, es un
-  build (`flutter build web`) servido igual por un Nginx estático, mismo
-  patrón que el backoffice.
+  build (`flutter build web`) servido igual por un Nginx estático detrás
+  de Caddy — agregar un tercer `handle` en el `Caddyfile` (ej. bajo
+  `/pos/*` o un subdominio nuevo) apuntando a ese contenedor.
+- **Rotación/renovación de certificado**: Caddy la maneja sola (renueva
+  automáticamente antes de que expire) — no requiere `cron` ni paso manual,
+  solo que el volumen `caddy_data` no se borre entre deploys.

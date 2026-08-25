@@ -32,7 +32,10 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      # Solo accesible desde la propia VM (curl de verificación, health
+      # check) — el tráfico público entra por Caddy (80/443), nunca directo
+      # a este puerto. Ver el servicio "caddy" abajo.
+      - "127.0.0.1:8080:8080"
     environment:
       # Fase 1 (docs/plan-mejoras.md): este es el deploy productivo del repo —
       # application-prod.yml exige explícitamente cada variable de abajo (sin
@@ -48,7 +51,10 @@ services:
       JWT_PUBLIC_KEY_LOCATION: file:/certs/prod-public.pem
       JWT_ISSUER: ${JWT_ISSUER:-market-backend}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-market-clients}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      # Un solo dominio público, ruteado por path vía Caddy (ver Caddyfile) —
+      # el origin que el navegador manda es siempre https://${DOMAIN}, sin
+      # importar si pidió "/" (backoffice) o "/api/..." (este backend).
+      CORS_ALLOWED_ORIGINS: https://${DOMAIN}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES}
       SEED_ENABLED: ${SEED_ENABLED:-false}
       SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME}
@@ -61,18 +67,38 @@ services:
     build:
       context: ../market-backoffice
       args:
-        # Vite empaca esto en el bundle en build-time — debe ser la URL
-        # PÚBLICA del backend (la que el navegador del usuario resuelve),
-        # nunca "backend" (el nombre del servicio, solo resoluble dentro de
-        # la red de docker compose). Tiene que coincidir con un origin
-        # listado en CORS_ALLOWED_ORIGINS. Ver deploy/README.md.
-        VITE_API_BASE_URL: ${BACKOFFICE_API_BASE_URL}
+        # Vite empaca esto en el bundle en build-time. Un solo dominio
+        # ruteado por path (ver Caddyfile): el backend cuelga de
+        # https://${DOMAIN}/api/..., así que la base URL del cliente HTTP es
+        # el dominio a secas — cada endpoint ya trae su propio "/api/v1/..."
+        # (ver market-backoffice/src/config/endpoints.ts). Nunca "backend",
+        # el nombre del servicio solo resuelve dentro de la red de compose.
+        VITE_API_BASE_URL: https://${DOMAIN}
     restart: unless-stopped
     logging: *default-logging
     depends_on:
       - backend
     ports:
-      - "8081:80"
+      # Solo accesible desde la propia VM — el tráfico público entra por
+      # Caddy (80/443). Ver el servicio "caddy" abajo.
+      - "127.0.0.1:8081:80"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      - backend
+      - backoffice
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
   backup:
     build: ./deploy/backup
@@ -97,3 +123,9 @@ services:
 
 volumes:
   pgdata:
+  # Certificados TLS de Let's Encrypt + estado del ACME de Caddy — deben
+  # sobrevivir a "docker compose up --build" para no re-solicitar
+  # certificados nuevos innecesariamente (Let's Encrypt tiene límite de
+  # tasa por dominio).
+  caddy_data:
+  caddy_config:

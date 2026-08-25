@@ -1,0 +1,15 @@
+# Reverse proxy con HTTPS automático (Let's Encrypt) para un solo dominio,
+# ruteo por path — ver deploy/README.md. DOMAIN se inyecta desde .env vía
+# docker-compose.yml (variable de entorno del contenedor caddy).
+{$DOMAIN} {
+	encode zstd gzip
+
+	@api path /api/*
+	handle @api {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy backoffice:80
+	}
+}

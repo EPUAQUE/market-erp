@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/application/auth_notifier.dart';
 import '../../dashboard/application/dashboard_provider.dart';
 import '../../dashboard/data/dashboard_resumen.dart';
-
-const _brand = Color(0xFF0F4C5C);
-const _primary = Color(0xFF2E8B57);
+import '../../dashboard/presentation/dashboard_widgets.dart';
 
 /// Rendimiento del vendedor. El backend agrega por TIENDA, no por vendedor
 /// (no expone `usuarioId` en `/me` ni un corte por vendedor en ventas) — así
@@ -24,9 +22,9 @@ class DashboardVendedorScreen extends ConsumerWidget {
     final resumenAsync = ref.watch(dashboardResumenProvider(tiendaId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: DashboardPalette.surface,
       appBar: AppBar(
-        backgroundColor: _brand,
+        backgroundColor: DashboardPalette.brand,
         foregroundColor: Colors.white,
         title: const Text('Mi rendimiento'),
       ),
@@ -56,90 +54,68 @@ class _Contenido extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Ventas hoy',
                   valor: 'Q ${resumen.ventasHoyTotal}',
                   subtitulo: '${resumen.ventasHoyCantidad} venta(s)',
+                  icon: Icons.today_rounded,
+                  color: DashboardPalette.violet,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _StatCard(
-                  titulo: 'Ventas del mes',
-                  valor: 'Q ${resumen.ventasMesTotal}',
-                  subtitulo: '${resumen.ventasMesCantidad} venta(s)',
+                child: DashboardStatCard(
+                  titulo: 'Ticket promedio',
+                  valor: 'Q ${resumen.ticketPromedioMes}',
+                  icon: Icons.receipt_long_rounded,
+                  color: DashboardPalette.info,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _StatCard(
-            titulo: 'Ticket promedio del mes',
-            valor: 'Q ${resumen.ticketPromedioMes}',
+          DashboardComparisonBars(
+            titulo: 'Ventas del mes vs. mes anterior',
+            etiquetaActual: 'Este mes (${resumen.ventasMesCantidad} venta(s))',
+            valorActual: resumen.ventasMesTotal,
+            etiquetaAnterior: 'Mes anterior',
+            valorAnterior: resumen.ventasMesAnteriorTotal,
           ),
           const SizedBox(height: 20),
-          Card(
-            color: const Color(0xFFFFF8E1),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Icon(Icons.info_outline, color: Colors.black54),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Meta de ventas y ranking interno todavía no están '
-                      'disponibles: el sistema no registra una meta por '
-                      'vendedor ni separa las ventas por quién las hizo. '
-                      'Las cifras de arriba son las de toda la tienda.',
-                      style: TextStyle(fontSize: 12, color: Colors.black87),
-                    ),
-                  ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(
+                colors: [
+                  DashboardPalette.accent.withValues(alpha: 0.16),
+                  DashboardPalette.accent.withValues(alpha: 0.04),
                 ],
               ),
+              border: Border.all(color: DashboardPalette.accent.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const DashboardIconBadge(
+                  icon: Icons.info_outline_rounded,
+                  color: DashboardPalette.accent,
+                  size: 36,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Meta de ventas y ranking interno todavía no están '
+                    'disponibles: el sistema no registra una meta por '
+                    'vendedor ni separa las ventas por quién las hizo. '
+                    'Las cifras de arriba son las de toda la tienda.',
+                    style: TextStyle(fontSize: 12, color: DashboardPalette.ink),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.titulo, required this.valor, this.subtitulo});
-
-  final String titulo;
-  final String valor;
-  final String? subtitulo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(titulo, style: const TextStyle(color: Colors.black54)),
-            const SizedBox(height: 6),
-            Text(
-              valor,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: _primary,
-              ),
-            ),
-            if (subtitulo != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtitulo!,
-                style: const TextStyle(fontSize: 12, color: Colors.black45),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }

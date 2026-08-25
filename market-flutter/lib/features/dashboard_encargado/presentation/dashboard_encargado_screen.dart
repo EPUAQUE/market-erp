@@ -1,14 +1,9 @@
-import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/application/auth_notifier.dart';
 import '../../dashboard/application/dashboard_provider.dart';
 import '../../dashboard/data/dashboard_resumen.dart';
-
-const _brand = Color(0xFF0F4C5C);
-const _primary = Color(0xFF2E8B57);
-const _danger = Color(0xFFDC6B6B);
-const _warning = Color(0xFFF4B942);
+import '../../dashboard/presentation/dashboard_widgets.dart';
 
 class DashboardEncargadoScreen extends ConsumerWidget {
   const DashboardEncargadoScreen({super.key});
@@ -21,9 +16,9 @@ class DashboardEncargadoScreen extends ConsumerWidget {
     final resumenAsync = ref.watch(dashboardResumenProvider(tiendaId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: DashboardPalette.surface,
       appBar: AppBar(
-        backgroundColor: _brand,
+        backgroundColor: DashboardPalette.brand,
         foregroundColor: Colors.white,
         title: const Text('Dashboard · Tienda'),
       ),
@@ -51,457 +46,306 @@ class _Contenido extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         children: [
           if (resumen.alertasCriticas > 0 || resumen.alertasPreventivas > 0)
-            _AlertasBanner(resumen: resumen),
-          const _SeccionTitulo('Ventas'),
+            DashboardAlertBanner(
+              criticas: resumen.alertasCriticas,
+              preventivas: resumen.alertasPreventivas,
+            ),
+          const DashboardSectionHeader(
+            titulo: 'Ventas',
+            icon: Icons.point_of_sale_rounded,
+            color: DashboardPalette.violet,
+          ),
           Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Hoy',
                   valor: 'Q ${resumen.ventasHoyTotal}',
                   subtitulo: '${resumen.ventasHoyCantidad} venta(s)',
+                  icon: Icons.today_rounded,
+                  color: DashboardPalette.violet,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _StatCard(
-                  titulo: 'Este mes',
-                  valor: 'Q ${resumen.ventasMesTotal}',
-                  subtitulo: '${resumen.ventasMesCantidad} venta(s)',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  titulo: 'Mes anterior',
-                  valor: 'Q ${resumen.ventasMesAnteriorTotal}',
+                child: DashboardStatCard(
+                  titulo: 'Ticket promedio',
+                  valor: 'Q ${resumen.ticketPromedioMes}',
+                  icon: Icons.receipt_long_rounded,
+                  color: DashboardPalette.info,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
+          DashboardComparisonBars(
+            titulo: 'Ventas del mes vs. mes anterior',
+            etiquetaActual: 'Este mes (${resumen.ventasMesCantidad} venta(s))',
+            valorActual: resumen.ventasMesTotal,
+            etiquetaAnterior: 'Mes anterior',
+            valorAnterior: resumen.ventasMesAnteriorTotal,
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _StatCard(
-                  titulo: 'Ticket promedio del mes',
-                  valor: 'Q ${resumen.ticketPromedioMes}',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Facturas FEL certificadas',
                   valor:
                       '${resumen.facturasFelCertificadasMes}/${resumen.facturasEmitidasMes}',
+                  icon: Icons.fact_check_rounded,
+                  color: DashboardPalette.accent,
                 ),
               ),
               if (resumen.utilidadMesTotal != null) ...[
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _StatCard(
+                  child: DashboardStatCard(
                     titulo: 'Utilidad del mes',
                     valor: 'Q ${resumen.utilidadMesTotal}',
                     subtitulo: resumen.margenPromedioMes != null
                         ? 'Margen ${resumen.margenPromedioMes}%'
                         : null,
+                    icon: Icons.trending_up_rounded,
+                    color: DashboardPalette.primary,
                   ),
                 ),
               ],
             ],
           ),
-          const _SeccionTitulo('Caja'),
+          const DashboardSectionHeader(
+            titulo: 'Caja',
+            icon: Icons.point_of_sale_outlined,
+            color: DashboardPalette.coral,
+          ),
           Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Estado',
                   valor: resumen.cajaAbierta ? 'Abierta' : 'Cerrada',
-                  colorValor: resumen.cajaAbierta ? _primary : Colors.black54,
+                  icon: resumen.cajaAbierta
+                      ? Icons.lock_open_rounded
+                      : Icons.lock_outline_rounded,
+                  color: resumen.cajaAbierta
+                      ? DashboardPalette.primary
+                      : DashboardPalette.inkMuted,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Saldo esperado',
                   valor: resumen.cajaSaldoEsperado != null
                       ? 'Q ${resumen.cajaSaldoEsperado}'
                       : '—',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  titulo: 'Ingresos / egresos hoy',
-                  valor: '+Q ${resumen.ingresosHoy} / -Q ${resumen.egresosHoy}',
+                  icon: Icons.account_balance_wallet_rounded,
+                  color: DashboardPalette.coral,
                 ),
               ),
             ],
           ),
-          const _SeccionTitulo('Inventario'),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
+                  titulo: 'Ingresos hoy',
+                  valor: '+Q ${resumen.ingresosHoy}',
+                  icon: Icons.arrow_downward_rounded,
+                  color: DashboardPalette.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DashboardStatCard(
+                  titulo: 'Egresos hoy',
+                  valor: '-Q ${resumen.egresosHoy}',
+                  icon: Icons.arrow_upward_rounded,
+                  color: DashboardPalette.danger,
+                ),
+              ),
+            ],
+          ),
+          const DashboardSectionHeader(
+            titulo: 'Inventario',
+            icon: Icons.inventory_2_rounded,
+            color: DashboardPalette.info,
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: DashboardStatCard(
                   titulo: 'Valorizado',
                   valor: 'Q ${resumen.inventarioValorizadoTotal}',
+                  icon: Icons.warehouse_rounded,
+                  color: DashboardPalette.info,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Agotados',
                   valor: '${resumen.productosAgotados}',
-                  colorValor: resumen.productosAgotados > 0
-                      ? _danger
-                      : _primary,
+                  icon: Icons.remove_shopping_cart_rounded,
+                  color: resumen.productosAgotados > 0
+                      ? DashboardPalette.danger
+                      : DashboardPalette.primary,
                 ),
               ),
-              const SizedBox(width: 12),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Bajo mínimo',
                   valor: '${resumen.productosBajoMinimo}',
-                  colorValor: resumen.productosBajoMinimo > 0
-                      ? _warning
-                      : _primary,
+                  icon: Icons.trending_down_rounded,
+                  color: resumen.productosBajoMinimo > 0
+                      ? DashboardPalette.warning
+                      : DashboardPalette.primary,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _StatCard(
+                child: DashboardStatCard(
                   titulo: 'Sin movimiento (60d)',
                   valor: '${resumen.productosSinMovimiento}',
+                  icon: Icons.hourglass_bottom_rounded,
+                  color: DashboardPalette.inkMuted,
                 ),
               ),
             ],
           ),
-          const _SeccionTitulo('Cuentas por cobrar'),
-          Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  titulo: 'Saldo pendiente',
-                  valor: 'Q ${resumen.saldoPendienteCuentasPorCobrar}',
-                  subtitulo: '${resumen.cuentasPorCobrarVencidas} vencida(s)',
-                  colorValor: resumen.cuentasPorCobrarVencidas > 0
-                      ? _danger
-                      : _primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _AgingCard(
-                  a0a30: resumen.cxcAging0a30,
-                  a31a60: resumen.cxcAging31a60,
-                  aMas60: resumen.cxcAgingMas60,
-                ),
-              ),
-            ],
+          const DashboardSectionHeader(
+            titulo: 'Cuentas por cobrar',
+            icon: Icons.call_received_rounded,
+            color: DashboardPalette.primary,
           ),
-          if (resumen.topCobrosPendientes.isNotEmpty)
-            _ListaCuentasPendientes(
-              titulo: 'Top cobros pendientes',
-              cuentas: resumen.topCobrosPendientes,
-              etiquetaContraparte: 'Cliente',
-            ),
-          const _SeccionTitulo('Cuentas por pagar'),
-          Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  titulo: 'Saldo pendiente',
-                  valor: 'Q ${resumen.saldoPendienteCuentasPorPagar}',
-                  subtitulo: '${resumen.cuentasPorPagarVencidas} vencida(s)',
-                  colorValor: resumen.cuentasPorPagarVencidas > 0
-                      ? _danger
-                      : _primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _AgingCard(
-                  a0a30: resumen.cxpAging0a30,
-                  a31a60: resumen.cxpAging31a60,
-                  aMas60: resumen.cxpAgingMas60,
-                ),
-              ),
-            ],
+          DashboardStatCard(
+            titulo: 'Saldo pendiente',
+            valor: 'Q ${resumen.saldoPendienteCuentasPorCobrar}',
+            subtitulo: '${resumen.cuentasPorCobrarVencidas} vencida(s)',
+            icon: Icons.request_page_rounded,
+            color: resumen.cuentasPorCobrarVencidas > 0
+                ? DashboardPalette.danger
+                : DashboardPalette.primary,
           ),
-          if (resumen.topPagosPendientes.isNotEmpty)
-            _ListaCuentasPendientes(
-              titulo: 'Top pagos pendientes',
-              cuentas: resumen.topPagosPendientes,
-              etiquetaContraparte: 'Proveedor',
-            ),
-          if (resumen.sugerenciasCompra.isNotEmpty) ...[
-            const _SeccionTitulo('Sugerencias de compra'),
-            Card(
-              child: Column(
-                children: resumen.sugerenciasCompra
-                    .map(
-                      (s) => ListTile(
-                        leading: const Icon(
-                          Icons.shopping_cart_outlined,
-                          color: _warning,
-                        ),
-                        title: Text('Producto #${s.productoId}'),
-                        subtitle: Text(
-                          'Existencia ${s.existenciaActual} · mínimo ${s.stockMinimo}',
-                        ),
-                        trailing: Text(
-                          'Sugerido: ${s.cantidadSugerida}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
-          if (resumen.sugerenciasTraslado.isNotEmpty) ...[
-            const _SeccionTitulo('Sugerencias de traslado'),
-            Card(
-              child: Column(
-                children: resumen.sugerenciasTraslado
-                    .map(
-                      (s) => ListTile(
-                        leading: const Icon(Icons.swap_horiz, color: _brand),
-                        title: Text('Producto #${s.productoId}'),
-                        subtitle: Text(
-                          'Desde tienda #${s.tiendaOrigenId} (existencia ${s.existenciaOrigen})',
-                        ),
-                        trailing: Text(
-                          'Sugerido: ${s.cantidadSugerida}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
           const SizedBox(height: 12),
-        ],
-      ),
-    );
-  }
-}
-
-class _AlertasBanner extends StatelessWidget {
-  const _AlertasBanner({required this.resumen});
-
-  final DashboardResumen resumen;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: resumen.alertasCriticas > 0
-          ? const Color(0xFFFDECEA)
-          : const Color(0xFFFFF8E1),
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: resumen.alertasCriticas > 0 ? _danger : _warning,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                '${resumen.alertasCriticas} alerta(s) crítica(s) · '
-                '${resumen.alertasPreventivas} preventiva(s) sin leer',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SeccionTitulo extends StatelessWidget {
-  const _SeccionTitulo(this.texto);
-
-  final String texto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 10),
-      child: Text(
-        texto.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.black45,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.titulo,
-    required this.valor,
-    this.subtitulo,
-    this.colorValor = _primary,
-  });
-
-  final String titulo;
-  final String valor;
-  final String? subtitulo;
-  final Color colorValor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              titulo,
-              style: const TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              valor,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: colorValor,
-              ),
-            ),
-            if (subtitulo != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtitulo!,
-                style: const TextStyle(fontSize: 11, color: Colors.black45),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AgingCard extends StatelessWidget {
-  const _AgingCard({
-    required this.a0a30,
-    required this.a31a60,
-    required this.aMas60,
-  });
-
-  final Decimal a0a30;
-  final Decimal a31a60;
-  final Decimal aMas60;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Antigüedad de saldo vencido',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(height: 6),
-            _AgingRow(etiqueta: '0-30 días', valor: a0a30),
-            _AgingRow(etiqueta: '31-60 días', valor: a31a60, color: _warning),
-            _AgingRow(etiqueta: '+60 días', valor: aMas60, color: _danger),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AgingRow extends StatelessWidget {
-  const _AgingRow({
-    required this.etiqueta,
-    required this.valor,
-    this.color = Colors.black87,
-  });
-
-  final String etiqueta;
-  final Decimal valor;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(etiqueta, style: const TextStyle(fontSize: 12)),
-          Text(
-            'Q $valor',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+          DashboardAgingRing(
+            a0a30: resumen.cxcAging0a30,
+            a31a60: resumen.cxcAging31a60,
+            aMas60: resumen.cxcAgingMas60,
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ListaCuentasPendientes extends StatelessWidget {
-  const _ListaCuentasPendientes({
-    required this.titulo,
-    required this.cuentas,
-    required this.etiquetaContraparte,
-  });
-
-  final String titulo;
-  final List<CuentaPendiente> cuentas;
-  final String etiquetaContraparte;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            titulo,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-          const SizedBox(height: 6),
-          Card(
-            child: Column(
-              children: cuentas
+          if (resumen.topCobrosPendientes.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Top cobros pendientes',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: DashboardPalette.inkMuted),
+            ),
+            const SizedBox(height: 8),
+            DashboardListCard(
+              children: resumen.topCobrosPendientes
                   .map(
-                    (c) => ListTile(
-                      dense: true,
-                      title: Text('$etiquetaContraparte #${c.contraparteId}'),
-                      subtitle: Text(
-                        'Vence ${c.fechaVencimiento.toLocal().toString().split(' ').first}',
-                      ),
-                      trailing: Text(
-                        'Q ${c.monto}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                    (c) => DashboardListRow(
+                      icon: Icons.person_outline_rounded,
+                      color: DashboardPalette.primary,
+                      titulo: 'Cliente #${c.contraparteId}',
+                      subtitulo:
+                          'Vence ${c.fechaVencimiento.toLocal().toString().split(' ').first}',
+                      trailing: 'Q ${c.monto}',
                     ),
                   )
                   .toList(),
             ),
+          ],
+          const DashboardSectionHeader(
+            titulo: 'Cuentas por pagar',
+            icon: Icons.call_made_rounded,
+            color: DashboardPalette.danger,
           ),
+          DashboardStatCard(
+            titulo: 'Saldo pendiente',
+            valor: 'Q ${resumen.saldoPendienteCuentasPorPagar}',
+            subtitulo: '${resumen.cuentasPorPagarVencidas} vencida(s)',
+            icon: Icons.payments_rounded,
+            color: resumen.cuentasPorPagarVencidas > 0
+                ? DashboardPalette.danger
+                : DashboardPalette.primary,
+          ),
+          const SizedBox(height: 12),
+          DashboardAgingRing(
+            a0a30: resumen.cxpAging0a30,
+            a31a60: resumen.cxpAging31a60,
+            aMas60: resumen.cxpAgingMas60,
+          ),
+          if (resumen.topPagosPendientes.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Top pagos pendientes',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: DashboardPalette.inkMuted),
+            ),
+            const SizedBox(height: 8),
+            DashboardListCard(
+              children: resumen.topPagosPendientes
+                  .map(
+                    (c) => DashboardListRow(
+                      icon: Icons.local_shipping_outlined,
+                      color: DashboardPalette.danger,
+                      titulo: 'Proveedor #${c.contraparteId}',
+                      subtitulo:
+                          'Vence ${c.fechaVencimiento.toLocal().toString().split(' ').first}',
+                      trailing: 'Q ${c.monto}',
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (resumen.sugerenciasCompra.isNotEmpty) ...[
+            const DashboardSectionHeader(
+              titulo: 'Sugerencias de compra',
+              icon: Icons.shopping_cart_rounded,
+              color: DashboardPalette.warning,
+            ),
+            DashboardListCard(
+              children: resumen.sugerenciasCompra
+                  .map(
+                    (s) => DashboardListRow(
+                      icon: Icons.shopping_cart_outlined,
+                      color: DashboardPalette.warning,
+                      titulo: 'Producto #${s.productoId}',
+                      subtitulo:
+                          'Existencia ${s.existenciaActual} · mínimo ${s.stockMinimo}',
+                      trailing: '+${s.cantidadSugerida}',
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (resumen.sugerenciasTraslado.isNotEmpty) ...[
+            const DashboardSectionHeader(
+              titulo: 'Sugerencias de traslado',
+              icon: Icons.swap_horiz_rounded,
+              color: DashboardPalette.brand,
+            ),
+            DashboardListCard(
+              children: resumen.sugerenciasTraslado
+                  .map(
+                    (s) => DashboardListRow(
+                      icon: Icons.swap_horiz_rounded,
+                      color: DashboardPalette.brand,
+                      titulo: 'Producto #${s.productoId}',
+                      subtitulo:
+                          'Desde tienda #${s.tiendaOrigenId} (existencia ${s.existenciaOrigen})',
+                      trailing: '+${s.cantidadSugerida}',
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          const SizedBox(height: 12),
         ],
       ),
     );

@@ -10,6 +10,7 @@ import com.ais.marketbackend.compras.domain.repository.CompraRepository;
 import com.ais.marketbackend.cuentasporpagar.application.services.interfaces.CuentaPorPagarService;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -80,6 +81,11 @@ public class CompraServiceImpl implements CompraService {
     @Override
     public List<CompraResumen> listarPorTienda(Long tiendaId) {
         return compraRepository.findByTiendaId(tiendaId).stream().map(this::toResumen).toList();
+    }
+
+    @Override
+    public Pagina<CompraResumen> listarPorTienda(Long tiendaId, int pagina, int tamano) {
+        return compraRepository.findByTiendaId(tiendaId, pagina, tamano).map(this::toResumen);
     }
 
     private Compra obtenerORequerida(Long tiendaId, Long id) {

@@ -1,34 +1,47 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useClientes } from '@/composables/useClientes'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Cliente } from '@/types/cliente'
 
-const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado } =
-  useClientes()
+const {
+  items,
+  listLoading,
+  listError,
+  saveLoading,
+  saveError,
+  pagina,
+  tamano,
+  totalElementos,
+  totalPaginas,
+  cargar,
+  crear,
+  actualizar,
+  alternarEstado,
+} = useClientes()
+
+// El composable arranca con un tamano grande (pensado para consumidores tipo
+// dropdown, ver useClientes.ts) — esta es la vista de administración real,
+// así que empieza con paginación normal 10/página.
+tamano.value = 10
 const permissions = usePermissionsStore()
 
 const search = ref('')
-const page = ref(1)
-const pageSize = ref(10)
 
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const form = ref({ nit: '', nombre: '', direccion: '', telefono: '', correo: '' })
 
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el catálogo — mismo trade-off documentado para
+// Productos (ver CLAUDE.md, "Server-side pagination").
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
   if (!term) return items.value
   return items.value.filter(
     (c) => c.nombre.toLowerCase().includes(term) || (c.nit ?? '').toLowerCase().includes(term),
   )
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize.value
-  return filtered.value.slice(start, start + pageSize.value)
 })
 
 function abrirCrear() {
@@ -63,6 +76,13 @@ async function onSubmit() {
     showForm.value = false
   }
 }
+
+watch(tamano, () => {
+  pagina.value = 1
+})
+watch([pagina, tamano], () => {
+  cargar()
+})
 
 onMounted(cargar)
 </script>
@@ -164,10 +184,10 @@ onMounted(cargar)
           <tr v-else-if="listError">
             <td colspan="4" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="paged.length === 0">
+          <tr v-else-if="filtered.length === 0">
             <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
           </tr>
-          <tr v-for="cliente in paged" :key="cliente.id" class="border-b border-mk-border last:border-0">
+          <tr v-for="cliente in filtered" :key="cliente.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ cliente.nit ?? '—' }}</td>
             <td class="px-4 py-2">{{ cliente.nombre }}</td>
             <td class="px-4 py-2">
@@ -200,16 +220,16 @@ onMounted(cargar)
     </div>
 
     <div class="flex items-center justify-between text-sm text-mk-text/70">
-      <select v-model.number="pageSize" class="rounded border border-mk-border bg-transparent px-2 py-1">
+      <select v-model.number="tamano" class="rounded border border-mk-border bg-transparent px-2 py-1">
         <option :value="10">10 / página</option>
         <option :value="25">25 / página</option>
         <option :value="50">50 / página</option>
         <option :value="100">100 / página</option>
       </select>
       <div class="flex items-center gap-2">
-        <button type="button" :disabled="page <= 1" class="disabled:opacity-40" @click="page--">Anterior</button>
-        <span>Página {{ page }} de {{ totalPages }}</span>
-        <button type="button" :disabled="page >= totalPages" class="disabled:opacity-40" @click="page++">
+        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">Anterior</button>
+        <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
+        <button type="button" :disabled="pagina >= totalPaginas" class="disabled:opacity-40" @click="pagina++">
           Siguiente
         </button>
       </div>

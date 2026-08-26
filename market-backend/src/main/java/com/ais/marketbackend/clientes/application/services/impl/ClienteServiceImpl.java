@@ -5,9 +5,9 @@ import com.ais.marketbackend.clientes.application.services.interfaces.ClienteSer
 import com.ais.marketbackend.clientes.domain.exception.ClienteDuplicadoException;
 import com.ais.marketbackend.clientes.domain.model.Cliente;
 import com.ais.marketbackend.clientes.domain.repository.ClienteRepository;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,8 +60,8 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public List<ClienteResumen> listar() {
-        return clienteRepository.findAll().stream().map(this::toResumen).toList();
+    public Pagina<ClienteResumen> listar(int pagina, int tamano) {
+        return clienteRepository.findAll(pagina, tamano).map(this::toResumen);
     }
 
     @Override

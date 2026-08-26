@@ -1,6 +1,7 @@
 import { apiClient } from '@/services/http/ApiClient'
 import { API_ENDPOINTS } from '@/config/endpoints'
 import type { Compra } from '@/types/compra'
+import type { Pagina } from '@/types/pagina'
 
 export interface DatosLineaCompra {
   productoId: number
@@ -9,8 +10,10 @@ export interface DatosLineaCompra {
 }
 
 class ComprasService {
-  listarPorTienda(tiendaId: number) {
-    return apiClient.get<Compra[]>(API_ENDPOINTS.compras.porTienda(tiendaId))
+  listarPorTienda(tiendaId: number, pagina: number, tamano: number) {
+    return apiClient.get<Pagina<Compra>>(API_ENDPOINTS.compras.porTienda(tiendaId), {
+      params: { page: pagina, size: tamano },
+    })
   }
 
   crear(tiendaId: number, proveedorId: number, lineas: DatosLineaCompra[]) {

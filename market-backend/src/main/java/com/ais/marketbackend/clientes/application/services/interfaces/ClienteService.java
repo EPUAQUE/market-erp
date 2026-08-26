@@ -1,8 +1,8 @@
 package com.ais.marketbackend.clientes.application.services.interfaces;
 
 import com.ais.marketbackend.clientes.application.dtos.ClienteResumen;
+import com.ais.marketbackend.shared.domain.Pagina;
 import java.math.BigDecimal;
-import java.util.List;
 
 public interface ClienteService {
 
@@ -13,12 +13,12 @@ public interface ClienteService {
     ClienteResumen actualizar(
             Long id, String nombre, String direccion, String telefono, String correo, BigDecimal limiteCredito);
 
-    /** Usado por otros módulos (Ventas, para validar límite de crédito) — no reemplaza {@link #listar()}. */
+    /** Usado por otros módulos (Ventas, para validar límite de crédito) — no reemplaza {@link #listar}. */
     ClienteResumen obtener(Long id);
 
     void activar(Long id);
 
     void desactivar(Long id);
 
-    List<ClienteResumen> listar();
+    Pagina<ClienteResumen> listar(int pagina, int tamano);
 }

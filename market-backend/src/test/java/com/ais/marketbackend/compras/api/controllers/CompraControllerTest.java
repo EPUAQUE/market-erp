@@ -17,6 +17,7 @@ import com.ais.marketbackend.compras.application.services.interfaces.CompraServi
 import com.ais.marketbackend.compras.domain.exception.EstadoCompraInvalidoException;
 import com.ais.marketbackend.compras.domain.model.EstadoCompra;
 import com.ais.marketbackend.inventario.domain.exception.MovimientoNoPermitidoException;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
@@ -43,12 +44,13 @@ class CompraControllerTest {
     }
 
     @Test
-    void listarDevuelveLasComprasDeLaTienda() throws Exception {
-        when(compraService.listarPorTienda(1L)).thenReturn(List.of(resumen(5L, EstadoCompra.BORRADOR)));
+    void listarDevuelveLasComprasDeLaTiendaPaginadas() throws Exception {
+        when(compraService.listarPorTienda(1L, 0, 20))
+                .thenReturn(new Pagina<>(List.of(resumen(5L, EstadoCompra.BORRADOR)), 0, 20, 1, 1));
 
         mockMvc.perform(get("/api/v1/compras/tiendas/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].estado").value("BORRADOR"));
+                .andExpect(jsonPath("$.contenido[0].estado").value("BORRADOR"));
     }
 
     @Test

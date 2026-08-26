@@ -20,7 +20,21 @@ const ESTADO_LABEL: Record<string, string> = {
   ANULADA: 'Anulada',
 }
 
-const { items, listLoading, listError, saveLoading, saveError, cargar, crear, recibir, anular } = useCompras()
+const {
+  items,
+  listLoading,
+  listError,
+  saveLoading,
+  saveError,
+  pagina,
+  tamano,
+  totalElementos,
+  totalPaginas,
+  cargar,
+  crear,
+  recibir,
+  anular,
+} = useCompras()
 const { items: tiendas, cargar: cargarTiendas } = useTiendas()
 const { items: proveedores, cargar: cargarProveedores } = useProveedores()
 const { items: productos, cargar: cargarProductos } = useProductos()
@@ -58,7 +72,14 @@ function abrirCrear() {
 
 watch(tiendaId, (id) => {
   detalleAbiertoId.value = null
+  pagina.value = 1
   if (id !== null) cargar(id)
+})
+watch(tamano, () => {
+  pagina.value = 1
+})
+watch([pagina, tamano], () => {
+  if (tiendaId.value !== null) cargar(tiendaId.value)
 })
 
 async function onSubmit() {
@@ -243,6 +264,22 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="flex items-center justify-between text-sm text-mk-text/70">
+      <select v-model.number="tamano" class="rounded border border-mk-border bg-transparent px-2 py-1">
+        <option :value="10">10 / página</option>
+        <option :value="25">25 / página</option>
+        <option :value="50">50 / página</option>
+        <option :value="100">100 / página</option>
+      </select>
+      <div class="flex items-center gap-2">
+        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">Anterior</button>
+        <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
+        <button type="button" :disabled="pagina >= totalPaginas" class="disabled:opacity-40" @click="pagina++">
+          Siguiente
+        </button>
+      </div>
     </div>
 
     <div v-if="compraEnDetalle" class="space-y-2">

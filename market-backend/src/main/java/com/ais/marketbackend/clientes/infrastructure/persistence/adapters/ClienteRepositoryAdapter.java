@@ -4,8 +4,10 @@ import com.ais.marketbackend.clientes.domain.model.Cliente;
 import com.ais.marketbackend.clientes.domain.repository.ClienteRepository;
 import com.ais.marketbackend.clientes.infrastructure.persistence.mappers.ClienteEntityMapper;
 import com.ais.marketbackend.clientes.infrastructure.persistence.repositories.ClienteJpaRepository;
-import java.util.List;
+import com.ais.marketbackend.shared.domain.Pagina;
+import com.ais.marketbackend.shared.infrastructure.persistence.PaginaMapper;
 import java.util.Optional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,7 +37,7 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
     }
 
     @Override
-    public List<Cliente> findAll() {
-        return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+    public Pagina<Cliente> findAll(int pagina, int tamano) {
+        return PaginaMapper.desde(jpaRepository.findAll(PageRequest.of(pagina, tamano)).map(mapper::toDomain));
     }
 }

@@ -2,6 +2,7 @@ package com.ais.marketbackend.compras.application.services.interfaces;
 
 import com.ais.marketbackend.compras.application.dtos.CompraResumen;
 import com.ais.marketbackend.compras.application.dtos.NuevaLineaCompra;
+import com.ais.marketbackend.shared.domain.Pagina;
 import java.util.List;
 
 public interface CompraService {
@@ -15,5 +16,8 @@ public interface CompraService {
 
     CompraResumen obtener(Long tiendaId, Long id);
 
+    /** Lista completa, sin paginar — para consumo interno entre módulos (ver ReporteServiceImpl). */
     List<CompraResumen> listarPorTienda(Long tiendaId);
+
+    Pagina<CompraResumen> listarPorTienda(Long tiendaId, int pagina, int tamano);
 }

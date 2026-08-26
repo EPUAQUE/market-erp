@@ -6,6 +6,8 @@ import com.ais.marketbackend.compras.api.mappers.CompraApiMapper;
 import com.ais.marketbackend.compras.application.dtos.NuevaLineaCompra;
 import com.ais.marketbackend.compras.application.services.interfaces.CompraService;
 import com.ais.marketbackend.seguridad.infrastructure.security.RequiresPermission;
+import com.ais.marketbackend.shared.api.PaginacionParams;
+import com.ais.marketbackend.shared.responses.PaginaResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** {@code tiendaId} va en la ruta para que {@code PermissionInterceptor} aplique el alcance de tienda. */
@@ -29,10 +32,13 @@ public class CompraController {
 
     @GetMapping
     @RequiresPermission("COMPRAS_VER")
-    public ResponseEntity<List<CompraResponse>> listar(@PathVariable Long tiendaId) {
-        List<CompraResponse> items =
-                compraService.listarPorTienda(tiendaId).stream().map(mapper::toResponse).toList();
-        return ResponseEntity.ok(items);
+    public ResponseEntity<PaginaResponse<CompraResponse>> listar(
+            @PathVariable Long tiendaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PaginacionParams.TAMANO_DEFECTO) int size) {
+        var pagina = compraService.listarPorTienda(
+                tiendaId, PaginacionParams.normalizarPagina(page), PaginacionParams.normalizarTamano(size));
+        return ResponseEntity.ok(PaginaResponse.de(pagina, mapper::toResponse));
     }
 
     @GetMapping("/{id}")

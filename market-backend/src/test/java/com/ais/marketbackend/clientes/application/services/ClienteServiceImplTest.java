@@ -13,8 +13,10 @@ import com.ais.marketbackend.clientes.application.services.impl.ClienteServiceIm
 import com.ais.marketbackend.clientes.domain.exception.ClienteDuplicadoException;
 import com.ais.marketbackend.clientes.domain.model.Cliente;
 import com.ais.marketbackend.clientes.domain.repository.ClienteRepository;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,13 +106,13 @@ class ClienteServiceImplTest {
     }
 
     @Test
-    void listarMapeaTodosLosClientes() {
-        when(clienteRepository.findAll()).thenReturn(java.util.List.of(
-                Cliente.nuevo("12345678-9", "Juan Pérez", null, null, null, null)));
+    void listarMapeaLaPaginaDeClientes() {
+        when(clienteRepository.findAll(0, 20)).thenReturn(new Pagina<>(
+                List.of(Cliente.nuevo("12345678-9", "Juan Pérez", null, null, null, null)), 0, 20, 1, 1));
 
-        var resultado = clienteService.listar();
+        var resultado = clienteService.listar(0, 20);
 
-        assertThat(resultado).hasSize(1);
-        assertThat(resultado.get(0).nit()).isEqualTo("12345678-9");
+        assertThat(resultado.contenido()).hasSize(1);
+        assertThat(resultado.contenido().get(0).nit()).isEqualTo("12345678-9");
     }
 }

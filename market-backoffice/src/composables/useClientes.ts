@@ -3,6 +3,14 @@ import { clientesService, type DatosCliente } from '@/services/clientes.service'
 import { ApiClientError } from '@/services/http/ApiClient'
 import type { Cliente } from '@/types/cliente'
 
+/**
+ * `tamano` por defecto es grande a propósito: además de `ClientesView` (que lo
+ * pisa con su propio selector 10/25/50/100), este composable lo usan
+ * `VentasView`/`CuentasPorCobrarView` solo como fuente de un `<select>`/lookup
+ * de cliente — necesitan el catálogo completo, no una página de 10.
+ */
+const TAMANO_CATALOGO_COMPLETO = 5000
+
 export function useClientes() {
   const items = ref<Cliente[]>([])
   const listLoading = ref(false)
@@ -10,11 +18,19 @@ export function useClientes() {
   const saveLoading = ref(false)
   const saveError = ref<string | null>(null)
 
+  const pagina = ref(1)
+  const tamano = ref(TAMANO_CATALOGO_COMPLETO)
+  const totalElementos = ref(0)
+  const totalPaginas = ref(1)
+
   async function cargar() {
     listLoading.value = true
     listError.value = null
     try {
-      items.value = await clientesService.listar()
+      const resultado = await clientesService.listar(pagina.value - 1, tamano.value)
+      items.value = resultado.contenido
+      totalElementos.value = resultado.totalElementos
+      totalPaginas.value = resultado.totalPaginas
     } catch (error) {
       listError.value = error instanceof ApiClientError ? error.message : 'No se pudo cargar la lista.'
     } finally {
@@ -26,8 +42,8 @@ export function useClientes() {
     saveLoading.value = true
     saveError.value = null
     try {
-      const creado = await clientesService.crear(nit, datos)
-      items.value = [...items.value, creado]
+      await clientesService.crear(nit, datos)
+      await cargar()
       return true
     } catch (error) {
       saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo crear el cliente.'
@@ -66,5 +82,19 @@ export function useClientes() {
     }
   }
 
-  return { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado }
+  return {
+    items,
+    listLoading,
+    listError,
+    saveLoading,
+    saveError,
+    pagina,
+    tamano,
+    totalElementos,
+    totalPaginas,
+    cargar,
+    crear,
+    actualizar,
+    alternarEstado,
+  }
 }

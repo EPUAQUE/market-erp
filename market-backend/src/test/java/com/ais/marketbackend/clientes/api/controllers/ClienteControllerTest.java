@@ -17,6 +17,7 @@ import com.ais.marketbackend.clientes.application.dtos.ClienteResumen;
 import com.ais.marketbackend.clientes.application.services.interfaces.ClienteService;
 import com.ais.marketbackend.clientes.domain.exception.ClienteDuplicadoException;
 import com.ais.marketbackend.clientes.domain.model.EstadoCliente;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
@@ -52,13 +53,13 @@ class ClienteControllerTest {
     }
 
     @Test
-    void listarDevuelveLosClientes() throws Exception {
-        when(clienteService.listar()).thenReturn(List.of(new ClienteResumen(
-                1L, "12345678-9", "Juan Pérez", null, null, null, EstadoCliente.ACTIVO, null)));
+    void listarDevuelveLosClientesPaginados() throws Exception {
+        when(clienteService.listar(0, 20)).thenReturn(new Pagina<>(List.of(new ClienteResumen(
+                1L, "12345678-9", "Juan Pérez", null, null, null, EstadoCliente.ACTIVO, null)), 0, 20, 1, 1));
 
         mockMvc.perform(get("/api/v1/clientes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nit").value("12345678-9"));
+                .andExpect(jsonPath("$.contenido[0].nit").value("12345678-9"));
     }
 
     @Test

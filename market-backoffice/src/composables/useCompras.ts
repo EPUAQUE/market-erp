@@ -10,11 +10,19 @@ export function useCompras() {
   const saveLoading = ref(false)
   const saveError = ref<string | null>(null)
 
+  const pagina = ref(1)
+  const tamano = ref(10)
+  const totalElementos = ref(0)
+  const totalPaginas = ref(1)
+
   async function cargar(tiendaId: number) {
     listLoading.value = true
     listError.value = null
     try {
-      items.value = await comprasService.listarPorTienda(tiendaId)
+      const resultado = await comprasService.listarPorTienda(tiendaId, pagina.value - 1, tamano.value)
+      items.value = resultado.contenido
+      totalElementos.value = resultado.totalElementos
+      totalPaginas.value = resultado.totalPaginas
     } catch (error) {
       listError.value = error instanceof ApiClientError ? error.message : 'No se pudo cargar la lista.'
     } finally {
@@ -26,8 +34,8 @@ export function useCompras() {
     saveLoading.value = true
     saveError.value = null
     try {
-      const creada = await comprasService.crear(tiendaId, proveedorId, lineas)
-      items.value = [...items.value, creada]
+      await comprasService.crear(tiendaId, proveedorId, lineas)
+      await cargar(tiendaId)
       return true
     } catch (error) {
       saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo crear la compra.'
@@ -57,5 +65,19 @@ export function useCompras() {
     }
   }
 
-  return { items, listLoading, listError, saveLoading, saveError, cargar, crear, recibir, anular }
+  return {
+    items,
+    listLoading,
+    listError,
+    saveLoading,
+    saveError,
+    pagina,
+    tamano,
+    totalElementos,
+    totalPaginas,
+    cargar,
+    crear,
+    recibir,
+    anular,
+  }
 }

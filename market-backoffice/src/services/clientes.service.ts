@@ -1,6 +1,7 @@
 import { apiClient } from '@/services/http/ApiClient'
 import { API_ENDPOINTS } from '@/config/endpoints'
 import type { Cliente } from '@/types/cliente'
+import type { Pagina } from '@/types/pagina'
 
 export interface DatosCliente {
   nombre: string
@@ -10,8 +11,8 @@ export interface DatosCliente {
 }
 
 class ClientesService {
-  listar() {
-    return apiClient.get<Cliente[]>(API_ENDPOINTS.clientes.base)
+  listar(pagina: number, tamano: number) {
+    return apiClient.get<Pagina<Cliente>>(API_ENDPOINTS.clientes.base, { params: { page: pagina, size: tamano } })
   }
 
   crear(nit: string | undefined, datos: DatosCliente) {

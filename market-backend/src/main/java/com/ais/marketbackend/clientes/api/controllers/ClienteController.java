@@ -6,8 +6,9 @@ import com.ais.marketbackend.clientes.api.dtos.responses.ClienteResponse;
 import com.ais.marketbackend.clientes.api.mappers.ClienteApiMapper;
 import com.ais.marketbackend.clientes.application.services.interfaces.ClienteService;
 import com.ais.marketbackend.seguridad.infrastructure.security.RequiresPermission;
+import com.ais.marketbackend.shared.api.PaginacionParams;
+import com.ais.marketbackend.shared.responses.PaginaResponse;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -29,8 +31,12 @@ public class ClienteController {
 
     @GetMapping
     @RequiresPermission("CLIENTES_VER")
-    public ResponseEntity<List<ClienteResponse>> listar() {
-        return ResponseEntity.ok(clienteService.listar().stream().map(mapper::toResponse).toList());
+    public ResponseEntity<PaginaResponse<ClienteResponse>> listar(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PaginacionParams.TAMANO_DEFECTO) int size) {
+        var pagina = clienteService.listar(
+                PaginacionParams.normalizarPagina(page), PaginacionParams.normalizarTamano(size));
+        return ResponseEntity.ok(PaginaResponse.de(pagina, mapper::toResponse));
     }
 
     @PostMapping

@@ -21,6 +21,7 @@ import com.ais.marketbackend.cuentasporpagar.application.services.interfaces.Cue
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
 import com.ais.marketbackend.inventario.domain.exception.MovimientoNoPermitidoException;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -122,6 +123,18 @@ class CompraServiceImplTest {
         when(compraRepository.findById(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
 
         assertThatThrownBy(() -> compraService.anular(1L, 5L)).isInstanceOf(EstadoCompraInvalidoException.class);
+    }
+
+    @Test
+    void listarPorTiendaPaginadoDelegaEnElRepositorioYMapeaElContenido() {
+        Compra compra = withId(
+                Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, BigDecimal.ONE, BigDecimal.ONE))), 5L, 1L);
+        when(compraRepository.findByTiendaId(1L, 0, 20)).thenReturn(new Pagina<>(List.of(compra), 0, 20, 1, 1));
+
+        Pagina<CompraResumen> resultado = compraService.listarPorTienda(1L, 0, 20);
+
+        assertThat(resultado.contenido()).hasSize(1);
+        assertThat(resultado.contenido().get(0).id()).isEqualTo(5L);
     }
 
     /** Simula lo que devolvería el repositorio tras persistir: mismos datos, con id asignado. */

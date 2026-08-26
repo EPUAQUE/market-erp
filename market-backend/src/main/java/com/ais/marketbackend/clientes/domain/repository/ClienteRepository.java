@@ -1,7 +1,7 @@
 package com.ais.marketbackend.clientes.domain.repository;
 
 import com.ais.marketbackend.clientes.domain.model.Cliente;
-import java.util.List;
+import com.ais.marketbackend.shared.domain.Pagina;
 import java.util.Optional;
 
 public interface ClienteRepository {
@@ -12,5 +12,5 @@ public interface ClienteRepository {
 
     boolean existsByNit(String nit);
 
-    List<Cliente> findAll();
+    Pagina<Cliente> findAll(int pagina, int tamano);
 }

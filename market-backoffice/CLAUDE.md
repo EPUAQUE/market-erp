@@ -81,24 +81,24 @@ Package manager is **pnpm** (Node ≥ 20).
 pnpm dev                        # Vite dev server
 pnpm build                      # vue-tsc -b + vite build
 pnpm typecheck                  # vue-tsc -b --noEmit
-pnpm lint                       # eslint, --max-warnings 0 (warnings fail)
-pnpm lint:fix
-pnpm format                     # prettier --write src/**/*.{ts,vue,css,json,md}
-pnpm test                       # vitest run (unit)
+pnpm test                       # vitest run (unit) — colocated *.spec.ts next to source
 pnpm test:watch
-pnpm test:coverage
-pnpm test:e2e                   # playwright (spins up `pnpm dev` on :5173)
 
 # Single unit test file / by name:
-pnpm vitest run src/utils/money.spec.ts
-pnpm vitest run -t "percentageChange"
+pnpm vitest run src/services/clientes.service.spec.ts
+pnpm vitest run -t "cargar convierte pagina"
 ```
 
+No ESLint/Prettier/Playwright configured in this repo — don't assume `lint`/`format`/
+`test:e2e` scripts exist. Vitest itself was only wired up when tests were first written
+for the Clientes/Compras pagination work — most of the app still has zero test coverage,
+this is not yet a general convention followed project-wide.
+
 Copy `.env.example` to `.env` (or use a committed `.env.development`) and set
-`VITE_API_BASE_URL` (real backend, e.g. `http://localhost:8080`), `VITE_API_TIMEOUT`,
-`VITE_ENABLE_MOCKS`. `environment.ts` should throw at startup if `VITE_API_BASE_URL` is
-missing — Vitest must set it explicitly in `vitest.config.ts` since the HTTP layer reads
-it at import time.
+`VITE_API_BASE_URL` (real backend, e.g. `http://localhost:8080`) and `VITE_API_TIMEOUT`.
+`environment.ts` throws at startup if `VITE_API_BASE_URL` is missing — Vitest sets it
+explicitly via `test.env` in `vite.config.ts` (no separate `vitest.config.ts` file) since
+the HTTP layer reads it at import time.
 
 ## Architecture
 

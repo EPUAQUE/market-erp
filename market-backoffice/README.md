@@ -71,9 +71,10 @@ Flutter cubre la operación diaria de venta/caja dentro de una sola tienda.
 Sin librería de tablas/formularios/exportación de terceros — tablas, formularios
 y validación son Vue simple (`ref`/`computed`/`watch`) por módulo, no una capa
 compartida tipo TanStack/VeeValidate. Sin i18n (texto en español directo en los
-templates) y sin suite de pruebas automatizadas todavía (no hay ESLint,
-Prettier, Vitest ni Playwright configurados en este repo). No se utiliza
-**PrimeVue / PrimeFaces / PrimeIcons** ni ninguna librería Prime.
+templates). Vitest está configurado (`pnpm test`) pero la cobertura hoy es
+parcial — solo Clientes y Compras (servicios + composables) tienen tests; el
+resto del proyecto no tiene ninguno. Sin ESLint, Prettier ni Playwright. No se
+utiliza **PrimeVue / PrimeFaces / PrimeIcons** ni ninguna librería Prime.
 
 ## Requisitos
 
@@ -103,6 +104,8 @@ pnpm dev            # Servidor de desarrollo
 pnpm build          # vue-tsc -b + build de producción
 pnpm preview        # Previsualizar el build
 pnpm typecheck      # vue-tsc -b --noEmit
+pnpm test           # vitest run — cobertura parcial, ver "Limitaciones conocidas"
+pnpm test:watch
 ```
 
 ## Credenciales
@@ -166,7 +169,8 @@ access token expira.
 
 ## Limitaciones conocidas
 
-- Sin suite de pruebas automatizadas (unitarias ni e2e) todavía.
+- Cobertura de pruebas parcial — solo Clientes y Compras tienen tests
+  (Vitest, `pnpm test`); el resto del proyecto no tiene ninguno, y no hay E2E.
 - Sin i18n — texto en español hardcodeado en los templates.
 - Exportación limitada a CSV hecho a mano (`Reportes` — ventas/compras); sin
   Excel ni PDF (no hay librerías de exportación instaladas).
@@ -174,9 +178,10 @@ access token expira.
 ## Mejoras futuras
 
 - Paginación real del lado del servidor ya cubre Ventas, Cuentas por Cobrar,
-  Traslados, Productos, Inventario y Caja — extenderla al resto de módulos
-  (hoy paginan/filtran del lado del cliente sobre el arreglo completo).
+  Traslados, Productos, Inventario, Caja, Clientes y Compras — Categorías,
+  Marcas, Proveedores y Unidades de Medida se quedan client-side a propósito
+  (catálogos chicos, no vale la pena la complejidad).
 - Orden/filtrado del lado del servidor y virtualización de tablas grandes.
 - Flujos de aprobación multinivel (compras) y adjuntos reales.
-- Suite de pruebas (unitarias y E2E) — hoy no hay ninguna.
+- Extender la cobertura de pruebas al resto de módulos, y agregar E2E.
 </content>

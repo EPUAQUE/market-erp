@@ -22,11 +22,11 @@ export function useCategorias() {
     }
   }
 
-  async function crear(nombre: string, imagen?: string): Promise<boolean> {
+  async function crear(nombre: string): Promise<boolean> {
     saveLoading.value = true
     saveError.value = null
     try {
-      const creada = await categoriasService.crear(nombre, imagen)
+      const creada = await categoriasService.crear(nombre)
       items.value = [...items.value, creada]
       return true
     } catch (error) {
@@ -37,11 +37,11 @@ export function useCategorias() {
     }
   }
 
-  async function actualizar(id: number, nombre: string, imagen?: string): Promise<boolean> {
+  async function actualizar(id: number, nombre: string): Promise<boolean> {
     saveLoading.value = true
     saveError.value = null
     try {
-      const actualizada = await categoriasService.actualizar(id, nombre, imagen)
+      const actualizada = await categoriasService.actualizar(id, nombre)
       items.value = items.value.map((c) => (c.id === id ? actualizada : c))
       return true
     } catch (error) {

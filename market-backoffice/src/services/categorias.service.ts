@@ -7,12 +7,12 @@ class CategoriasService {
     return apiClient.get<Categoria[]>(API_ENDPOINTS.categorias.base)
   }
 
-  crear(nombre: string, imagen?: string) {
-    return apiClient.post<Categoria>(API_ENDPOINTS.categorias.base, { nombre, imagen })
+  crear(nombre: string) {
+    return apiClient.post<Categoria>(API_ENDPOINTS.categorias.base, { nombre })
   }
 
-  actualizar(id: number, nombre: string, imagen?: string) {
-    return apiClient.put<Categoria>(API_ENDPOINTS.categorias.porId(id), { nombre, imagen })
+  actualizar(id: number, nombre: string) {
+    return apiClient.put<Categoria>(API_ENDPOINTS.categorias.porId(id), { nombre })
   }
 
   activar(id: number) {

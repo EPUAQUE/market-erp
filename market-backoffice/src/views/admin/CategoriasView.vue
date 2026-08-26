@@ -12,7 +12,7 @@ const permissions = usePermissionsStore()
 const search = ref('')
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
-const form = ref({ nombre: '', imagen: '' })
+const form = ref({ nombre: '' })
 
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
@@ -22,21 +22,20 @@ const filtered = computed(() => {
 
 function abrirCrear() {
   editingId.value = null
-  form.value = { nombre: '', imagen: '' }
+  form.value = { nombre: '' }
   showForm.value = true
 }
 
 function abrirEditar(categoria: Categoria) {
   editingId.value = categoria.id
-  form.value = { nombre: categoria.nombre, imagen: categoria.imagen ?? '' }
+  form.value = { nombre: categoria.nombre }
   showForm.value = true
 }
 
 async function onSubmit() {
-  const imagen = form.value.imagen || undefined
   const ok = editingId.value
-    ? await actualizar(editingId.value, form.value.nombre, imagen)
-    : await crear(form.value.nombre, imagen)
+    ? await actualizar(editingId.value, form.value.nombre)
+    : await crear(form.value.nombre)
   if (ok) showForm.value = false
 }
 
@@ -75,14 +74,6 @@ onMounted(cargar)
             v-model="form.nombre"
             type="text"
             required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Imagen (URL)</label>
-          <input
-            v-model="form.imagen"
-            type="text"
             class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
           />
         </div>

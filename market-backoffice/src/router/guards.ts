@@ -1,6 +1,7 @@
 import type { NavigationGuardWithThis } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { tokenService } from '@/services/http/token.service'
 
 export const authGuard: NavigationGuardWithThis<undefined> = async (to) => {
   const authStore = useAuthStore()
@@ -9,7 +10,14 @@ export const authGuard: NavigationGuardWithThis<undefined> = async (to) => {
     return true
   }
 
-  if (!authStore.isAuthenticated) {
+  // tokenService.hasToken() consulta directo, nunca vía un getter de Pinia:
+  // el access token vive en una variable de módulo plana (no reactiva, a
+  // propósito — nunca localStorage, ver token.service.ts), así que un
+  // `computed`/getter que lo lea queda cacheado en su primer valor para
+  // siempre (Vue no tiene forma de saber que cambió) — causaba que el login
+  // nunca redirigiera al dashboard, porque el getter había cacheado `false`
+  // desde la primera navegación (sin sesión) del arranque de la app.
+  if (!tokenService.hasToken()) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 

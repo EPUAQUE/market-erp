@@ -8,11 +8,6 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     authorizationLoaded: false,
   }),
-  getters: {
-    isAuthenticated(): boolean {
-      return tokenService.hasToken()
-    },
-  },
   actions: {
     async login(username: string, password: string) {
       const response = await authService.login(username, password)

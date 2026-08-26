@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/config/environment.dart';
 import '../../auth/application/auth_notifier.dart';
 import '../../productos/application/catalogo_provider.dart';
 import '../../productos/application/categorias_provider.dart';
@@ -456,11 +457,11 @@ class _ProductoCard extends ConsumerWidget {
                       color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: producto.imagenUrl != null
+                    child: Environment.resolverImagenUrl(producto.imagenUrl) != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              producto.imagenUrl!,
+                              Environment.resolverImagenUrl(producto.imagenUrl)!,
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) {
                                 return const Icon(

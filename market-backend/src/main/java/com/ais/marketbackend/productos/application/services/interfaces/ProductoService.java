@@ -14,6 +14,8 @@ public interface ProductoService {
             Long id, String codigoBarras, String nombre, String descripcion,
             Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl);
 
+    ProductoResumen actualizarImagen(Long id, String imagenUrl);
+
     void activar(Long id);
 
     void desactivar(Long id);

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.UUID;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,6 +35,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh", "/actuator/health").permitAll()
+                        // Lectura pública, igual que cualquier otra imagen alojada externamente
+                        // (lo que reemplaza) — nunca requirió JWT antes, y <img>/Image.network no
+                        // adjuntan el header Authorization. Solo GET: la subida (POST .../imagen)
+                        // sigue exigiendo PRODUCTOS_EDITAR vía @RequiresPermission.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/productos/imagenes/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> {})

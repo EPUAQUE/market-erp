@@ -34,6 +34,7 @@ export const API_ENDPOINTS = {
     porId: (id: number) => `/api/v1/productos/${id}`,
     activar: (id: number) => `/api/v1/productos/${id}/activar`,
     desactivar: (id: number) => `/api/v1/productos/${id}/desactivar`,
+    imagen: (id: number) => `/api/v1/productos/${id}/imagen`,
     tiendas: (productoId: number) => `/api/v1/productos/${productoId}/tiendas`,
     tiendaPorId: (productoId: number, id: number) => `/api/v1/productos/${productoId}/tiendas/${id}`,
     tiendaActivar: (productoId: number, id: number) => `/api/v1/productos/${productoId}/tiendas/${id}/activar`,

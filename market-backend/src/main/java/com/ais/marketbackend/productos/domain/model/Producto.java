@@ -56,6 +56,10 @@ public class Producto {
         this.imagenUrl = imagenUrl;
     }
 
+    public void actualizarImagen(String imagenUrl) {
+        this.imagenUrl = imagenUrl;
+    }
+
     public void activar() {
         this.activo = true;
     }

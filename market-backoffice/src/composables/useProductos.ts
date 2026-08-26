@@ -38,16 +38,17 @@ export function useProductos() {
     }
   }
 
-  async function crear(codigoInterno: string, datos: DatosProducto): Promise<boolean> {
+  /** Devuelve el id del producto creado (o null si falló) — lo necesita ProductosView para subir la imagen justo después. */
+  async function crear(codigoInterno: string, datos: DatosProducto): Promise<number | null> {
     saveLoading.value = true
     saveError.value = null
     try {
-      await productosService.crear(codigoInterno, datos)
+      const creado = await productosService.crear(codigoInterno, datos)
       await cargar()
-      return true
+      return creado.id
     } catch (error) {
       saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo crear el producto.'
-      return false
+      return null
     } finally {
       saveLoading.value = false
     }
@@ -62,6 +63,21 @@ export function useProductos() {
       return true
     } catch (error) {
       saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo actualizar el producto.'
+      return false
+    } finally {
+      saveLoading.value = false
+    }
+  }
+
+  async function subirImagen(id: number, archivo: File): Promise<boolean> {
+    saveLoading.value = true
+    saveError.value = null
+    try {
+      const actualizado = await productosService.subirImagen(id, archivo)
+      items.value = items.value.map((p) => (p.id === id ? actualizado : p))
+      return true
+    } catch (error) {
+      saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo subir la imagen.'
       return false
     } finally {
       saveLoading.value = false
@@ -95,6 +111,7 @@ export function useProductos() {
     cargar,
     crear,
     actualizar,
+    subirImagen,
     alternarEstado,
   }
 }

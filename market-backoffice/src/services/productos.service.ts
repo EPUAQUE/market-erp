@@ -34,6 +34,12 @@ class ProductosService {
     return apiClient.put<Producto>(API_ENDPOINTS.productos.porId(id), datos)
   }
 
+  subirImagen(id: number, archivo: File) {
+    const formData = new FormData()
+    formData.append('archivo', archivo)
+    return apiClient.post<Producto>(API_ENDPOINTS.productos.imagen(id), formData)
+  }
+
   activar(id: number) {
     return apiClient.post<void>(API_ENDPOINTS.productos.activar(id))
   }

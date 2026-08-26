@@ -45,6 +45,14 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional
+    public ProductoResumen actualizarImagen(Long id, String imagenUrl) {
+        Producto producto = obtenerORequerido(id);
+        producto.actualizarImagen(imagenUrl);
+        return toResumen(productoRepository.save(producto));
+    }
+
+    @Override
+    @Transactional
     public void activar(Long id) {
         Producto producto = obtenerORequerido(id);
         producto.activar();

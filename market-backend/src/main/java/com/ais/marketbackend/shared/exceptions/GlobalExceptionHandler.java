@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -83,6 +84,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleNoResourceFound(HttpServletRequest request) {
         ApiErrorResponse body = errorBody(HttpStatus.NOT_FOUND, "NOT_FOUND", "Recurso no encontrado.", request);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(HttpServletRequest request) {
+        ApiErrorResponse body = errorBody(
+                HttpStatus.BAD_REQUEST, "IMAGEN_INVALIDA", "El archivo excede el tamaño máximo permitido (5MB).",
+                request);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

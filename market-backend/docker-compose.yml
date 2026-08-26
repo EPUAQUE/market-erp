@@ -62,6 +62,10 @@ services:
       BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Guatemala}
     volumes:
       - ./deploy/certs:/certs:ro
+      # Volumen nombrado (no bind mount) a propósito: Docker inicializa su
+      # contenido/dueño desde lo que ya existía en esa ruta de la imagen
+      # (ver Dockerfile) — evita el permission denied que sí tuvo /certs.
+      - productos_imagenes:/data/productos-imagenes
 
   backoffice:
     build:
@@ -129,3 +133,4 @@ volumes:
   # tasa por dominio).
   caddy_data:
   caddy_config:
+  productos_imagenes:

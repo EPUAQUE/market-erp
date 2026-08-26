@@ -19,6 +19,10 @@ WORKDIR /app
 RUN addgroup -S market && adduser -S market -G market
 COPY --from=build /app/target/market-backend-*.jar app.jar
 RUN chown market:market app.jar
+# Creado y con dueño acá (no en el volumen) para que el volumen nombrado de
+# docker-compose.yml herede este owner al inicializarse la primera vez — evita
+# el mismo permission denied que tuvo el mount de deploy/certs (ver deploy/README.md).
+RUN mkdir -p /data/productos-imagenes && chown market:market /data/productos-imagenes
 USER market
 
 EXPOSE 8080

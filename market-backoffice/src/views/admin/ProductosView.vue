@@ -5,6 +5,7 @@ import { usePermissionsStore } from '@/stores/permissions.store'
 import { categoriasService } from '@/services/categorias.service'
 import { marcasService } from '@/services/marcas.service'
 import { unidadesMedidaService } from '@/services/unidadesMedida.service'
+import { resolverImagenUrl } from '@/utils/imagenUrl'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Producto } from '@/types/producto'
 import type { Categoria } from '@/types/categoria'
@@ -24,6 +25,7 @@ const {
   cargar,
   crear,
   actualizar,
+  subirImagen,
   alternarEstado,
 } = useProductos()
 
@@ -48,8 +50,18 @@ const form = ref({
   categoriaId: '' as number | '',
   marcaId: '' as number | '',
   unidadMedidaId: '' as number | '',
-  imagenUrl: '',
 })
+const imagenActualUrl = ref<string | null>(null)
+const archivoImagen = ref<File | null>(null)
+const previewImagen = ref<string | null>(null)
+
+function onArchivoImagenSeleccionado(event: Event) {
+  const input = event.target as HTMLInputElement
+  const archivo = input.files?.[0] ?? null
+  archivoImagen.value = archivo
+  if (previewImagen.value) URL.revokeObjectURL(previewImagen.value)
+  previewImagen.value = archivo ? URL.createObjectURL(archivo) : null
+}
 
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
@@ -69,6 +81,12 @@ function nombreUnidad(id: number) {
   return unidades.value.find((u) => u.id === id)?.abreviacion ?? id
 }
 
+function resetImagenForm() {
+  if (previewImagen.value) URL.revokeObjectURL(previewImagen.value)
+  archivoImagen.value = null
+  previewImagen.value = null
+}
+
 function abrirCrear() {
   editingId.value = null
   form.value = {
@@ -79,8 +97,9 @@ function abrirCrear() {
     categoriaId: '',
     marcaId: '',
     unidadMedidaId: '',
-    imagenUrl: '',
   }
+  imagenActualUrl.value = null
+  resetImagenForm()
   showForm.value = true
 }
 
@@ -94,8 +113,9 @@ function abrirEditar(producto: Producto) {
     categoriaId: producto.categoriaId,
     marcaId: producto.marcaId,
     unidadMedidaId: producto.unidadMedidaId,
-    imagenUrl: producto.imagenUrl ?? '',
   }
+  imagenActualUrl.value = producto.imagenUrl
+  resetImagenForm()
   showForm.value = true
 }
 
@@ -108,12 +128,24 @@ async function onSubmit() {
     categoriaId: Number(form.value.categoriaId),
     marcaId: Number(form.value.marcaId),
     unidadMedidaId: Number(form.value.unidadMedidaId),
-    imagenUrl: form.value.imagenUrl || undefined,
+    // El backend sobrescribe imagenUrl con lo que venga acá (ver
+    // ActualizarProductoRequest) — hay que reenviar el valor actual o una
+    // edición de cualquier otro campo borraría la imagen ya subida. La imagen
+    // en sí se sube aparte (subirImagen abajo), esto solo evita perderla.
+    imagenUrl: imagenActualUrl.value ?? undefined,
   }
-  const ok = editingId.value
-    ? await actualizar(editingId.value, datos)
-    : await crear(form.value.codigoInterno, datos)
-  if (ok) showForm.value = false
+  // La imagen se sube en un segundo paso porque necesita el id del producto
+  // (endpoint dedicado `POST /productos/{id}/imagen`, ver productos.service.ts)
+  // — al crear, ese id todavía no existe hasta que el primer paso responde.
+  let id: number | null = null
+  if (editingId.value) {
+    id = (await actualizar(editingId.value, datos)) ? editingId.value : null
+  } else {
+    id = await crear(form.value.codigoInterno, datos)
+  }
+  if (!id) return
+  if (archivoImagen.value && !(await subirImagen(id, archivoImagen.value))) return
+  showForm.value = false
 }
 
 watch(tamano, () => {
@@ -228,12 +260,22 @@ onMounted(async () => {
           </select>
         </div>
         <div class="space-y-1">
-          <label class="text-sm font-medium">Imagen (URL)</label>
-          <input
-            v-model="form.imagenUrl"
-            type="text"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
+          <label class="text-sm font-medium">Imagen</label>
+          <div class="flex items-center gap-3">
+            <img
+              v-if="previewImagen || imagenActualUrl"
+              :src="previewImagen ?? resolverImagenUrl(imagenActualUrl)"
+              alt=""
+              class="h-14 w-14 rounded border border-mk-border object-cover"
+            />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+              @change="onArchivoImagenSeleccionado"
+            />
+          </div>
+          <p class="text-xs text-mk-text/60">JPG, PNG o WEBP — máximo 5MB.</p>
         </div>
       </div>
       <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
@@ -250,6 +292,7 @@ onMounted(async () => {
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
           <tr>
+            <th class="px-4 py-2 font-medium">Imagen</th>
             <th class="px-4 py-2 font-medium">Código</th>
             <th class="px-4 py-2 font-medium">Nombre</th>
             <th class="px-4 py-2 font-medium">Categoría</th>
@@ -261,15 +304,24 @@ onMounted(async () => {
         </thead>
         <tbody>
           <tr v-if="listLoading">
-            <td colspan="7" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
+            <td colspan="8" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
           </tr>
           <tr v-else-if="listError">
-            <td colspan="7" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
+            <td colspan="8" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
           <tr v-else-if="filtered.length === 0">
-            <td colspan="7" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
+            <td colspan="8" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
           </tr>
           <tr v-for="producto in filtered" :key="producto.id" class="border-b border-mk-border last:border-0">
+            <td class="px-4 py-2">
+              <img
+                v-if="producto.imagenUrl"
+                :src="resolverImagenUrl(producto.imagenUrl)"
+                alt=""
+                class="h-10 w-10 rounded border border-mk-border object-cover"
+              />
+              <span v-else class="text-mk-text/40">—</span>
+            </td>
             <td class="px-4 py-2">{{ producto.codigoInterno }}</td>
             <td class="px-4 py-2">{{ producto.nombre }}</td>
             <td class="px-4 py-2">{{ nombreCategoria(producto.categoriaId) }}</td>

@@ -5,6 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useClientes } from '@/composables/useClientes'
 import { useProductos } from '@/composables/useProductos'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { resolverImagenUrl } from '@/utils/imagenUrl'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Venta } from '@/types/venta'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
@@ -55,6 +56,10 @@ function nombreCliente(clienteId: number): string {
 
 function nombreProducto(productoId: number): string {
   return productos.value.find((p) => p.id === productoId)?.nombre ?? `#${productoId}`
+}
+
+function imagenProducto(productoId: number): string | undefined {
+  return resolverImagenUrl(productos.value.find((p) => p.id === productoId)?.imagenUrl)
 }
 
 function agregarLinea() {
@@ -163,16 +168,24 @@ onMounted(async () => {
       <div class="space-y-2">
         <label class="text-sm font-medium">Líneas</label>
         <div v-for="(linea, index) in form.lineas" :key="index" class="grid gap-3 sm:grid-cols-4">
-          <select
-            v-model="linea.productoId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
-          >
-            <option value="" disabled>Producto…</option>
-            <option v-for="producto in productos" :key="producto.id" :value="producto.id">
-              {{ producto.nombre }}
-            </option>
-          </select>
+          <div class="flex items-center gap-2 sm:col-span-2">
+            <img
+              v-if="linea.productoId && imagenProducto(Number(linea.productoId))"
+              :src="imagenProducto(Number(linea.productoId))"
+              alt=""
+              class="h-9 w-9 shrink-0 rounded border border-mk-border object-cover"
+            />
+            <select
+              v-model="linea.productoId"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="" disabled>Producto…</option>
+              <option v-for="producto in productos" :key="producto.id" :value="producto.id">
+                {{ producto.nombre }}
+              </option>
+            </select>
+          </div>
           <input
             v-model="linea.cantidad"
             type="number"
@@ -295,6 +308,7 @@ onMounted(async () => {
         <table class="w-full text-left text-sm">
           <thead class="border-b border-mk-border bg-mk-surface">
             <tr>
+              <th class="px-4 py-2 font-medium"></th>
               <th class="px-4 py-2 font-medium">Producto</th>
               <th class="mk-num px-4 py-2 font-medium">Cantidad</th>
               <th class="mk-num px-4 py-2 font-medium">Precio unitario</th>
@@ -302,6 +316,14 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="linea in ventaEnDetalle.lineas" :key="linea.id" class="border-b border-mk-border last:border-0">
+              <td class="px-4 py-2">
+                <img
+                  v-if="imagenProducto(linea.productoId)"
+                  :src="imagenProducto(linea.productoId)"
+                  alt=""
+                  class="h-8 w-8 rounded border border-mk-border object-cover"
+                />
+              </td>
               <td class="px-4 py-2">{{ nombreProducto(linea.productoId) }}</td>
               <td class="mk-num px-4 py-2">{{ linea.cantidad }}</td>
               <td class="mk-num px-4 py-2">{{ linea.precioUnitario }}</td>

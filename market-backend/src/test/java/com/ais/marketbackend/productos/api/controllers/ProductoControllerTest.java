@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -13,7 +14,9 @@ import com.ais.marketbackend.productos.api.dtos.responses.ProductoResponse;
 import com.ais.marketbackend.productos.api.mappers.ProductoApiMapper;
 import com.ais.marketbackend.productos.application.dtos.ProductoResumen;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoService;
+import com.ais.marketbackend.productos.domain.exception.ImagenInvalidaException;
 import com.ais.marketbackend.productos.domain.exception.ProductoDuplicadoException;
+import com.ais.marketbackend.productos.infrastructure.storage.ImagenProductoAlmacenamientoService;
 import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -21,17 +24,20 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class ProductoControllerTest {
 
     private ProductoService productoService;
+    private ImagenProductoAlmacenamientoService imagenAlmacenamientoService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         productoService = mock(ProductoService.class);
+        imagenAlmacenamientoService = mock(ImagenProductoAlmacenamientoService.class);
         ProductoApiMapper mapper = resumen -> ProductoResponse.builder()
                 .id(resumen.id())
                 .codigoInterno(resumen.codigoInterno())
@@ -45,7 +51,7 @@ class ProductoControllerTest {
                 .activo(resumen.activo())
                 .build();
 
-        ProductoController controller = new ProductoController(productoService, mapper);
+        ProductoController controller = new ProductoController(productoService, mapper, imagenAlmacenamientoService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
                 .build();
@@ -93,5 +99,29 @@ class ProductoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"codigoInterno\":\"\",\"nombre\":\"\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void subirImagenDevuelveElProductoConLaNuevaUrl() throws Exception {
+        MockMultipartFile archivo = new MockMultipartFile("archivo", "foto.jpg", "image/jpeg", new byte[]{1, 2, 3});
+        when(imagenAlmacenamientoService.guardar(any())).thenReturn("/api/v1/productos/imagenes/abc.jpg");
+        when(productoService.actualizarImagen(1L, "/api/v1/productos/imagenes/abc.jpg")).thenReturn(
+                new ProductoResumen(1L, "P001", null, "Leche", null, 1L, 2L, 3L, "/api/v1/productos/imagenes/abc.jpg",
+                        true));
+
+        mockMvc.perform(multipart("/api/v1/productos/1/imagen").file(archivo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imagenUrl").value("/api/v1/productos/imagenes/abc.jpg"));
+    }
+
+    @Test
+    void subirImagenConFormatoInvalidoDevuelve400() throws Exception {
+        MockMultipartFile archivo = new MockMultipartFile("archivo", "doc.pdf", "application/pdf", new byte[]{1});
+        when(imagenAlmacenamientoService.guardar(any())).thenThrow(
+                new ImagenInvalidaException("Formato no permitido — use JPG, PNG o WEBP."));
+
+        mockMvc.perform(multipart("/api/v1/productos/1/imagen").file(archivo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("IMAGEN_INVALIDA"));
     }
 }

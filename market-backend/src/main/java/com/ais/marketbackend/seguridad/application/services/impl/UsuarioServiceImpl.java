@@ -1,6 +1,7 @@
 package com.ais.marketbackend.seguridad.application.services.impl;
 
 import com.ais.marketbackend.seguridad.application.dtos.UsuarioResumen;
+import com.ais.marketbackend.seguridad.application.dtos.UsuarioTiendaResumen;
 import com.ais.marketbackend.seguridad.domain.exception.UsuarioDuplicadoException;
 import com.ais.marketbackend.seguridad.domain.model.PermisosEfectivos;
 import com.ais.marketbackend.seguridad.domain.model.Rol;
@@ -53,7 +54,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public UsuarioResumen crear(String username, String passwordPlano) {
+    public UsuarioResumen crear(
+            String username, String passwordPlano, String nombre, String telefono, String correo) {
         String usernameCanonico = UsernameCanonicalizer.canonicalizar(username);
         PoliticaContrasenaValidator.validar(
                 passwordPlano, properties.passwordPolicy().minLength(), properties.passwordPolicy().maxLength());
@@ -62,7 +64,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new UsuarioDuplicadoException(usernameCanonico);
         }
 
-        Usuario usuario = Usuario.nuevo(usernameCanonico, passwordEncoder.encode(passwordPlano));
+        Usuario usuario = Usuario.nuevo(
+                usernameCanonico, passwordEncoder.encode(passwordPlano), nombre, telefono, correo);
         Usuario guardado = usuarioRepository.save(usuario);
         auditPublisher.publicar(
                 TipoEventoAuditoria.USUARIO_CREADO, UUID.randomUUID().toString(), "usuarioId=" + guardado.getId());
@@ -80,6 +83,13 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuarioTiendaRepository.save(new UsuarioTienda(null, usuarioId, tiendaId, rol));
         auditPublisher.publicar(TipoEventoAuditoria.TIENDA_ASIGNADA, UUID.randomUUID().toString(),
                 "usuarioId=" + usuarioId + ",tiendaId=" + tiendaId + ",rolId=" + rolId);
+    }
+
+    @Override
+    public List<UsuarioTiendaResumen> listarTiendas(Long usuarioId) {
+        return usuarioTiendaRepository.findByUsuarioId(usuarioId).stream()
+                .map(ut -> new UsuarioTiendaResumen(ut.getId(), ut.getTiendaId(), ut.getRol().getId(), ut.getRol().getNombre()))
+                .toList();
     }
 
     @Override
@@ -107,6 +117,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     private UsuarioResumen toResumen(Usuario usuario) {
-        return new UsuarioResumen(usuario.getId(), usuario.getUsername(), usuario.getEstado());
+        return new UsuarioResumen(
+                usuario.getId(), usuario.getUsername(), usuario.getEstado(), usuario.getNombre(),
+                usuario.getTelefono(), usuario.getCorreo());
     }
 }

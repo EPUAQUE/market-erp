@@ -3,6 +3,7 @@ package com.ais.marketbackend.seguridad.api.controllers;
 import com.ais.marketbackend.seguridad.api.dtos.requests.AsignarTiendaRolRequest;
 import com.ais.marketbackend.seguridad.api.dtos.requests.CrearUsuarioRequest;
 import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioResponse;
+import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioTiendaResponse;
 import com.ais.marketbackend.seguridad.api.mappers.UsuarioApiMapper;
 import com.ais.marketbackend.seguridad.application.services.interfaces.UsuarioService;
 import com.ais.marketbackend.seguridad.infrastructure.security.RequiresPermission;
@@ -36,7 +37,8 @@ public class UsuarioController {
     @PostMapping
     @RequiresPermission("USUARIOS_CREAR")
     public ResponseEntity<UsuarioResponse> crear(@Valid @RequestBody CrearUsuarioRequest request) {
-        UsuarioResponse creado = mapper.toResponse(usuarioService.crear(request.username(), request.password()));
+        UsuarioResponse creado = mapper.toResponse(usuarioService.crear(
+                request.username(), request.password(), request.nombre(), request.telefono(), request.correo()));
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
@@ -46,5 +48,14 @@ public class UsuarioController {
             @PathVariable Long usuarioId, @Valid @RequestBody AsignarTiendaRolRequest request) {
         usuarioService.asignarTienda(usuarioId, request.tiendaId(), request.rolId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/{usuarioId}/tiendas")
+    @RequiresPermission("USUARIOS_VER")
+    public ResponseEntity<List<UsuarioTiendaResponse>> listarTiendas(@PathVariable Long usuarioId) {
+        List<UsuarioTiendaResponse> asignaciones = usuarioService.listarTiendas(usuarioId).stream()
+                .map(ut -> new UsuarioTiendaResponse(ut.id(), ut.tiendaId(), ut.rolId(), ut.rolNombre()))
+                .toList();
+        return ResponseEntity.ok(asignaciones);
     }
 }

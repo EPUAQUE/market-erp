@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { usuariosService } from '@/services/usuarios.service'
 import { ApiClientError } from '@/services/http/ApiClient'
-import type { Usuario } from '@/types/usuario'
+import type { Usuario, UsuarioTienda } from '@/types/usuario'
 
 export function useUsuarios() {
   const items = ref<Usuario[]>([])
@@ -9,6 +9,12 @@ export function useUsuarios() {
   const listError = ref<string | null>(null)
   const createLoading = ref(false)
   const createError = ref<string | null>(null)
+
+  const tiendasPorUsuario = ref<Record<number, UsuarioTienda[]>>({})
+  const tiendasLoading = ref(false)
+  const tiendasError = ref<string | null>(null)
+  const asignarLoading = ref(false)
+  const asignarError = ref<string | null>(null)
 
   async function cargar() {
     listLoading.value = true
@@ -22,20 +28,69 @@ export function useUsuarios() {
     }
   }
 
-  async function crear(username: string, password: string): Promise<boolean> {
+  /** Devuelve el id del usuario creado (o null si falló) — lo necesita UsuariosView para asignar tienda justo después. */
+  async function crear(
+    username: string,
+    password: string,
+    nombre: string,
+    telefono: string,
+    correo: string,
+  ): Promise<number | null> {
     createLoading.value = true
     createError.value = null
     try {
-      const creado = await usuariosService.crear(username, password)
+      const creado = await usuariosService.crear(username, password, nombre, telefono, correo)
       items.value = [...items.value, creado]
-      return true
+      return creado.id
     } catch (error) {
       createError.value = error instanceof ApiClientError ? error.message : 'No se pudo crear el usuario.'
-      return false
+      return null
     } finally {
       createLoading.value = false
     }
   }
 
-  return { items, listLoading, listError, createLoading, createError, cargar, crear }
+  async function cargarTiendas(usuarioId: number) {
+    tiendasLoading.value = true
+    tiendasError.value = null
+    try {
+      tiendasPorUsuario.value = { ...tiendasPorUsuario.value, [usuarioId]: await usuariosService.listarTiendas(usuarioId) }
+    } catch (error) {
+      tiendasError.value = error instanceof ApiClientError ? error.message : 'No se pudieron cargar las tiendas asignadas.'
+    } finally {
+      tiendasLoading.value = false
+    }
+  }
+
+  async function asignarTienda(usuarioId: number, tiendaId: number, rolId: number): Promise<boolean> {
+    asignarLoading.value = true
+    asignarError.value = null
+    try {
+      await usuariosService.asignarTienda(usuarioId, tiendaId, rolId)
+      await cargarTiendas(usuarioId)
+      return true
+    } catch (error) {
+      asignarError.value = error instanceof ApiClientError ? error.message : 'No se pudo asignar la tienda.'
+      return false
+    } finally {
+      asignarLoading.value = false
+    }
+  }
+
+  return {
+    items,
+    listLoading,
+    listError,
+    createLoading,
+    createError,
+    tiendasPorUsuario,
+    tiendasLoading,
+    tiendasError,
+    asignarLoading,
+    asignarError,
+    cargar,
+    crear,
+    cargarTiendas,
+    asignarTienda,
+  }
 }

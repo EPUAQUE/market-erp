@@ -11,4 +11,7 @@ public class UsuarioResponse {
     Long id;
     String username;
     EstadoUsuario estado;
+    String nombre;
+    String telefono;
+    String correo;
 }

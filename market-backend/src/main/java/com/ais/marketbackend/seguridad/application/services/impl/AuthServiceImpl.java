@@ -79,9 +79,26 @@ public class AuthServiceImpl implements AuthService {
 
         Usuario usuario = usuarioOpt.get();
         PermisosEfectivos permisos = permisosEfectivosResolver.resolver(usuario.getId());
+        exigirAlcanceOAuditarYRechazar(usuario.getId(), permisos, correlationId, TipoEventoAuditoria.LOGIN_FALLIDO);
         LoginResult resultado = emitirTokens(usuario, permisos);
         auditPublisher.publicar(TipoEventoAuditoria.LOGIN_EXITOSO, correlationId, "usuarioId=" + usuario.getId());
         return resultado;
+    }
+
+    /**
+     * Un rol de alcance global (ADMIN) no necesita tienda asignada; cualquier otro rol
+     * sí — sin al menos una fila en {@code usuario_tienda}, el usuario no tiene sobre qué
+     * operar. Mismo mensaje/código genérico que cualquier otra falla de autenticación
+     * (ver el comentario de clase de {@link AutenticacionFallidaException}): esto nunca
+     * debe distinguirse en la respuesta de un login con credenciales incorrectas.
+     */
+    private void exigirAlcanceOAuditarYRechazar(
+            Long usuarioId, PermisosEfectivos permisos, String correlationId, TipoEventoAuditoria tipoEventoFallo) {
+        if (!permisos.alcanceGlobal() && permisos.tiendaIds().isEmpty()) {
+            auditPublisher.publicar(
+                    tipoEventoFallo, correlationId, "usuarioId=" + usuarioId + ",motivo=sin_tienda_asignada");
+            throw new AutenticacionFallidaException();
+        }
     }
 
     /**
@@ -121,6 +138,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(AutenticacionFallidaException::new);
 
         PermisosEfectivos permisos = permisosEfectivosResolver.resolver(usuario.getId());
+        exigirAlcanceOAuditarYRechazar(usuario.getId(), permisos, correlationId, TipoEventoAuditoria.REFRESH_FALLIDO);
         LoginResult resultado = emitirTokensRotados(usuario, permisos, token.getId());
         auditPublisher.publicar(TipoEventoAuditoria.REFRESH_EXITOSO, correlationId, "usuarioId=" + usuario.getId());
         return resultado;

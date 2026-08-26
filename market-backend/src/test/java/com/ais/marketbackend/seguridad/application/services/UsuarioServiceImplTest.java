@@ -20,6 +20,7 @@ import com.ais.marketbackend.seguridad.domain.service.PermisosEfectivosResolver;
 import com.ais.marketbackend.seguridad.domain.service.SecurityAuditPublisher;
 import com.ais.marketbackend.seguridad.infrastructure.security.SeguridadProperties;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +60,8 @@ class UsuarioServiceImplTest {
         when(passwordEncoder.encode("clave-larga-segura")).thenReturn("hash-codificado");
         when(usuarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UsuarioResumen resumen = usuarioService.crear("Ana", "clave-larga-segura");
+        UsuarioResumen resumen = usuarioService.crear(
+                "Ana", "clave-larga-segura", "Ana Pérez", "12345678", "ana@example.com");
 
         assertThat(resumen.username()).isEqualTo("ana");
         verify(usuarioRepository).save(any());
@@ -69,7 +71,8 @@ class UsuarioServiceImplTest {
     void crearUsuarioDuplicadoLanzaExcepcion() {
         when(usuarioRepository.existsByUsername("ana")).thenReturn(true);
 
-        assertThatThrownBy(() -> usuarioService.crear("ana", "clave-larga-segura"))
+        assertThatThrownBy(() -> usuarioService.crear(
+                "ana", "clave-larga-segura", "Ana Pérez", "12345678", "ana@example.com"))
                 .isInstanceOf(UsuarioDuplicadoException.class);
     }
 
@@ -77,7 +80,8 @@ class UsuarioServiceImplTest {
     void crearUsuarioConPasswordCortaLanzaExcepcionDePolitica() {
         when(usuarioRepository.existsByUsername(anyString())).thenReturn(false);
 
-        assertThatThrownBy(() -> usuarioService.crear("ana", "corta"))
+        assertThatThrownBy(() -> usuarioService.crear(
+                "ana", "corta", "Ana Pérez", "12345678", "ana@example.com"))
                 .isInstanceOf(com.ais.marketbackend.seguridad.domain.exception.PoliticaContrasenaException.class);
     }
 
@@ -109,5 +113,20 @@ class UsuarioServiceImplTest {
 
         assertThatThrownBy(() -> usuarioService.asignarTienda(1L, 10L, 5L))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void listarTiendasDevuelveLasAsignacionesDelUsuario() {
+        Rol rol = new Rol(5L, "CAJERO", false, Set.of());
+        com.ais.marketbackend.seguridad.domain.model.UsuarioTienda asignacion =
+                new com.ais.marketbackend.seguridad.domain.model.UsuarioTienda(1L, 1L, 10L, rol);
+        when(usuarioTiendaRepository.findByUsuarioId(1L)).thenReturn(List.of(asignacion));
+
+        List<com.ais.marketbackend.seguridad.application.dtos.UsuarioTiendaResumen> resultado =
+                usuarioService.listarTiendas(1L);
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).tiendaId()).isEqualTo(10L);
+        assertThat(resultado.get(0).rolNombre()).isEqualTo("CAJERO");
     }
 }

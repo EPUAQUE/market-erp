@@ -56,7 +56,7 @@ class VentaControllerTest {
         authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn("vendedor1");
         when(usuarioService.obtenerPorUsername("vendedor1"))
-                .thenReturn(new UsuarioResumen(3L, "vendedor1", EstadoUsuario.ACTIVO));
+                .thenReturn(new UsuarioResumen(3L, "vendedor1", EstadoUsuario.ACTIVO, null, null, null));
     }
 
     @Test

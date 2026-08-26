@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Nullable y sin backfill: obligatorios para altas nuevas (CrearUsuarioRequest,
+         @NotBlank), pero usuarios sembrados antes de este cambio (AdminUserSeeder,
+         seeds de prueba en 006-seed-roles-operativos.xml) no tienen estos datos y no
+         hay forma real de reconstruirlos. Mismo patrón que ventas/004-correlation-id.xml. -->
+    <changeSet id="seguridad-009-usuario-nombre" author="market-backend">
+        <addColumn tableName="usuario">
+            <column name="nombre" type="VARCHAR(150)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="seguridad-009-usuario-telefono" author="market-backend">
+        <addColumn tableName="usuario">
+            <column name="telefono" type="VARCHAR(20)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="seguridad-009-usuario-correo" author="market-backend">
+        <addColumn tableName="usuario">
+            <column name="correo" type="VARCHAR(150)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

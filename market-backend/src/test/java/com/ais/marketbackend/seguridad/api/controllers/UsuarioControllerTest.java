@@ -37,7 +37,8 @@ class UsuarioControllerTest {
 
     @Test
     void listarDevuelveLosUsuariosDelServicio() throws Exception {
-        when(usuarioService.listar()).thenReturn(List.of(new UsuarioResumen(1L, "ana", EstadoUsuario.ACTIVO)));
+        when(usuarioService.listar()).thenReturn(
+                List.of(new UsuarioResumen(1L, "ana", EstadoUsuario.ACTIVO, "Ana Pérez", "12345678", "ana@example.com")));
 
         mockMvc.perform(get("/api/v1/usuarios"))
                 .andExpect(status().isOk())
@@ -46,14 +47,28 @@ class UsuarioControllerTest {
 
     @Test
     void crearDevuelve201ConElUsuarioCreado() throws Exception {
-        when(usuarioService.crear(anyString(), anyString()))
-                .thenReturn(new UsuarioResumen(2L, "beto", EstadoUsuario.ACTIVO));
+        when(usuarioService.crear(anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new UsuarioResumen(
+                        2L, "beto", EstadoUsuario.ACTIVO, "Beto Gómez", "87654321", "beto@example.com"));
 
         mockMvc.perform(post("/api/v1/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"beto\",\"password\":\"clave-larga-segura\"}"))
+                        .content("{\"username\":\"beto\",\"password\":\"clave-larga-segura\","
+                                + "\"nombre\":\"Beto Gómez\",\"telefono\":\"87654321\","
+                                + "\"correo\":\"beto@example.com\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("beto"));
+    }
+
+    @Test
+    void listarTiendasDevuelveLasAsignacionesDelUsuario() throws Exception {
+        when(usuarioService.listarTiendas(1L)).thenReturn(List.of(
+                new com.ais.marketbackend.seguridad.application.dtos.UsuarioTiendaResumen(1L, 10L, 5L, "CAJERO")));
+
+        mockMvc.perform(get("/api/v1/usuarios/1/tiendas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tiendaId").value(10))
+                .andExpect(jsonPath("$[0].rolNombre").value("CAJERO"));
     }
 
     @Test
@@ -74,6 +89,9 @@ class UsuarioControllerTest {
                     .id(resumen.id())
                     .username(resumen.username())
                     .estado(resumen.estado())
+                    .nombre(resumen.nombre())
+                    .telefono(resumen.telefono())
+                    .correo(resumen.correo())
                     .build();
         }
     }

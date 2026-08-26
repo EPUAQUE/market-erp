@@ -7,7 +7,11 @@ export const API_ENDPOINTS = {
   },
   usuarios: {
     base: '/api/v1/usuarios',
-    asignarTienda: (usuarioId: number) => `/api/v1/usuarios/${usuarioId}/tiendas`,
+    // Mismo endpoint para GET (listar asignaciones) y POST (asignar) — ver usuarios.service.ts.
+    tiendas: (usuarioId: number) => `/api/v1/usuarios/${usuarioId}/tiendas`,
+  },
+  roles: {
+    base: '/api/v1/roles',
   },
   tiendas: {
     base: '/api/v1/tiendas',

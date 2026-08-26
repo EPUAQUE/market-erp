@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- El rol AUDITOR se sembró en 005-seed-catalogo.xml pero nunca se le asignó
+         ningún permiso — quedó seleccionable en el backoffice sin poder ver nada.
+         Se le da acceso de solo lectura a todo el sistema: los 21 permisos *_VER
+         existentes a la fecha de este changeset, ninguno de crear/editar/eliminar. -->
+    <changeSet id="seguridad-010-auditor-permisos" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'DASHBOARD_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'DASHBOARD_FINANCIERO_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PRODUCTOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CATEGORIAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'MARCAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'UNIDADES_MEDIDA_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PROVEEDORES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'COMPRAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CLIENTES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'VENTAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_COBRAR_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'CAJA_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TRASLADOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'NOTIFICACIONES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'TIENDAS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'USUARIOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'REPORTES_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'FEL_VER')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

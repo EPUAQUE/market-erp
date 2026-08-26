@@ -39,4 +39,13 @@ public class UsuarioEntity {
 
     @Column(name = "version_seguridad", nullable = false)
     private long versionSeguridad;
+
+    @Column(name = "nombre", length = 150)
+    private String nombre;
+
+    @Column(name = "telefono", length = 20)
+    private String telefono;
+
+    @Column(name = "correo", length = 150)
+    private String correo;
 }

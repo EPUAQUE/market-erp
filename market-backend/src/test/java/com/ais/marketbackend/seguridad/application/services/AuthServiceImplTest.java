@@ -108,6 +108,33 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void loginSinTiendaAsignadaYSinAlcanceGlobalSeRechaza() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-real");
+        when(usuarioRepository.findByUsername("ana")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("clave123456", "hash-real")).thenReturn(true);
+        when(permisosEfectivosResolver.resolver(any()))
+                .thenReturn(new PermisosEfectivos(1L, "ana", Set.of(), Set.of(), false));
+
+        assertThatThrownBy(() -> authService.login("ana", "clave123456", "127.0.0.1"))
+                .isInstanceOf(AutenticacionFallidaException.class);
+
+        verify(refreshTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void loginConAlcanceGlobalNoNecesitaTiendaAsignada() {
+        Usuario usuario = Usuario.nuevo("admin", "hash-real");
+        when(usuarioRepository.findByUsername("admin")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("clave123456", "hash-real")).thenReturn(true);
+        when(permisosEfectivosResolver.resolver(any()))
+                .thenReturn(new PermisosEfectivos(1L, "admin", Set.of("USUARIOS_CREAR"), Set.of(), true));
+
+        LoginResult resultado = authService.login("admin", "clave123456", "127.0.0.1");
+
+        assertThat(resultado.accessToken()).isEqualTo("jwt-token");
+    }
+
+    @Test
     void loginConUsuarioBloqueadoSeRechazaAunConPasswordCorrecta() {
         Usuario usuario = Usuario.nuevo("ana", "hash-real");
         usuario.bloquear();
@@ -138,7 +165,7 @@ class AuthServiceImplTest {
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(tokenExistente));
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(permisosEfectivosResolver.resolver(any()))
-                .thenReturn(new PermisosEfectivos(1L, "ana", Set.of(), Set.of(), false));
+                .thenReturn(new PermisosEfectivos(1L, "ana", Set.of(), Set.of(1L), false));
 
         LoginResult resultado = authService.refresh("token-plano");
 
@@ -184,6 +211,22 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void refreshSinTiendaAsignadaYSinAlcanceGlobalSeRechaza() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-real");
+        RefreshToken tokenExistente = RefreshToken.nuevo(1L, "hash", Instant.now(), Instant.now().plusSeconds(3600), null);
+        when(refreshTokenRepository.consumir(anyString(), any())).thenReturn(1);
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(tokenExistente));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(permisosEfectivosResolver.resolver(any()))
+                .thenReturn(new PermisosEfectivos(1L, "ana", Set.of(), Set.of(), false));
+
+        assertThatThrownBy(() -> authService.refresh("token-plano"))
+                .isInstanceOf(AutenticacionFallidaException.class);
+
+        verify(refreshTokenRepository, never()).save(any());
+    }
+
+    @Test
     void refreshConUsuarioYaNoActivoSeRechaza() {
         Usuario usuarioBloqueado = Usuario.nuevo("ana", "hash-real");
         usuarioBloqueado.bloquear();
@@ -202,7 +245,7 @@ class AuthServiceImplTest {
         RefreshToken tokenExistente = RefreshToken.nuevo(1L, "hash", Instant.now(), Instant.now().plusSeconds(3600), null);
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(permisosEfectivosResolver.resolver(any()))
-                .thenReturn(new PermisosEfectivos(1L, "ana", Set.of(), Set.of(), false));
+                .thenReturn(new PermisosEfectivos(1L, "ana", Set.of(), Set.of(1L), false));
         when(refreshTokenRepository.consumir(anyString(), any())).thenReturn(1, 0);
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(tokenExistente));
 

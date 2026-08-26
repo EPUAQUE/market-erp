@@ -63,4 +63,6 @@
     <include file="db/changelog/modules/seguridad/006-seed-roles-operativos.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/007-seed-categorias-ver-operativo.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/008-refresh-token-index-expira-en.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/009-usuario-datos-personales.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/010-seed-auditor-permisos.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

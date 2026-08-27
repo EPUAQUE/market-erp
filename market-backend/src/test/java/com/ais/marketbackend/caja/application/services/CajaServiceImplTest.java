@@ -120,4 +120,19 @@ class CajaServiceImplTest {
         assertThat(resultado).isPresent();
         assertThat(resultado.get().saldoEsperado()).isEqualByComparingTo(new BigDecimal("110.00"));
     }
+
+    @Test
+    void hayAbiertaPorTiendaDevuelveFalsoSinCajaAbierta() {
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+
+        assertThat(cajaService.hayAbiertaPorTienda(1L)).isFalse();
+    }
+
+    @Test
+    void hayAbiertaPorTiendaDevuelveVerdaderoConCajaAbierta() {
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L))
+                .thenReturn(Optional.of(CajaSesion.nueva(1L, BigDecimal.ZERO)));
+
+        assertThat(cajaService.hayAbiertaPorTienda(1L)).isTrue();
+    }
 }

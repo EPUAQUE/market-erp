@@ -86,6 +86,11 @@ public class CajaServiceImpl implements CajaService {
         });
     }
 
+    @Override
+    public boolean hayAbiertaPorTienda(Long tiendaId) {
+        return cajaSesionRepository.findAbiertaByTiendaId(tiendaId).isPresent();
+    }
+
     private CajaSesion obtenerAbiertaORequerida(Long tiendaId) {
         return cajaSesionRepository.findAbiertaByTiendaId(tiendaId)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay una caja abierta para la tienda " + tiendaId + "."));

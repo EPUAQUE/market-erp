@@ -29,6 +29,7 @@ import com.ais.marketbackend.ventas.application.dtos.NuevaLineaVenta;
 import com.ais.marketbackend.ventas.application.dtos.PagoInmediato;
 import com.ais.marketbackend.ventas.application.dtos.VentaResumen;
 import com.ais.marketbackend.ventas.application.services.impl.VentaServiceImpl;
+import com.ais.marketbackend.ventas.domain.exception.CajaNoAbiertaException;
 import com.ais.marketbackend.ventas.domain.exception.DesglosePagoInvalidoException;
 import com.ais.marketbackend.ventas.domain.exception.EstadoVentaInvalidoException;
 import com.ais.marketbackend.ventas.domain.exception.LimiteCreditoExcedidoException;
@@ -62,6 +63,9 @@ class VentaServiceImplTest {
                 ventaRepository, inventarioService, cuentaPorCobrarService, clienteService, cajaService);
         when(ventaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(cuentaPorCobrarService.listarPorTienda(any())).thenReturn(List.of());
+        // Caja abierta por default — los tests de "sin caja abierta" la
+        // sobreescriben a false explícitamente.
+        when(cajaService.hayAbiertaPorTienda(any())).thenReturn(true);
     }
 
     private ClienteResumen cliente(BigDecimal limiteCredito) {
@@ -496,6 +500,49 @@ class VentaServiceImplTest {
         ventaService.completar(1L, 5L);
 
         verify(clienteService, never()).obtener(any());
+    }
+
+    @Test
+    void completarEfectivoSinCajaAbiertaLanzaCajaNoAbiertaYNoMutaNada() {
+        Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
+                MetodoPago.EFECTIVO), 5L, 1L);
+        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(cajaService.hayAbiertaPorTienda(1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> ventaService.completar(1L, 5L)).isInstanceOf(CajaNoAbiertaException.class);
+
+        assertThat(venta.getEstado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.BORRADOR);
+        verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
+        verify(cajaService, never()).registrarMovimientoSiHayAbierta(any(), any(), any(), any());
+    }
+
+    @Test
+    void completarMixtaSinCajaAbiertaLanzaCajaNoAbierta() {
+        Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
+                MetodoPago.MIXTO), 5L, 1L);
+        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(cajaService.hayAbiertaPorTienda(1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> ventaService.completar(
+                1L, 5L, List.of(new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("4")))))
+                .isInstanceOf(CajaNoAbiertaException.class);
+        verify(clienteService, never()).obtener(any());
+    }
+
+    @Test
+    void completarCreditoSinCajaAbiertaNoRequiereCajaAbierta() {
+        Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
+                MetodoPago.CREDITO), 5L, 1L);
+        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(inventarioService.obtener(1L, 10L)).thenReturn(
+                new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
+        when(clienteService.obtener(2L)).thenReturn(cliente(null));
+        when(cajaService.hayAbiertaPorTienda(1L)).thenReturn(false);
+
+        VentaResumen resumen = ventaService.completar(1L, 5L);
+
+        assertThat(resumen.estado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.COMPLETADA);
+        verify(cajaService, never()).hayAbiertaPorTienda(any());
     }
 
     private Venta withId(Venta venta, Long id, Long tiendaId) {

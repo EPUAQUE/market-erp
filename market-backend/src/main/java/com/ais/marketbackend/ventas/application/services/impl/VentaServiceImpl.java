@@ -17,6 +17,7 @@ import com.ais.marketbackend.ventas.application.dtos.NuevaLineaVenta;
 import com.ais.marketbackend.ventas.application.dtos.PagoInmediato;
 import com.ais.marketbackend.ventas.application.dtos.VentaResumen;
 import com.ais.marketbackend.ventas.application.services.interfaces.VentaService;
+import com.ais.marketbackend.ventas.domain.exception.CajaNoAbiertaException;
 import com.ais.marketbackend.ventas.domain.exception.CorrelationIdReutilizadoException;
 import com.ais.marketbackend.ventas.domain.exception.DesglosePagoInvalidoException;
 import com.ais.marketbackend.ventas.domain.exception.LimiteCreditoExcedidoException;
@@ -37,7 +38,10 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code cajaService} son dependencias cruzadas de módulo permitidas: solo se usan
  * sus puertos {@code application.services.interfaces}. {@code completar} resuelve
  * el pago inmediato según {@code Venta.metodoPago} (ver
- * {@code resolverPagosInmediatos}), valida el límite de crédito sobre el saldo
+ * {@code resolverPagosInmediatos}), exige una caja abierta para cualquier
+ * método salvo CREDITO (si no, {@code CajaNoAbiertaException} — antes de esto
+ * la venta se completaba igual y el ingreso se descartaba en silencio), valida
+ * el límite de crédito sobre el saldo
  * financiado real (si la venta es a crédito o mixta — ver
  * {@code validarLimiteCredito}), registra un movimiento VENTA por línea, refleja
  * cada pago inmediato como ingreso en Caja, y crea una cuenta por cobrar
@@ -181,6 +185,9 @@ public class VentaServiceImpl implements VentaService {
         BigDecimal totalInmediato = pagos.stream().map(PagoInmediato::monto).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal saldo = venta.total().subtract(totalInmediato);
 
+        if (venta.getMetodoPago() != MetodoPago.CREDITO && !cajaService.hayAbiertaPorTienda(tiendaId)) {
+            throw new CajaNoAbiertaException(tiendaId);
+        }
         if (venta.getMetodoPago() == MetodoPago.CREDITO || venta.getMetodoPago() == MetodoPago.MIXTO) {
             validarLimiteCredito(tiendaId, venta, saldo);
         }

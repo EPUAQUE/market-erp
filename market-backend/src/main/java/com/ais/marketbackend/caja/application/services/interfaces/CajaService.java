@@ -32,4 +32,12 @@ public interface CajaService {
      */
     Optional<CajaSesionResumen> registrarMovimientoSiHayAbierta(
             Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto);
+
+    /**
+     * Usado por Ventas para bloquear el completar() de una venta que mueve
+     * efectivo/tarjeta/transferencia — a diferencia de
+     * {@code registrarMovimientoSiHayAbierta}, aquí la ausencia de caja abierta
+     * sí debe impedir la operación (ver {@code CajaNoAbiertaException}).
+     */
+    boolean hayAbiertaPorTienda(Long tiendaId);
 }

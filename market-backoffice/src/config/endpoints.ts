@@ -116,6 +116,7 @@ export const API_ENDPOINTS = {
   },
   dashboard: {
     porTienda: (tiendaId: number) => `/api/v1/dashboard/tiendas/${tiendaId}`,
+    porGrupo: (grupoId: number) => `/api/v1/dashboard/grupos/${grupoId}`,
   },
   reportes: {
     ventas: (tiendaId: number) => `/api/v1/reportes/tiendas/${tiendaId}/ventas`,

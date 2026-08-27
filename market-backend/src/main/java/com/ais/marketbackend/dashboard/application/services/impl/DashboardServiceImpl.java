@@ -10,6 +10,7 @@ import com.ais.marketbackend.cuentasporpagar.application.dtos.CuentaPorPagarResu
 import com.ais.marketbackend.cuentasporpagar.application.services.interfaces.CuentaPorPagarService;
 import com.ais.marketbackend.cuentasporpagar.domain.model.EstadoCuentaPorPagar;
 import com.ais.marketbackend.dashboard.application.dtos.CuentaPendienteResumen;
+import com.ais.marketbackend.dashboard.application.dtos.DashboardGrupoResumen;
 import com.ais.marketbackend.dashboard.application.dtos.DashboardResumen;
 import com.ais.marketbackend.dashboard.application.dtos.RecordatorioResumen;
 import com.ais.marketbackend.dashboard.application.dtos.SugerenciaCompraResumen;
@@ -26,6 +27,7 @@ import com.ais.marketbackend.notificaciones.application.services.interfaces.Noti
 import com.ais.marketbackend.notificaciones.domain.model.TipoNotificacion;
 import com.ais.marketbackend.productos.application.dtos.ProductoTiendaResumen;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoTiendaService;
+import com.ais.marketbackend.seguridad.application.services.interfaces.AutorizacionTiendaService;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.tiendas.application.services.interfaces.TiendaService;
 import com.ais.marketbackend.tiendas.domain.model.EstadoTienda;
@@ -78,6 +80,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final NotificacionService notificacionService;
     private final GastoProgramadoService gastoProgramadoService;
     private final TiendaService tiendaService;
+    private final AutorizacionTiendaService autorizacionTiendaService;
     private final ZoneId zonaHorariaNegocio;
 
     public DashboardServiceImpl(
@@ -85,7 +88,7 @@ public class DashboardServiceImpl implements DashboardService {
             CuentaPorPagarService cuentaPorPagarService, ProductoTiendaService productoTiendaService,
             InventarioService inventarioService, CajaService cajaService, FelService felService,
             NotificacionService notificacionService, GastoProgramadoService gastoProgramadoService,
-            TiendaService tiendaService,
+            TiendaService tiendaService, AutorizacionTiendaService autorizacionTiendaService,
             @Value("${app.negocio.zona-horaria:America/Guatemala}") String zonaHorariaNegocio) {
         this.ventaService = ventaService;
         this.cuentaPorCobrarService = cuentaPorCobrarService;
@@ -97,6 +100,7 @@ public class DashboardServiceImpl implements DashboardService {
         this.notificacionService = notificacionService;
         this.gastoProgramadoService = gastoProgramadoService;
         this.tiendaService = tiendaService;
+        this.autorizacionTiendaService = autorizacionTiendaService;
         this.zonaHorariaNegocio = ZoneId.of(zonaHorariaNegocio);
     }
 
@@ -262,6 +266,75 @@ public class DashboardServiceImpl implements DashboardService {
                 cajaAbierta, cajaSaldoEsperado, ingresosHoy, egresosHoy, alertasCriticas, alertasPreventivas,
                 proximosVencimientos, topCobrosPendientes, topPagosPendientes, recordatorios, sugerenciasCompra,
                 sugerenciasTraslado);
+    }
+
+    @Override
+    public DashboardGrupoResumen obtenerResumenGrupo(Long grupoId) {
+        autorizacionTiendaService.exigirAccesoAGrupo(grupoId);
+
+        List<Long> tiendaIds = tiendaService.listar().stream()
+                .filter(t -> grupoId.equals(t.grupoId()))
+                .map(t -> t.id())
+                .toList();
+        List<DashboardResumen> resumenes = tiendaIds.stream().map(this::obtenerResumen).toList();
+
+        return agregarPorGrupo(grupoId, tiendaIds, resumenes);
+    }
+
+    private DashboardGrupoResumen agregarPorGrupo(
+            Long grupoId, List<Long> tiendaIds, List<DashboardResumen> resumenes) {
+        BigDecimal ventasHoyTotal = sumar(resumenes, DashboardResumen::ventasHoyTotal);
+        long ventasHoyCantidad = resumenes.stream().mapToLong(DashboardResumen::ventasHoyCantidad).sum();
+        BigDecimal ventasMesTotal = sumar(resumenes, DashboardResumen::ventasMesTotal);
+        long ventasMesCantidad = resumenes.stream().mapToLong(DashboardResumen::ventasMesCantidad).sum();
+        BigDecimal ventasMesAnteriorTotal = sumar(resumenes, DashboardResumen::ventasMesAnteriorTotal);
+        BigDecimal ticketPromedioMes = dividir(ventasMesTotal, BigDecimal.valueOf(ventasMesCantidad));
+        long facturasEmitidasMes = resumenes.stream().mapToLong(DashboardResumen::facturasEmitidasMes).sum();
+        long facturasFelCertificadasMes =
+                resumenes.stream().mapToLong(DashboardResumen::facturasFelCertificadasMes).sum();
+
+        BigDecimal utilidadMesTotal = sumar(resumenes, DashboardResumen::utilidadMesTotal);
+        BigDecimal margenPromedioMes = ventasMesTotal.compareTo(BigDecimal.ZERO) == 0
+                ? null
+                : utilidadMesTotal.multiply(BigDecimal.valueOf(100)).divide(ventasMesTotal, 2, RoundingMode.HALF_UP);
+
+        BigDecimal inventarioValorizadoTotal = sumar(resumenes, DashboardResumen::inventarioValorizadoTotal);
+        long productosAgotados = resumenes.stream().mapToLong(DashboardResumen::productosAgotados).sum();
+        long productosBajoMinimo = resumenes.stream().mapToLong(DashboardResumen::productosBajoMinimo).sum();
+        long productosSinMovimiento = resumenes.stream().mapToLong(DashboardResumen::productosSinMovimiento).sum();
+
+        BigDecimal saldoPendienteCuentasPorCobrar = sumar(resumenes, DashboardResumen::saldoPendienteCuentasPorCobrar);
+        long cuentasPorCobrarVencidas = resumenes.stream().mapToLong(DashboardResumen::cuentasPorCobrarVencidas).sum();
+        BigDecimal cxcAging0a30 = sumar(resumenes, DashboardResumen::cxcAging0a30);
+        BigDecimal cxcAging31a60 = sumar(resumenes, DashboardResumen::cxcAging31a60);
+        BigDecimal cxcAgingMas60 = sumar(resumenes, DashboardResumen::cxcAgingMas60);
+
+        BigDecimal saldoPendienteCuentasPorPagar = sumar(resumenes, DashboardResumen::saldoPendienteCuentasPorPagar);
+        long cuentasPorPagarVencidas = resumenes.stream().mapToLong(DashboardResumen::cuentasPorPagarVencidas).sum();
+        BigDecimal cxpAging0a30 = sumar(resumenes, DashboardResumen::cxpAging0a30);
+        BigDecimal cxpAging31a60 = sumar(resumenes, DashboardResumen::cxpAging31a60);
+        BigDecimal cxpAgingMas60 = sumar(resumenes, DashboardResumen::cxpAgingMas60);
+
+        long tiendasConCajaAbierta = resumenes.stream().filter(DashboardResumen::cajaAbierta).count();
+        BigDecimal cajaSaldoEsperadoTotal = resumenes.stream()
+                .filter(DashboardResumen::cajaAbierta)
+                .map(DashboardResumen::cajaSaldoEsperado)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal ingresosHoy = sumar(resumenes, DashboardResumen::ingresosHoy);
+        BigDecimal egresosHoy = sumar(resumenes, DashboardResumen::egresosHoy);
+
+        long alertasCriticas = resumenes.stream().mapToLong(DashboardResumen::alertasCriticas).sum();
+        long alertasPreventivas = resumenes.stream().mapToLong(DashboardResumen::alertasPreventivas).sum();
+
+        return new DashboardGrupoResumen(
+                grupoId, tiendaIds, ventasHoyTotal, ventasHoyCantidad, ventasMesTotal, ventasMesCantidad,
+                ventasMesAnteriorTotal, ticketPromedioMes, facturasEmitidasMes, facturasFelCertificadasMes,
+                utilidadMesTotal, margenPromedioMes, inventarioValorizadoTotal, productosAgotados,
+                productosBajoMinimo, productosSinMovimiento, saldoPendienteCuentasPorCobrar,
+                cuentasPorCobrarVencidas, cxcAging0a30, cxcAging31a60, cxcAgingMas60,
+                saldoPendienteCuentasPorPagar, cuentasPorPagarVencidas, cxpAging0a30, cxpAging31a60, cxpAgingMas60,
+                tiendasConCajaAbierta, (long) resumenes.size(), cajaSaldoEsperadoTotal, ingresosHoy, egresosHoy,
+                alertasCriticas, alertasPreventivas);
     }
 
     private boolean estaSinMovimientoReciente(Long tiendaId, Long productoId, Instant ahora) {

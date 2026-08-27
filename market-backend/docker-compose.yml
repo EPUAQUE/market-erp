@@ -51,6 +51,12 @@ services:
       JWT_PUBLIC_KEY_LOCATION: file:/certs/prod-public.pem
       JWT_ISSUER: ${JWT_ISSUER:-market-backend}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-market-clients}
+      # Sin esto, el default de application.yml (./data/productos-imagenes,
+      # relativo a WORKDIR /app) no coincide con el volumen nombrado montado
+      # abajo en /data/productos-imagenes — subir la imagen de un producto
+      # fallaba con AccessDeniedException: /app/data (esa ruta nunca se creó
+      # ni se le dio dueño en el Dockerfile, a diferencia de /data/productos-imagenes).
+      PRODUCTOS_IMAGENES_DIR: /data/productos-imagenes
       # Un solo dominio público, ruteado por path vía Caddy (ver Caddyfile) —
       # el origin que el navegador manda es siempre https://${DOMAIN}, sin
       # importar si pidió "/" (backoffice) o "/api/..." (este backend).

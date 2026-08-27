@@ -8,18 +8,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ais.marketbackend.grupostienda.domain.model.EstadoGrupoTienda;
+import com.ais.marketbackend.grupostienda.domain.model.GrupoTienda;
+import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
 import com.ais.marketbackend.seguridad.application.dtos.UsuarioResumen;
 import com.ais.marketbackend.seguridad.application.services.impl.UsuarioServiceImpl;
+import com.ais.marketbackend.seguridad.domain.exception.AsignacionMixtaNoPermitidaException;
 import com.ais.marketbackend.seguridad.domain.exception.UsuarioDuplicadoException;
 import com.ais.marketbackend.seguridad.domain.model.Rol;
 import com.ais.marketbackend.seguridad.domain.model.Usuario;
+import com.ais.marketbackend.seguridad.domain.model.UsuarioGrupoTienda;
 import com.ais.marketbackend.seguridad.domain.repository.RolRepository;
+import com.ais.marketbackend.seguridad.domain.repository.UsuarioGrupoTiendaRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioTiendaRepository;
 import com.ais.marketbackend.seguridad.domain.service.PermisosEfectivosResolver;
 import com.ais.marketbackend.seguridad.domain.service.SecurityAuditPublisher;
 import com.ais.marketbackend.seguridad.infrastructure.security.SeguridadProperties;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
+import com.ais.marketbackend.tiendas.domain.model.Tienda;
+import com.ais.marketbackend.tiendas.domain.repository.TiendaRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,7 +39,10 @@ class UsuarioServiceImplTest {
 
     private UsuarioRepository usuarioRepository;
     private UsuarioTiendaRepository usuarioTiendaRepository;
+    private UsuarioGrupoTiendaRepository usuarioGrupoTiendaRepository;
     private RolRepository rolRepository;
+    private TiendaRepository tiendaRepository;
+    private GrupoTiendaRepository grupoTiendaRepository;
     private PasswordEncoder passwordEncoder;
     private UsuarioServiceImpl usuarioService;
 
@@ -39,7 +50,10 @@ class UsuarioServiceImplTest {
     void setUp() {
         usuarioRepository = mock(UsuarioRepository.class);
         usuarioTiendaRepository = mock(UsuarioTiendaRepository.class);
+        usuarioGrupoTiendaRepository = mock(UsuarioGrupoTiendaRepository.class);
         rolRepository = mock(RolRepository.class);
+        tiendaRepository = mock(TiendaRepository.class);
+        grupoTiendaRepository = mock(GrupoTiendaRepository.class);
         passwordEncoder = mock(PasswordEncoder.class);
         PermisosEfectivosResolver resolver = mock(PermisosEfectivosResolver.class);
         SecurityAuditPublisher auditPublisher = mock(SecurityAuditPublisher.class);
@@ -50,8 +64,12 @@ class UsuarioServiceImplTest {
                 null, null, null);
 
         usuarioService = new UsuarioServiceImpl(
-                usuarioRepository, usuarioTiendaRepository, rolRepository, passwordEncoder, resolver,
-                auditPublisher, properties);
+                usuarioRepository, usuarioTiendaRepository, usuarioGrupoTiendaRepository, rolRepository,
+                tiendaRepository, grupoTiendaRepository, passwordEncoder, resolver, auditPublisher, properties);
+
+        when(usuarioGrupoTiendaRepository.findByUsuarioId(org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(List.of());
+        when(usuarioTiendaRepository.findByUsuarioId(org.mockito.ArgumentMatchers.anyLong())).thenReturn(List.of());
     }
 
     @Test
@@ -89,8 +107,10 @@ class UsuarioServiceImplTest {
     void asignarTiendaConRolExistenteFunciona() {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         Rol rol = new Rol(5L, "CAJERO", false, Set.of());
+        Tienda tienda = Tienda.nueva("NORTE", "Tienda Norte", null, null, null, 1L);
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(5L)).thenReturn(Optional.of(rol));
+        when(tiendaRepository.findById(10L)).thenReturn(Optional.of(tienda));
 
         usuarioService.asignarTienda(1L, 10L, 5L);
 
@@ -116,6 +136,35 @@ class UsuarioServiceImplTest {
     }
 
     @Test
+    void asignarTiendaConTiendaInexistenteLanzaNoEncontrado() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        Rol rol = new Rol(5L, "CAJERO", false, Set.of());
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(rolRepository.findById(5L)).thenReturn(Optional.of(rol));
+        when(tiendaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.asignarTienda(1L, 99L, 5L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void asignarTiendaConGrupoYaAsignadoAlUsuarioLanzaAsignacionMixta() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        Rol rol = new Rol(5L, "CAJERO", false, Set.of());
+        Tienda tienda = Tienda.nueva("NORTE", "Tienda Norte", null, null, null, 1L);
+        Rol rolGrupo = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(rolRepository.findById(5L)).thenReturn(Optional.of(rol));
+        when(tiendaRepository.findById(10L)).thenReturn(Optional.of(tienda));
+        when(usuarioGrupoTiendaRepository.findByUsuarioId(1L)).thenReturn(
+                List.of(new UsuarioGrupoTienda(1L, 1L, 1L, rolGrupo)));
+
+        assertThatThrownBy(() -> usuarioService.asignarTienda(1L, 10L, 5L))
+                .isInstanceOf(AsignacionMixtaNoPermitidaException.class);
+        verify(usuarioTiendaRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
     void listarTiendasDevuelveLasAsignacionesDelUsuario() {
         Rol rol = new Rol(5L, "CAJERO", false, Set.of());
         com.ais.marketbackend.seguridad.domain.model.UsuarioTienda asignacion =
@@ -128,5 +177,64 @@ class UsuarioServiceImplTest {
         assertThat(resultado).hasSize(1);
         assertThat(resultado.get(0).tiendaId()).isEqualTo(10L);
         assertThat(resultado.get(0).rolNombre()).isEqualTo("CAJERO");
+    }
+
+    @Test
+    void asignarGrupoConRolExistenteFunciona() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        Rol rol = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
+        GrupoTienda grupo = new GrupoTienda(1L, "PRINCIPAL", "Grupo Principal", EstadoGrupoTienda.ACTIVO);
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(rolRepository.findById(9L)).thenReturn(Optional.of(rol));
+        when(grupoTiendaRepository.findById(1L)).thenReturn(Optional.of(grupo));
+        when(tiendaRepository.listarIdsPorGrupo(1L)).thenReturn(List.of(10L, 11L));
+
+        usuarioService.asignarGrupo(1L, 1L, 9L);
+
+        verify(usuarioGrupoTiendaRepository).save(any());
+    }
+
+    @Test
+    void asignarGrupoConGrupoInexistenteLanzaNoEncontrado() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        Rol rol = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(rolRepository.findById(9L)).thenReturn(Optional.of(rol));
+        when(grupoTiendaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.asignarGrupo(1L, 99L, 9L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void asignarGrupoConTiendaIndividualDeEseGrupoYaAsignadaLanzaAsignacionMixta() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        Rol rol = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
+        Rol rolTienda = new Rol(5L, "CAJERO", false, Set.of());
+        GrupoTienda grupo = new GrupoTienda(1L, "PRINCIPAL", "Grupo Principal", EstadoGrupoTienda.ACTIVO);
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(rolRepository.findById(9L)).thenReturn(Optional.of(rol));
+        when(grupoTiendaRepository.findById(1L)).thenReturn(Optional.of(grupo));
+        when(tiendaRepository.listarIdsPorGrupo(1L)).thenReturn(List.of(10L, 11L));
+        when(usuarioTiendaRepository.findByUsuarioId(1L)).thenReturn(
+                List.of(new com.ais.marketbackend.seguridad.domain.model.UsuarioTienda(1L, 1L, 10L, rolTienda)));
+
+        assertThatThrownBy(() -> usuarioService.asignarGrupo(1L, 1L, 9L))
+                .isInstanceOf(AsignacionMixtaNoPermitidaException.class);
+        verify(usuarioGrupoTiendaRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void listarGruposDevuelveLasAsignacionesDelUsuario() {
+        Rol rol = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
+        UsuarioGrupoTienda asignacion = new UsuarioGrupoTienda(1L, 1L, 1L, rol);
+        when(usuarioGrupoTiendaRepository.findByUsuarioId(1L)).thenReturn(List.of(asignacion));
+
+        List<com.ais.marketbackend.seguridad.application.dtos.UsuarioGrupoTiendaResumen> resultado =
+                usuarioService.listarGrupos(1L);
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).grupoTiendaId()).isEqualTo(1L);
+        assertThat(resultado.get(0).rolNombre()).isEqualTo("ADMIN_GRUPO");
     }
 }

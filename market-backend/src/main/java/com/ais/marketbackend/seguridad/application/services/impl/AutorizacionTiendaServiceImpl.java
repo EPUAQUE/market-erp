@@ -35,6 +35,14 @@ public class AutorizacionTiendaServiceImpl implements AutorizacionTiendaService 
     }
 
     @Override
+    public void exigirAccesoAGrupo(Long grupoId) {
+        PermisosEfectivos permisos = permisosEfectivosResolver.resolver(contextoAutenticacion.usuarioIdActual());
+        if (!permisos.puedeAccederAGrupo(grupoId)) {
+            throw new AccessDeniedException("Grupo de tiendas fuera de alcance: " + grupoId);
+        }
+    }
+
+    @Override
     public boolean tieneAcceso(Long tiendaId) {
         PermisosEfectivos permisos = permisosEfectivosResolver.resolver(contextoAutenticacion.usuarioIdActual());
         return permisos.puedeAccederATienda(tiendaId);

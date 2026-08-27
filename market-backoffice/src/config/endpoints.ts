@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
     base: '/api/v1/usuarios',
     // Mismo endpoint para GET (listar asignaciones) y POST (asignar) — ver usuarios.service.ts.
     tiendas: (usuarioId: number) => `/api/v1/usuarios/${usuarioId}/tiendas`,
+    grupos: (usuarioId: number) => `/api/v1/usuarios/${usuarioId}/grupos`,
   },
   roles: {
     base: '/api/v1/roles',
@@ -18,6 +19,12 @@ export const API_ENDPOINTS = {
     porId: (id: number) => `/api/v1/tiendas/${id}`,
     activar: (id: number) => `/api/v1/tiendas/${id}/activar`,
     desactivar: (id: number) => `/api/v1/tiendas/${id}/desactivar`,
+  },
+  gruposTienda: {
+    base: '/api/v1/grupos-tienda',
+    porId: (id: number) => `/api/v1/grupos-tienda/${id}`,
+    activar: (id: number) => `/api/v1/grupos-tienda/${id}/activar`,
+    desactivar: (id: number) => `/api/v1/grupos-tienda/${id}/desactivar`,
   },
   unidadesMedida: {
     base: '/api/v1/unidades-medida',
@@ -112,6 +119,7 @@ export const API_ENDPOINTS = {
   },
   dashboard: {
     porTienda: (tiendaId: number) => `/api/v1/dashboard/tiendas/${tiendaId}`,
+    porGrupo: (grupoId: number) => `/api/v1/dashboard/grupos/${grupoId}`,
   },
   reportes: {
     ventas: (tiendaId: number) => `/api/v1/reportes/tiendas/${tiendaId}/ventas`,

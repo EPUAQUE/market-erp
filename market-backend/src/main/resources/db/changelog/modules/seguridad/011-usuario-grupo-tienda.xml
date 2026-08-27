@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        Mismo patrón que usuario_tienda (003-usuario-tienda.xml) pero a nivel de
+        grupo completo: un usuario asignado aquí opera sobre todas las tiendas del
+        grupo, no solo una. `grupo_tienda` (módulo grupostienda) ya existe para
+        cuando este changelog corre — se agrega la FK directamente, sin el paso
+        intermedio que usuario_tienda necesitó en su momento.
+    -->
+    <changeSet id="seguridad-011-usuario-grupo-tienda" author="market-backend">
+        <createTable tableName="usuario_grupo_tienda">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="usuario_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="grupo_tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rol_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="usuario_grupo_tienda" baseColumnNames="usuario_id"
+                referencedTableName="usuario" referencedColumnNames="id"
+                constraintName="fk_usuario_grupo_tienda_usuario" onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="usuario_grupo_tienda" baseColumnNames="grupo_tienda_id"
+                referencedTableName="grupo_tienda" referencedColumnNames="id"
+                constraintName="fk_usuario_grupo_tienda_grupo_tienda" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="usuario_grupo_tienda" baseColumnNames="rol_id"
+                referencedTableName="rol" referencedColumnNames="id"
+                constraintName="fk_usuario_grupo_tienda_rol" onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="usuario_grupo_tienda" columnNames="usuario_id, grupo_tienda_id"
+                constraintName="ux_usuario_grupo_tienda"/>
+    </changeSet>
+
+    <changeSet id="seguridad-011-seed-rol-admin-grupo" author="market-backend">
+        <insert tableName="rol">
+            <column name="nombre" value="ADMIN_GRUPO"/>
+            <column name="alcance_global" valueBoolean="false"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="seguridad-011-seed-permiso-asignar-grupo" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="USUARIOS_ASIGNAR_GRUPO"/>
+            <column name="descripcion" value="Asignar grupo de tiendas y rol a un usuario"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'USUARIOS_ASIGNAR_GRUPO')"/>
+        </insert>
+    </changeSet>
+
+    <!--
+        ADMIN_GRUPO = unión de todo lo operativo ya otorgado a ENCARGADO_TIENDA +
+        CAJERO + AUDITOR a la fecha en que corre este changeset (al final del master
+        changelog, después de que todos los módulos sembraron sus propios permisos
+        para esos 3 roles) — decisión del usuario: "todos los operativos combinados".
+        Se calcula con SQL en vez de enumerar ~30 códigos a mano: queda correcto
+        aunque un módulo futuro agregue más permisos a esos roles antes de este punto
+        del changelog, y no se puede desincronizar de la lista real.
+    -->
+    <changeSet id="seguridad-011-admin-grupo-permisos" author="market-backend">
+        <sql>
+            INSERT INTO rol_permiso (rol_id, permiso_id)
+            SELECT (SELECT id FROM rol WHERE nombre = 'ADMIN_GRUPO'), permiso_id
+            FROM (
+                SELECT DISTINCT rp.permiso_id
+                FROM rol_permiso rp
+                JOIN rol r ON r.id = rp.rol_id
+                WHERE r.nombre IN ('ENCARGADO_TIENDA', 'CAJERO', 'AUDITOR')
+            ) union_permisos;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

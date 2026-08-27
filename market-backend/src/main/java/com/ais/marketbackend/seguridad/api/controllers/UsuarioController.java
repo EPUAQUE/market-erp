@@ -1,7 +1,9 @@
 package com.ais.marketbackend.seguridad.api.controllers;
 
+import com.ais.marketbackend.seguridad.api.dtos.requests.AsignarGrupoRolRequest;
 import com.ais.marketbackend.seguridad.api.dtos.requests.AsignarTiendaRolRequest;
 import com.ais.marketbackend.seguridad.api.dtos.requests.CrearUsuarioRequest;
+import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioGrupoTiendaResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioTiendaResponse;
 import com.ais.marketbackend.seguridad.api.mappers.UsuarioApiMapper;
@@ -55,6 +57,23 @@ public class UsuarioController {
     public ResponseEntity<List<UsuarioTiendaResponse>> listarTiendas(@PathVariable Long usuarioId) {
         List<UsuarioTiendaResponse> asignaciones = usuarioService.listarTiendas(usuarioId).stream()
                 .map(ut -> new UsuarioTiendaResponse(ut.id(), ut.tiendaId(), ut.rolId(), ut.rolNombre()))
+                .toList();
+        return ResponseEntity.ok(asignaciones);
+    }
+
+    @PostMapping("/{usuarioId}/grupos")
+    @RequiresPermission("USUARIOS_ASIGNAR_GRUPO")
+    public ResponseEntity<Void> asignarGrupo(
+            @PathVariable Long usuarioId, @Valid @RequestBody AsignarGrupoRolRequest request) {
+        usuarioService.asignarGrupo(usuarioId, request.grupoTiendaId(), request.rolId());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/{usuarioId}/grupos")
+    @RequiresPermission("USUARIOS_VER")
+    public ResponseEntity<List<UsuarioGrupoTiendaResponse>> listarGrupos(@PathVariable Long usuarioId) {
+        List<UsuarioGrupoTiendaResponse> asignaciones = usuarioService.listarGrupos(usuarioId).stream()
+                .map(ug -> new UsuarioGrupoTiendaResponse(ug.id(), ug.grupoTiendaId(), ug.rolId(), ug.rolNombre()))
                 .toList();
         return ResponseEntity.ok(asignaciones);
     }

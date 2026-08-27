@@ -1,12 +1,14 @@
 package com.ais.marketbackend.dashboard.api.mappers;
 
 import com.ais.marketbackend.dashboard.api.dtos.responses.CuentaPendienteResponse;
+import com.ais.marketbackend.dashboard.api.dtos.responses.DashboardGrupoResponse;
 import com.ais.marketbackend.dashboard.api.dtos.responses.DashboardResponse;
 import com.ais.marketbackend.dashboard.api.dtos.responses.RecordatorioResponse;
 import com.ais.marketbackend.dashboard.api.dtos.responses.SugerenciaCompraResponse;
 import com.ais.marketbackend.dashboard.api.dtos.responses.SugerenciaTrasladoResponse;
 import com.ais.marketbackend.dashboard.api.dtos.responses.VencimientoResponse;
 import com.ais.marketbackend.dashboard.application.dtos.CuentaPendienteResumen;
+import com.ais.marketbackend.dashboard.application.dtos.DashboardGrupoResumen;
 import com.ais.marketbackend.dashboard.application.dtos.DashboardResumen;
 import com.ais.marketbackend.dashboard.application.dtos.RecordatorioResumen;
 import com.ais.marketbackend.dashboard.application.dtos.SugerenciaCompraResumen;
@@ -58,6 +60,44 @@ public class DashboardApiMapper {
                 .recordatorios(resumen.recordatorios().stream().map(this::toResponse).toList())
                 .sugerenciasCompra(resumen.sugerenciasCompra().stream().map(this::toResponse).toList())
                 .sugerenciasTraslado(resumen.sugerenciasTraslado().stream().map(this::toResponse).toList())
+                .build();
+    }
+
+    public DashboardGrupoResponse toResponseGrupo(DashboardGrupoResumen resumen, boolean incluirFinanciero) {
+        return DashboardGrupoResponse.builder()
+                .grupoId(resumen.grupoId())
+                .tiendaIds(resumen.tiendaIds())
+                .ventasHoyTotal(toPlainString(resumen.ventasHoyTotal()))
+                .ventasHoyCantidad(resumen.ventasHoyCantidad())
+                .ventasMesTotal(toPlainString(resumen.ventasMesTotal()))
+                .ventasMesCantidad(resumen.ventasMesCantidad())
+                .ventasMesAnteriorTotal(toPlainString(resumen.ventasMesAnteriorTotal()))
+                .ticketPromedioMes(toPlainString(resumen.ticketPromedioMes()))
+                .facturasEmitidasMes(resumen.facturasEmitidasMes())
+                .facturasFelCertificadasMes(resumen.facturasFelCertificadasMes())
+                .utilidadMesTotal(incluirFinanciero ? toPlainString(resumen.utilidadMesTotal()) : null)
+                .margenPromedioMes(incluirFinanciero ? toPlainString(resumen.margenPromedioMes()) : null)
+                .inventarioValorizadoTotal(toPlainString(resumen.inventarioValorizadoTotal()))
+                .productosAgotados(resumen.productosAgotados())
+                .productosBajoMinimo(resumen.productosBajoMinimo())
+                .productosSinMovimiento(resumen.productosSinMovimiento())
+                .saldoPendienteCuentasPorCobrar(toPlainString(resumen.saldoPendienteCuentasPorCobrar()))
+                .cuentasPorCobrarVencidas(resumen.cuentasPorCobrarVencidas())
+                .cxcAging0a30(toPlainString(resumen.cxcAging0a30()))
+                .cxcAging31a60(toPlainString(resumen.cxcAging31a60()))
+                .cxcAgingMas60(toPlainString(resumen.cxcAgingMas60()))
+                .saldoPendienteCuentasPorPagar(toPlainString(resumen.saldoPendienteCuentasPorPagar()))
+                .cuentasPorPagarVencidas(resumen.cuentasPorPagarVencidas())
+                .cxpAging0a30(toPlainString(resumen.cxpAging0a30()))
+                .cxpAging31a60(toPlainString(resumen.cxpAging31a60()))
+                .cxpAgingMas60(toPlainString(resumen.cxpAgingMas60()))
+                .tiendasConCajaAbierta(resumen.tiendasConCajaAbierta())
+                .totalTiendas(resumen.totalTiendas())
+                .cajaSaldoEsperadoTotal(toPlainString(resumen.cajaSaldoEsperadoTotal()))
+                .ingresosHoy(toPlainString(resumen.ingresosHoy()))
+                .egresosHoy(toPlainString(resumen.egresosHoy()))
+                .alertasCriticas(resumen.alertasCriticas())
+                .alertasPreventivas(resumen.alertasPreventivas())
                 .build();
     }
 

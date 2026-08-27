@@ -11,7 +11,10 @@
     <include file="db/changelog/modules/seguridad/004-refresh-token.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/005-seed-catalogo.xml" relativeToChangelogFile="false"/>
 
+    <include file="db/changelog/modules/grupostienda/001-grupo-tienda.xml" relativeToChangelogFile="false"/>
+
     <include file="db/changelog/modules/tiendas/001-tienda.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/tiendas/002-grupo-id.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/unidadesmedida/001-unidad-medida.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/categorias/001-categoria.xml" relativeToChangelogFile="false"/>
@@ -65,4 +68,5 @@
     <include file="db/changelog/modules/seguridad/008-refresh-token-index-expira-en.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/009-usuario-datos-personales.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/010-seed-auditor-permisos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/011-usuario-grupo-tienda.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

@@ -56,6 +56,7 @@ const navGroups: NavGroup[] = [
     label: 'Administración',
     items: [
       { label: 'Tiendas', path: '/tiendas', permission: 'TIENDAS_VER' },
+      { label: 'Grupos de tiendas', path: '/grupos-tienda', permission: 'GRUPOS_TIENDA_VER' },
       { label: 'Gastos Programados', path: '/gastos-programados', permission: 'GASTOS_PROGRAMADOS_VER' },
       { label: 'Notificaciones', path: '/notificaciones', permission: 'NOTIFICACIONES_VER' },
       { label: 'Reportes', path: '/reportes', permission: 'REPORTES_VER' },

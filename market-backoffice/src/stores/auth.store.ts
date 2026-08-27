@@ -18,7 +18,7 @@ export const useAuthStore = defineStore('auth', {
     async loadAuthorization() {
       const me = await authService.me()
       useUserStore().setUsername(me.username)
-      usePermissionsStore().hydrate(me.permisos, me.tiendaIds, me.alcanceGlobal)
+      usePermissionsStore().hydrate(me.permisos, me.tiendaIds, me.alcanceGlobal, me.grupoIds)
       this.authorizationLoaded = true
     },
 

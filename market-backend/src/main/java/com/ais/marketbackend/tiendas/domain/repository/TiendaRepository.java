@@ -13,4 +13,7 @@ public interface TiendaRepository {
     boolean existsByCodigo(String codigo);
 
     List<Tienda> findAll();
+
+    /** Usado por Seguridad para resolver el alcance de una asignación de grupo completo. */
+    List<Long> listarIdsPorGrupo(Long grupoId);
 }

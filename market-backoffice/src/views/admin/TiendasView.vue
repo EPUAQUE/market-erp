@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useTiendas } from '@/composables/useTiendas'
+import { useGruposTienda } from '@/composables/useGruposTienda'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Tienda } from '@/types/tienda'
 
 const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado } =
   useTiendas()
+const { items: grupos, cargar: cargarGrupos } = useGruposTienda()
 const permissions = usePermissionsStore()
 
 const search = ref('')
@@ -15,7 +17,7 @@ const pageSize = ref(10)
 
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
-const form = ref({ codigo: '', nombre: '', direccion: '', telefono: '', correo: '' })
+const form = ref({ codigo: '', nombre: '', direccion: '', telefono: '', correo: '', grupoId: null as number | null })
 
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
@@ -25,6 +27,10 @@ const filtered = computed(() => {
   )
 })
 
+function nombreGrupo(grupoId: number): string {
+  return grupos.value.find((g) => g.id === grupoId)?.nombre ?? '—'
+}
+
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
 const paged = computed(() => {
   const start = (page.value - 1) * pageSize.value
@@ -33,7 +39,7 @@ const paged = computed(() => {
 
 function abrirCrear() {
   editingId.value = null
-  form.value = { codigo: '', nombre: '', direccion: '', telefono: '', correo: '' }
+  form.value = { codigo: '', nombre: '', direccion: '', telefono: '', correo: '', grupoId: null }
   showForm.value = true
 }
 
@@ -45,16 +51,19 @@ function abrirEditar(tienda: Tienda) {
     direccion: tienda.direccion ?? '',
     telefono: tienda.telefono ?? '',
     correo: tienda.correo ?? '',
+    grupoId: tienda.grupoId,
   }
   showForm.value = true
 }
 
 async function onSubmit() {
+  if (form.value.grupoId === null) return
   const datos = {
     nombre: form.value.nombre,
     direccion: form.value.direccion || undefined,
     telefono: form.value.telefono || undefined,
     correo: form.value.correo || undefined,
+    grupoId: form.value.grupoId,
   }
   const ok = editingId.value
     ? await actualizar(editingId.value, datos)
@@ -64,7 +73,10 @@ async function onSubmit() {
   }
 }
 
-onMounted(cargar)
+onMounted(() => {
+  cargar()
+  cargarGrupos()
+})
 </script>
 
 <template>
@@ -113,6 +125,17 @@ onMounted(cargar)
           />
         </div>
         <div class="space-y-1">
+          <label class="text-sm font-medium">Grupo</label>
+          <select
+            v-model.number="form.grupoId"
+            required
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+          >
+            <option :value="null" disabled>Seleccione un grupo…</option>
+            <option v-for="grupo in grupos" :key="grupo.id" :value="grupo.id">{{ grupo.nombre }}</option>
+          </select>
+        </div>
+        <div class="space-y-1">
           <label class="text-sm font-medium">Dirección</label>
           <input
             v-model="form.direccion"
@@ -153,23 +176,25 @@ onMounted(cargar)
           <tr>
             <th class="px-4 py-2 font-medium">Código</th>
             <th class="px-4 py-2 font-medium">Nombre</th>
+            <th class="px-4 py-2 font-medium">Grupo</th>
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
-            <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
+            <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
           </tr>
           <tr v-else-if="listError">
-            <td colspan="4" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
+            <td colspan="5" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
           <tr v-else-if="paged.length === 0">
-            <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
+            <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
           </tr>
           <tr v-for="tienda in paged" :key="tienda.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ tienda.codigo }}</td>
             <td class="px-4 py-2">{{ tienda.nombre }}</td>
+            <td class="px-4 py-2">{{ nombreGrupo(tienda.grupoId) }}</td>
             <td class="px-4 py-2">
               <EstadoBadge
                 :variant="tienda.estado === 'ACTIVA' ? 'success' : 'neutral'"

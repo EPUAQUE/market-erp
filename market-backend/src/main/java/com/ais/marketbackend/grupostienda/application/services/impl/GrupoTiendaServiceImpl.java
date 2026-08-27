@@ -1,0 +1,76 @@
+package com.ais.marketbackend.grupostienda.application.services.impl;
+
+import com.ais.marketbackend.grupostienda.application.dtos.GrupoTiendaResumen;
+import com.ais.marketbackend.grupostienda.application.services.interfaces.GrupoTiendaService;
+import com.ais.marketbackend.grupostienda.domain.exception.GrupoTiendaDuplicadoException;
+import com.ais.marketbackend.grupostienda.domain.model.GrupoTienda;
+import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
+import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
+import java.util.List;
+import java.util.Locale;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class GrupoTiendaServiceImpl implements GrupoTiendaService {
+
+    private final GrupoTiendaRepository grupoTiendaRepository;
+
+    public GrupoTiendaServiceImpl(GrupoTiendaRepository grupoTiendaRepository) {
+        this.grupoTiendaRepository = grupoTiendaRepository;
+    }
+
+    @Override
+    @Transactional
+    public GrupoTiendaResumen crear(String codigo, String nombre) {
+        String codigoCanonico = canonicalizarCodigo(codigo);
+        if (grupoTiendaRepository.existsByCodigo(codigoCanonico)) {
+            throw new GrupoTiendaDuplicadoException(codigoCanonico);
+        }
+        GrupoTienda grupoTienda = GrupoTienda.nuevo(codigoCanonico, nombre);
+        return toResumen(grupoTiendaRepository.save(grupoTienda));
+    }
+
+    @Override
+    @Transactional
+    public GrupoTiendaResumen actualizar(Long id, String nombre) {
+        GrupoTienda grupoTienda = obtenerORequerido(id);
+        grupoTienda.actualizarDatos(nombre);
+        return toResumen(grupoTiendaRepository.save(grupoTienda));
+    }
+
+    @Override
+    @Transactional
+    public void activar(Long id) {
+        GrupoTienda grupoTienda = obtenerORequerido(id);
+        grupoTienda.activar();
+        grupoTiendaRepository.save(grupoTienda);
+    }
+
+    @Override
+    @Transactional
+    public void desactivar(Long id) {
+        GrupoTienda grupoTienda = obtenerORequerido(id);
+        grupoTienda.desactivar();
+        grupoTiendaRepository.save(grupoTienda);
+    }
+
+    @Override
+    public List<GrupoTiendaResumen> listar() {
+        return grupoTiendaRepository.findAll().stream().map(this::toResumen).toList();
+    }
+
+    private GrupoTienda obtenerORequerido(Long id) {
+        return grupoTiendaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Grupo de tiendas no encontrado: " + id));
+    }
+
+    private String canonicalizarCodigo(String codigo) {
+        return codigo == null ? null : codigo.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private GrupoTiendaResumen toResumen(GrupoTienda grupoTienda) {
+        return new GrupoTiendaResumen(
+                grupoTienda.getId(), grupoTienda.getCodigo(), grupoTienda.getNombre(), grupoTienda.getEstado());
+    }
+}

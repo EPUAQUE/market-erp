@@ -2,6 +2,7 @@ package com.ais.marketbackend.tiendas.api.dtos.requests;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CrearTiendaRequest(
@@ -21,5 +22,8 @@ public record CrearTiendaRequest(
 
         @Email(message = "El correo no tiene un formato válido")
         @Size(max = 150, message = "El correo no puede superar 150 caracteres")
-        String correo) {
+        String correo,
+
+        @NotNull(message = "El grupo de tiendas es obligatorio")
+        Long grupoId) {
 }

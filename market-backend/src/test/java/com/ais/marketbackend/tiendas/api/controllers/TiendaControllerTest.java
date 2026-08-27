@@ -41,6 +41,7 @@ class TiendaControllerTest {
                 .telefono(resumen.telefono())
                 .correo(resumen.correo())
                 .estado(resumen.estado())
+                .grupoId(resumen.grupoId())
                 .build();
 
         TiendaController controller = new TiendaController(tiendaService, mapper);
@@ -52,7 +53,8 @@ class TiendaControllerTest {
     @Test
     void listarDevuelveLasTiendas() throws Exception {
         when(tiendaService.listar()).thenReturn(List.of(
-                new TiendaResumen(1L, "CENTRAL", "Tienda Central", "Zona 1", "1234-5678", "c@x.com", EstadoTienda.ACTIVA)));
+                new TiendaResumen(
+                        1L, "CENTRAL", "Tienda Central", "Zona 1", "1234-5678", "c@x.com", EstadoTienda.ACTIVA, 1L)));
 
         mockMvc.perform(get("/api/v1/tiendas"))
                 .andExpect(status().isOk())
@@ -61,24 +63,24 @@ class TiendaControllerTest {
 
     @Test
     void crearDevuelve201() throws Exception {
-        when(tiendaService.crear(anyString(), anyString(), any(), any(), any()))
-                .thenReturn(new TiendaResumen(2L, "NORTE", "Tienda Norte", null, null, null, EstadoTienda.ACTIVA));
+        when(tiendaService.crear(anyString(), anyString(), any(), any(), any(), any()))
+                .thenReturn(new TiendaResumen(2L, "NORTE", "Tienda Norte", null, null, null, EstadoTienda.ACTIVA, 1L));
 
         mockMvc.perform(post("/api/v1/tiendas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"codigo\":\"norte\",\"nombre\":\"Tienda Norte\"}"))
+                        .content("{\"codigo\":\"norte\",\"nombre\":\"Tienda Norte\",\"grupoId\":1}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.codigo").value("NORTE"));
     }
 
     @Test
     void crearConCodigoDuplicadoDevuelve409() throws Exception {
-        when(tiendaService.crear(anyString(), anyString(), any(), any(), any()))
+        when(tiendaService.crear(anyString(), anyString(), any(), any(), any(), any()))
                 .thenThrow(new TiendaDuplicadaException("CENTRAL"));
 
         mockMvc.perform(post("/api/v1/tiendas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"codigo\":\"central\",\"nombre\":\"Otra\"}"))
+                        .content("{\"codigo\":\"central\",\"nombre\":\"Otra\",\"grupoId\":1}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("TIENDA_DUPLICADA"));
     }
@@ -92,13 +94,21 @@ class TiendaControllerTest {
     }
 
     @Test
+    void crearSinGrupoIdDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/v1/tiendas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigo\":\"norte\",\"nombre\":\"Tienda Norte\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void actualizarDelegaAlServicio() throws Exception {
-        when(tiendaService.actualizar(1L, "Nuevo nombre", null, null, null))
-                .thenReturn(new TiendaResumen(1L, "CENTRAL", "Nuevo nombre", null, null, null, EstadoTienda.ACTIVA));
+        when(tiendaService.actualizar(1L, "Nuevo nombre", null, null, null, 1L))
+                .thenReturn(new TiendaResumen(1L, "CENTRAL", "Nuevo nombre", null, null, null, EstadoTienda.ACTIVA, 1L));
 
         mockMvc.perform(put("/api/v1/tiendas/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombre\":\"Nuevo nombre\"}"))
+                        .content("{\"nombre\":\"Nuevo nombre\",\"grupoId\":1}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("Nuevo nombre"));
     }

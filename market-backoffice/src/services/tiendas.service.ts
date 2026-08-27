@@ -7,6 +7,7 @@ export interface DatosTienda {
   direccion?: string
   telefono?: string
   correo?: string
+  grupoId: number
 }
 
 class TiendasService {

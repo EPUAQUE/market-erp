@@ -16,10 +16,11 @@ public class Tienda {
     private String telefono;
     private String correo;
     private EstadoTienda estado;
+    private Long grupoId;
 
     public Tienda(
             Long id, String codigo, String nombre, String direccion, String telefono, String correo,
-            EstadoTienda estado) {
+            EstadoTienda estado, Long grupoId) {
         this.id = id;
         this.codigo = Objects.requireNonNull(codigo, "codigo");
         this.nombre = Objects.requireNonNull(nombre, "nombre");
@@ -27,10 +28,12 @@ public class Tienda {
         this.telefono = telefono;
         this.correo = correo;
         this.estado = Objects.requireNonNull(estado, "estado");
+        this.grupoId = Objects.requireNonNull(grupoId, "grupoId");
     }
 
-    public static Tienda nueva(String codigo, String nombre, String direccion, String telefono, String correo) {
-        return new Tienda(null, codigo, nombre, direccion, telefono, correo, EstadoTienda.ACTIVA);
+    public static Tienda nueva(
+            String codigo, String nombre, String direccion, String telefono, String correo, Long grupoId) {
+        return new Tienda(null, codigo, nombre, direccion, telefono, correo, EstadoTienda.ACTIVA, grupoId);
     }
 
     public boolean estaActiva() {
@@ -50,6 +53,10 @@ public class Tienda {
 
     public void desactivar() {
         this.estado = EstadoTienda.INACTIVA;
+    }
+
+    public void reasignarGrupo(Long grupoId) {
+        this.grupoId = Objects.requireNonNull(grupoId, "grupoId");
     }
 
     public Long getId() {
@@ -78,5 +85,9 @@ public class Tienda {
 
     public EstadoTienda getEstado() {
         return estado;
+    }
+
+    public Long getGrupoId() {
+        return grupoId;
     }
 }

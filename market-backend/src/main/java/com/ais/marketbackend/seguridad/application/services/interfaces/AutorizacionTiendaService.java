@@ -18,6 +18,13 @@ public interface AutorizacionTiendaService {
     /** Igual que {@link #exigirAcceso(Long)} pero para varias tiendas (p. ej. origen y destino de un traslado). */
     void exigirAccesoATodas(Collection<Long> tiendaIds);
 
+    /**
+     * Exige acceso a un grupo de tiendas completo (dashboard agregado por grupo, no
+     * por tienda individual). Lanza {@link org.springframework.security.access.AccessDeniedException}
+     * si el grupo está fuera de alcance.
+     */
+    void exigirAccesoAGrupo(Long grupoId);
+
     /** Para filtrar listados: no lanza, solo indica si el usuario puede acceder a esa tienda. */
     boolean tieneAcceso(Long tiendaId);
 

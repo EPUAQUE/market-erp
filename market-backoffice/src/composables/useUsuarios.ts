@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { usuariosService } from '@/services/usuarios.service'
 import { ApiClientError } from '@/services/http/ApiClient'
-import type { Usuario, UsuarioTienda } from '@/types/usuario'
+import type { Usuario, UsuarioGrupo, UsuarioTienda } from '@/types/usuario'
 
 export function useUsuarios() {
   const items = ref<Usuario[]>([])
@@ -15,6 +15,12 @@ export function useUsuarios() {
   const tiendasError = ref<string | null>(null)
   const asignarLoading = ref(false)
   const asignarError = ref<string | null>(null)
+
+  const gruposPorUsuario = ref<Record<number, UsuarioGrupo[]>>({})
+  const gruposLoading = ref(false)
+  const gruposError = ref<string | null>(null)
+  const asignarGrupoLoading = ref(false)
+  const asignarGrupoError = ref<string | null>(null)
 
   async function cargar() {
     listLoading.value = true
@@ -77,6 +83,33 @@ export function useUsuarios() {
     }
   }
 
+  async function cargarGrupos(usuarioId: number) {
+    gruposLoading.value = true
+    gruposError.value = null
+    try {
+      gruposPorUsuario.value = { ...gruposPorUsuario.value, [usuarioId]: await usuariosService.listarGrupos(usuarioId) }
+    } catch (error) {
+      gruposError.value = error instanceof ApiClientError ? error.message : 'No se pudieron cargar los grupos asignados.'
+    } finally {
+      gruposLoading.value = false
+    }
+  }
+
+  async function asignarGrupo(usuarioId: number, grupoTiendaId: number, rolId: number): Promise<boolean> {
+    asignarGrupoLoading.value = true
+    asignarGrupoError.value = null
+    try {
+      await usuariosService.asignarGrupo(usuarioId, grupoTiendaId, rolId)
+      await cargarGrupos(usuarioId)
+      return true
+    } catch (error) {
+      asignarGrupoError.value = error instanceof ApiClientError ? error.message : 'No se pudo asignar el grupo.'
+      return false
+    } finally {
+      asignarGrupoLoading.value = false
+    }
+  }
+
   return {
     items,
     listLoading,
@@ -88,9 +121,16 @@ export function useUsuarios() {
     tiendasError,
     asignarLoading,
     asignarError,
+    gruposPorUsuario,
+    gruposLoading,
+    gruposError,
+    asignarGrupoLoading,
+    asignarGrupoError,
     cargar,
     crear,
     cargarTiendas,
     asignarTienda,
+    cargarGrupos,
+    asignarGrupo,
   }
 }

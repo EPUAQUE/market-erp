@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        `grupo_id` se agrega nullable, se rellena con el grupo por defecto sembrado en
+        grupostienda/001-grupo-tienda.xml (así ninguna tienda existente queda huérfana
+        de grupo, incluida `CENTRAL`) y luego se hace obligatoria en el mismo changeset.
+    -->
+    <changeSet id="tiendas-002-grupo-id" author="market-backend">
+        <addColumn tableName="tienda">
+            <column name="grupo_id" type="BIGINT"/>
+        </addColumn>
+        <update tableName="tienda">
+            <column name="grupo_id" valueComputed="(select id from grupo_tienda where codigo = 'PRINCIPAL')"/>
+        </update>
+        <addNotNullConstraint tableName="tienda" columnName="grupo_id" columnDataType="BIGINT"/>
+        <addForeignKeyConstraint
+                baseTableName="tienda" baseColumnNames="grupo_id"
+                referencedTableName="grupo_tienda" referencedColumnNames="id"
+                constraintName="fk_tienda_grupo_tienda" onDelete="RESTRICT"/>
+    </changeSet>
+</databaseChangeLog>

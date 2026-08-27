@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.ais.marketbackend.dashboard.api.mappers.DashboardApiMapper;
+import com.ais.marketbackend.dashboard.application.dtos.DashboardGrupoResumen;
 import com.ais.marketbackend.dashboard.application.dtos.DashboardResumen;
 import com.ais.marketbackend.dashboard.application.services.interfaces.DashboardService;
 import com.ais.marketbackend.seguridad.application.services.interfaces.UsuarioService;
@@ -81,6 +82,24 @@ class DashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.utilidadMesTotal").value(nullValue()))
                 .andExpect(jsonPath("$.margenPromedioMes").value(nullValue()));
+    }
+
+    @Test
+    void obtenerResumenGrupoDevuelveElResumenAgregado() throws Exception {
+        when(dashboardService.obtenerResumenGrupo(5L)).thenReturn(new DashboardGrupoResumen(
+                5L, List.of(1L, 2L), new BigDecimal("80.00"), 2, BigDecimal.ZERO, 0, BigDecimal.ZERO,
+                BigDecimal.ZERO, 0, 0, BigDecimal.ZERO, null, BigDecimal.ZERO, 0, 0, 0, BigDecimal.ZERO, 0,
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO,
+                BigDecimal.ZERO, BigDecimal.ZERO, 1, 2, new BigDecimal("150.00"), BigDecimal.ZERO, BigDecimal.ZERO,
+                0, 0));
+
+        mockMvc.perform(get("/api/v1/dashboard/grupos/5").principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.grupoId").value(5))
+                .andExpect(jsonPath("$.tiendaIds[0]").value(1))
+                .andExpect(jsonPath("$.ventasHoyTotal").value("80.00"))
+                .andExpect(jsonPath("$.tiendasConCajaAbierta").value(1))
+                .andExpect(jsonPath("$.totalTiendas").value(2));
     }
 
     private DashboardResumen resumen(

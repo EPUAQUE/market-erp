@@ -1201,3 +1201,48 @@ a real cleartext connection against a genuine (non-`10.0.2.2`) test server.
 Next session with a working device/emulator should prioritize these over
 any new feature work.
 
+### Layout de teléfono en `PosScreen` + orientación libre — built this phase
+
+The client explicitly needs to test on, and possibly sell from, a phone —
+not just the 10"-12" tablets this app was originally scoped for. Two
+separate problems, both fixed:
+
+**Layout**: below `anchoAngosto` (700px), `PosScreen`'s body used to be a
+fixed 3-column `Row` (categorías 160px + carrito 340px) — on a phone those
+two columns alone eat ~500px, leaving no real room for the catálogo. New
+`_PosBodyTelefono` swaps that for a single column at that breakpoint:
+categorías become a horizontal chip row (`_CategoriasChips`), the catálogo
+gets the full width, and the carrito collapses into a persistent bottom bar
+(`_BarraCarritoInferior`, cantidad + total) that opens the same
+`_ColumnaCarrito` in a bottom sheet on tap — that sheet's only dismiss
+gesture used to be dragging it down (hard to hit on a real phone), so it now
+also has an explicit close (X) button.
+
+**Orientation**: the app was hard-locked to landscape — `SystemChrome
+.setPreferredOrientations` in `main.dart` only allowed
+`landscapeLeft`/`landscapeRight`, and `MainActivity`'s
+`android:screenOrientation="landscape"` in `AndroidManifest.xml` enforced
+the same lock at the Android level (the actual source of truth on Android —
+Flutter's `SystemChrome` call alone doesn't override it). This made every
+screen, including `LoginScreen`, render sideways on a phone held normally
+in portrait — not a layout bug, the orientation lock itself. Fixed by adding
+`portraitUp` to the allowed list in `main.dart` and removing
+`android:screenOrientation` from the manifest entirely (falls back to
+`unspecified`, i.e. follows the device's own rotation/lock). `portraitDown`
+(upside-down) stays excluded on purpose — no POS use case for it, only risk
+of a confusing flip if the device tips over. `LoginScreen`/`TiendaPickerScreen`
+needed no changes — both are already a centered, width-constrained card with
+no landscape-specific assumptions.
+
+Verified with a real release APK (`flutter build apk --release
+--dart-define=API_BASE_URL=https://inven365.com.gt`, a real deployed
+backend with HTTPS — no cleartext exception needed) installed on a real
+phone: the user confirmed the login screen still rendered landscape after
+the `PosScreen` phone-layout fix (correctly diagnosed as the orientation
+lock, not a `LoginScreen` bug) before this fix went in. **The fix itself
+(orientation unlock + `_PosBodyTelefono` in portrait) has not yet been
+re-verified on that same physical device** — this phase's manifest/`main.dart`
+change was made and reasoned through, but the APK wasn't rebuilt and
+reinstalled again in this session to confirm visually. Rebuild and reinstall
+before considering this closed.
+

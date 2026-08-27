@@ -5,10 +5,14 @@ import 'router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // El POS está diseñado para tablet horizontal (10"-12", ver CLAUDE.md) — el
-  // layout de 3 columnas de PosScreen se rompe en portrait, así que se fija
-  // la orientación en vez de hacerlo responsive a un caso de uso que no existe.
+  // El POS nació tablet-first (10"-12", landscape), pero ahora también debe
+  // andar bien en teléfono (ver `PosScreen`'s `anchoAngosto` breakpoint) — un
+  // teléfono se sostiene en portrait de forma natural, así que ya no se fija
+  // la app entera a landscape. Se excluye portraitDown (boca abajo) a
+  // propósito: no aporta nada en un POS y solo genera un flip confuso si el
+  // dispositivo se voltea por accidente.
   await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);

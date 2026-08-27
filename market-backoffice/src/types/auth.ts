@@ -11,6 +11,7 @@ export interface MeResponse {
   permisos: PermissionCode[]
   tiendaIds: number[]
   alcanceGlobal: boolean
+  grupoIds: number[]
 }
 
 export interface LoginResponse {

@@ -81,6 +81,28 @@ class UsuarioControllerTest {
         verify(usuarioService).asignarTienda(1L, 5L, 2L);
     }
 
+    @Test
+    void listarGruposDevuelveLasAsignacionesDelUsuario() throws Exception {
+        when(usuarioService.listarGrupos(1L)).thenReturn(List.of(
+                new com.ais.marketbackend.seguridad.application.dtos.UsuarioGrupoTiendaResumen(
+                        1L, 5L, 9L, "ADMIN_GRUPO")));
+
+        mockMvc.perform(get("/api/v1/usuarios/1/grupos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].grupoTiendaId").value(5))
+                .andExpect(jsonPath("$[0].rolNombre").value("ADMIN_GRUPO"));
+    }
+
+    @Test
+    void asignarGrupoDelegaAlServicioYDevuelve201() throws Exception {
+        mockMvc.perform(post("/api/v1/usuarios/1/grupos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"grupoTiendaId\":5,\"rolId\":9}"))
+                .andExpect(status().isCreated());
+
+        verify(usuarioService).asignarGrupo(1L, 5L, 9L);
+    }
+
     /** Mapper manual mínimo para el test — evita depender del bean generado por MapStruct en este módulo aislado. */
     private static class UsuarioApiMapperImplForTest implements UsuarioApiMapper {
         @Override

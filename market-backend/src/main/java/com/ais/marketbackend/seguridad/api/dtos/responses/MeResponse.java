@@ -12,4 +12,5 @@ public class MeResponse {
     Set<String> permisos;
     Set<Long> tiendaIds;
     boolean alcanceGlobal;
+    Set<Long> grupoIds;
 }

@@ -81,4 +81,29 @@ class AutorizacionTiendaServiceImplTest {
         assertThatThrownBy(() -> autorizacionTiendaService.exigirAccesoATodas(List.of(1L, 3L)))
                 .isInstanceOf(AccessDeniedException.class);
     }
+
+    @Test
+    void exigirAccesoAGrupoConAlcanceGlobalNoLanza() {
+        when(permisosEfectivosResolver.resolver(7L))
+                .thenReturn(new PermisosEfectivos(7L, "admin", Set.of(), Set.of(), true));
+
+        autorizacionTiendaService.exigirAccesoAGrupo(999L);
+    }
+
+    @Test
+    void exigirAccesoAGrupoConGrupoAsignadoNoLanza() {
+        when(permisosEfectivosResolver.resolver(7L))
+                .thenReturn(new PermisosEfectivos(7L, "admin_grupo", Set.of(), Set.of(), false, Set.of(5L)));
+
+        autorizacionTiendaService.exigirAccesoAGrupo(5L);
+    }
+
+    @Test
+    void exigirAccesoAGrupoConGrupoFueraDeAlcanceLanzaAccesoDenegado() {
+        when(permisosEfectivosResolver.resolver(7L))
+                .thenReturn(new PermisosEfectivos(7L, "admin_grupo", Set.of(), Set.of(), false, Set.of(5L)));
+
+        assertThatThrownBy(() -> autorizacionTiendaService.exigirAccesoAGrupo(9L))
+                .isInstanceOf(AccessDeniedException.class);
+    }
 }

@@ -76,6 +76,7 @@ public class AuthController {
                 .permisos(permisos.permisos())
                 .tiendaIds(permisos.tiendaIds())
                 .alcanceGlobal(permisos.alcanceGlobal())
+                .grupoIds(permisos.grupoIds())
                 .build());
     }
 

@@ -1,13 +1,18 @@
 package com.ais.marketbackend.seguridad.application.services.impl;
 
+import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
+import com.ais.marketbackend.seguridad.application.dtos.UsuarioGrupoTiendaResumen;
 import com.ais.marketbackend.seguridad.application.dtos.UsuarioResumen;
 import com.ais.marketbackend.seguridad.application.dtos.UsuarioTiendaResumen;
+import com.ais.marketbackend.seguridad.domain.exception.AsignacionMixtaNoPermitidaException;
 import com.ais.marketbackend.seguridad.domain.exception.UsuarioDuplicadoException;
 import com.ais.marketbackend.seguridad.domain.model.PermisosEfectivos;
 import com.ais.marketbackend.seguridad.domain.model.Rol;
 import com.ais.marketbackend.seguridad.domain.model.Usuario;
+import com.ais.marketbackend.seguridad.domain.model.UsuarioGrupoTienda;
 import com.ais.marketbackend.seguridad.domain.model.UsuarioTienda;
 import com.ais.marketbackend.seguridad.domain.repository.RolRepository;
+import com.ais.marketbackend.seguridad.domain.repository.UsuarioGrupoTiendaRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioTiendaRepository;
 import com.ais.marketbackend.seguridad.domain.service.PermisosEfectivosResolver;
@@ -18,6 +23,8 @@ import com.ais.marketbackend.seguridad.domain.service.UsernameCanonicalizer;
 import com.ais.marketbackend.seguridad.application.services.interfaces.UsuarioService;
 import com.ais.marketbackend.seguridad.infrastructure.security.SeguridadProperties;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
+import com.ais.marketbackend.tiendas.domain.model.Tienda;
+import com.ais.marketbackend.tiendas.domain.repository.TiendaRepository;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,7 +36,10 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioTiendaRepository usuarioTiendaRepository;
+    private final UsuarioGrupoTiendaRepository usuarioGrupoTiendaRepository;
     private final RolRepository rolRepository;
+    private final TiendaRepository tiendaRepository;
+    private final GrupoTiendaRepository grupoTiendaRepository;
     private final PasswordEncoder passwordEncoder;
     private final PermisosEfectivosResolver permisosEfectivosResolver;
     private final SecurityAuditPublisher auditPublisher;
@@ -38,14 +48,20 @@ public class UsuarioServiceImpl implements UsuarioService {
     public UsuarioServiceImpl(
             UsuarioRepository usuarioRepository,
             UsuarioTiendaRepository usuarioTiendaRepository,
+            UsuarioGrupoTiendaRepository usuarioGrupoTiendaRepository,
             RolRepository rolRepository,
+            TiendaRepository tiendaRepository,
+            GrupoTiendaRepository grupoTiendaRepository,
             PasswordEncoder passwordEncoder,
             PermisosEfectivosResolver permisosEfectivosResolver,
             SecurityAuditPublisher auditPublisher,
             SeguridadProperties properties) {
         this.usuarioRepository = usuarioRepository;
         this.usuarioTiendaRepository = usuarioTiendaRepository;
+        this.usuarioGrupoTiendaRepository = usuarioGrupoTiendaRepository;
         this.rolRepository = rolRepository;
+        this.tiendaRepository = tiendaRepository;
+        this.grupoTiendaRepository = grupoTiendaRepository;
         this.passwordEncoder = passwordEncoder;
         this.permisosEfectivosResolver = permisosEfectivosResolver;
         this.auditPublisher = auditPublisher;
@@ -79,6 +95,15 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
         Rol rol = rolRepository.findById(rolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));
+        Tienda tienda = tiendaRepository.findById(tiendaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tienda no encontrada: " + tiendaId));
+
+        boolean yaTieneElGrupoDeEstaTienda = usuarioGrupoTiendaRepository.findByUsuarioId(usuarioId).stream()
+                .anyMatch(ug -> ug.getGrupoTiendaId().equals(tienda.getGrupoId()));
+        if (yaTieneElGrupoDeEstaTienda) {
+            throw new AsignacionMixtaNoPermitidaException(
+                    "El usuario ya tiene asignado el grupo de tiendas al que pertenece la tienda " + tiendaId);
+        }
 
         usuarioTiendaRepository.save(new UsuarioTienda(null, usuarioId, tiendaId, rol));
         auditPublisher.publicar(TipoEventoAuditoria.TIENDA_ASIGNADA, UUID.randomUUID().toString(),
@@ -89,6 +114,37 @@ public class UsuarioServiceImpl implements UsuarioService {
     public List<UsuarioTiendaResumen> listarTiendas(Long usuarioId) {
         return usuarioTiendaRepository.findByUsuarioId(usuarioId).stream()
                 .map(ut -> new UsuarioTiendaResumen(ut.getId(), ut.getTiendaId(), ut.getRol().getId(), ut.getRol().getNombre()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void asignarGrupo(Long usuarioId, Long grupoTiendaId, Long rolId) {
+        usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+        Rol rol = rolRepository.findById(rolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));
+        grupoTiendaRepository.findById(grupoTiendaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Grupo de tiendas no encontrado: " + grupoTiendaId));
+
+        List<Long> tiendaIdsDelGrupo = tiendaRepository.listarIdsPorGrupo(grupoTiendaId);
+        boolean yaTieneUnaTiendaDeEsteGrupo = usuarioTiendaRepository.findByUsuarioId(usuarioId).stream()
+                .anyMatch(ut -> tiendaIdsDelGrupo.contains(ut.getTiendaId()));
+        if (yaTieneUnaTiendaDeEsteGrupo) {
+            throw new AsignacionMixtaNoPermitidaException(
+                    "El usuario ya tiene asignada una tienda individual del grupo " + grupoTiendaId);
+        }
+
+        usuarioGrupoTiendaRepository.save(new UsuarioGrupoTienda(null, usuarioId, grupoTiendaId, rol));
+        auditPublisher.publicar(TipoEventoAuditoria.GRUPO_ASIGNADO, UUID.randomUUID().toString(),
+                "usuarioId=" + usuarioId + ",grupoTiendaId=" + grupoTiendaId + ",rolId=" + rolId);
+    }
+
+    @Override
+    public List<UsuarioGrupoTiendaResumen> listarGrupos(Long usuarioId) {
+        return usuarioGrupoTiendaRepository.findByUsuarioId(usuarioId).stream()
+                .map(ug -> new UsuarioGrupoTiendaResumen(
+                        ug.getId(), ug.getGrupoTiendaId(), ug.getRol().getId(), ug.getRol().getNombre()))
                 .toList();
     }
 

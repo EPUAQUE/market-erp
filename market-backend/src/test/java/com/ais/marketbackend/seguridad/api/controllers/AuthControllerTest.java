@@ -127,5 +127,20 @@ class AuthControllerTest {
         assertThat(response.getPermisos()).containsExactly("VENTAS_VER");
         assertThat(response.getTiendaIds()).containsExactly(1L);
         assertThat(response.isAlcanceGlobal()).isFalse();
+        assertThat(response.getGrupoIds()).isEmpty();
+    }
+
+    @Test
+    void meDevuelveLosGruposDelUsuarioAutenticado() {
+        when(usuarioService.obtenerPermisosEfectivosPorUsername("ana")).thenReturn(new PermisosEfectivos(
+                1L, "ana", Set.of("VENTAS_VER"), Set.of(10L, 11L), false, Set.of(5L)));
+        Jwt jwt = new Jwt(
+                "jwt-value", Instant.now(), Instant.now().plusSeconds(600),
+                Map.of("alg", "RS256"), Map.of("sub", "ana"));
+
+        MeResponse response = controller.me(jwt).getBody();
+
+        assertThat(response).isNotNull();
+        assertThat(response.getGrupoIds()).containsExactly(5L);
     }
 }

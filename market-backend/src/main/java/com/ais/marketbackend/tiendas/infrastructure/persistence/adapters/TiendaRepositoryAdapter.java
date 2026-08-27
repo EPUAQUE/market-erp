@@ -2,6 +2,7 @@ package com.ais.marketbackend.tiendas.infrastructure.persistence.adapters;
 
 import com.ais.marketbackend.tiendas.domain.model.Tienda;
 import com.ais.marketbackend.tiendas.domain.repository.TiendaRepository;
+import com.ais.marketbackend.tiendas.infrastructure.persistence.entities.TiendaEntity;
 import com.ais.marketbackend.tiendas.infrastructure.persistence.mappers.TiendaEntityMapper;
 import com.ais.marketbackend.tiendas.infrastructure.persistence.repositories.TiendaJpaRepository;
 import java.util.List;
@@ -37,5 +38,10 @@ public class TiendaRepositoryAdapter implements TiendaRepository {
     @Override
     public List<Tienda> findAll() {
         return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Long> listarIdsPorGrupo(Long grupoId) {
+        return jpaRepository.findByGrupoId(grupoId).stream().map(TiendaEntity::getId).toList();
     }
 }

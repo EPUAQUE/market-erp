@@ -9,5 +9,6 @@ public enum TipoEventoAuditoria {
     REFRESH_REUTILIZADO,
     LOGOUT,
     USUARIO_CREADO,
-    TIENDA_ASIGNADA
+    TIENDA_ASIGNADA,
+    GRUPO_ASIGNADO
 }

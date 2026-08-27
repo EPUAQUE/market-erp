@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="grupostienda-001-grupo-tienda" author="market-backend">
+        <createTable tableName="grupo_tienda">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="codigo" type="VARCHAR(20)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_grupo_tienda_codigo"/>
+            </column>
+            <column name="nombre" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="estado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!--
+        Grupo por defecto: todas las tiendas existentes se asignarán a este grupo
+        cuando `tiendas` agregue la columna `grupo_id` obligatoria (fase siguiente),
+        así ninguna tienda queda huérfana de grupo tras la migración.
+    -->
+    <changeSet id="grupostienda-001-seed-principal" author="market-backend">
+        <insert tableName="grupo_tienda">
+            <column name="codigo" value="PRINCIPAL"/>
+            <column name="nombre" value="Grupo Principal"/>
+            <column name="estado" value="ACTIVO"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="grupostienda-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="GRUPOS_TIENDA_VER"/>
+            <column name="descripcion" value="Listar grupos de tiendas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="GRUPOS_TIENDA_CREAR"/>
+            <column name="descripcion" value="Crear grupos de tiendas"/>
+        </insert>
+        <insert tableName="permiso">
+            <column name="codigo" value="GRUPOS_TIENDA_EDITAR"/>
+            <column name="descripcion" value="Editar y activar/desactivar grupos de tiendas"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GRUPOS_TIENDA_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GRUPOS_TIENDA_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'GRUPOS_TIENDA_EDITAR')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

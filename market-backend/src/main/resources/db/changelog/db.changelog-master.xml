@@ -11,6 +11,8 @@
     <include file="db/changelog/modules/seguridad/004-refresh-token.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/005-seed-catalogo.xml" relativeToChangelogFile="false"/>
 
+    <include file="db/changelog/modules/grupostienda/001-grupo-tienda.xml" relativeToChangelogFile="false"/>
+
     <include file="db/changelog/modules/tiendas/001-tienda.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/unidadesmedida/001-unidad-medida.xml" relativeToChangelogFile="false"/>

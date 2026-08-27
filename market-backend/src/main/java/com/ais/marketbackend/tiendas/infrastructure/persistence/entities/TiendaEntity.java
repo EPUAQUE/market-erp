@@ -45,4 +45,9 @@ public class TiendaEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoTienda estado;
+
+    // Columna plana (no @ManyToOne): grupostienda es dueño de la tabla `grupo_tienda`,
+    // mismo patrón que `ProductoTiendaEntity.tiendaId`.
+    @Column(name = "grupo_id", nullable = false)
+    private Long grupoId;
 }

@@ -14,6 +14,7 @@
     <include file="db/changelog/modules/grupostienda/001-grupo-tienda.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/tiendas/001-tienda.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/tiendas/002-grupo-id.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/unidadesmedida/001-unidad-medida.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/categorias/001-categoria.xml" relativeToChangelogFile="false"/>

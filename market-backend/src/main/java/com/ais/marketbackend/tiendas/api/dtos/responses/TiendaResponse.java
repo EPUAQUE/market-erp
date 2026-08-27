@@ -15,4 +15,5 @@ public class TiendaResponse {
     String telefono;
     String correo;
     EstadoTienda estado;
+    Long grupoId;
 }

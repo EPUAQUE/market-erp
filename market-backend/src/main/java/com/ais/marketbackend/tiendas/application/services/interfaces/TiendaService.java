@@ -5,9 +5,9 @@ import java.util.List;
 
 public interface TiendaService {
 
-    TiendaResumen crear(String codigo, String nombre, String direccion, String telefono, String correo);
+    TiendaResumen crear(String codigo, String nombre, String direccion, String telefono, String correo, Long grupoId);
 
-    TiendaResumen actualizar(Long id, String nombre, String direccion, String telefono, String correo);
+    TiendaResumen actualizar(Long id, String nombre, String direccion, String telefono, String correo, Long grupoId);
 
     void activar(Long id);
 

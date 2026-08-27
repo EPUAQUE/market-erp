@@ -8,4 +8,5 @@ export interface Tienda {
   telefono: string | null
   correo: string | null
   estado: EstadoTienda
+  grupoId: number
 }

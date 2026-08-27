@@ -19,6 +19,10 @@ export const API_ENDPOINTS = {
     activar: (id: number) => `/api/v1/tiendas/${id}/activar`,
     desactivar: (id: number) => `/api/v1/tiendas/${id}/desactivar`,
   },
+  // El resto del CRUD (porId/activar/desactivar) se agrega cuando exista su UI dedicada.
+  gruposTienda: {
+    base: '/api/v1/grupos-tienda',
+  },
   unidadesMedida: {
     base: '/api/v1/unidades-medida',
     porId: (id: number) => `/api/v1/unidades-medida/${id}`,

@@ -1,5 +1,6 @@
 package com.ais.marketbackend.tiendas.application.services.impl;
 
+import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.tiendas.application.dtos.TiendaResumen;
 import com.ais.marketbackend.tiendas.application.services.interfaces.TiendaService;
@@ -15,27 +16,34 @@ import org.springframework.transaction.annotation.Transactional;
 public class TiendaServiceImpl implements TiendaService {
 
     private final TiendaRepository tiendaRepository;
+    private final GrupoTiendaRepository grupoTiendaRepository;
 
-    public TiendaServiceImpl(TiendaRepository tiendaRepository) {
+    public TiendaServiceImpl(TiendaRepository tiendaRepository, GrupoTiendaRepository grupoTiendaRepository) {
         this.tiendaRepository = tiendaRepository;
+        this.grupoTiendaRepository = grupoTiendaRepository;
     }
 
     @Override
     @Transactional
-    public TiendaResumen crear(String codigo, String nombre, String direccion, String telefono, String correo) {
+    public TiendaResumen crear(
+            String codigo, String nombre, String direccion, String telefono, String correo, Long grupoId) {
         String codigoCanonico = canonicalizarCodigo(codigo);
         if (tiendaRepository.existsByCodigo(codigoCanonico)) {
             throw new TiendaDuplicadaException(codigoCanonico);
         }
-        Tienda tienda = Tienda.nueva(codigoCanonico, nombre, direccion, telefono, correo);
+        exigirGrupoExistente(grupoId);
+        Tienda tienda = Tienda.nueva(codigoCanonico, nombre, direccion, telefono, correo, grupoId);
         return toResumen(tiendaRepository.save(tienda));
     }
 
     @Override
     @Transactional
-    public TiendaResumen actualizar(Long id, String nombre, String direccion, String telefono, String correo) {
+    public TiendaResumen actualizar(
+            Long id, String nombre, String direccion, String telefono, String correo, Long grupoId) {
         Tienda tienda = obtenerORequerido(id);
+        exigirGrupoExistente(grupoId);
         tienda.actualizarDatos(nombre, direccion, telefono, correo);
+        tienda.reasignarGrupo(grupoId);
         return toResumen(tiendaRepository.save(tienda));
     }
 
@@ -65,6 +73,12 @@ public class TiendaServiceImpl implements TiendaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tienda no encontrada: " + id));
     }
 
+    private void exigirGrupoExistente(Long grupoId) {
+        if (grupoTiendaRepository.findById(grupoId).isEmpty()) {
+            throw new ResourceNotFoundException("Grupo de tiendas no encontrado: " + grupoId);
+        }
+    }
+
     private String canonicalizarCodigo(String codigo) {
         return codigo == null ? null : codigo.trim().toUpperCase(Locale.ROOT);
     }
@@ -72,6 +86,6 @@ public class TiendaServiceImpl implements TiendaService {
     private TiendaResumen toResumen(Tienda tienda) {
         return new TiendaResumen(
                 tienda.getId(), tienda.getCodigo(), tienda.getNombre(), tienda.getDireccion(),
-                tienda.getTelefono(), tienda.getCorreo(), tienda.getEstado());
+                tienda.getTelefono(), tienda.getCorreo(), tienda.getEstado(), tienda.getGrupoId());
     }
 }

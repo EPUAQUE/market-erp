@@ -8,7 +8,7 @@ class TiendaTest {
 
     @Test
     void nuevaTiendaEstaActivaPorDefecto() {
-        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", "Zona 1", "1234-5678", "central@market.demo");
+        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", "Zona 1", "1234-5678", "central@market.demo", 1L);
 
         assertThat(tienda.estaActiva()).isTrue();
         assertThat(tienda.getEstado()).isEqualTo(EstadoTienda.ACTIVA);
@@ -17,7 +17,7 @@ class TiendaTest {
 
     @Test
     void desactivarYActivarCambianElEstado() {
-        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", null, null, null);
+        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", null, null, null, 1L);
 
         tienda.desactivar();
         assertThat(tienda.estaActiva()).isFalse();
@@ -28,12 +28,21 @@ class TiendaTest {
 
     @Test
     void actualizarDatosNoCambiaElCodigo() {
-        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", "Zona 1", "1234-5678", "central@market.demo");
+        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", "Zona 1", "1234-5678", "central@market.demo", 1L);
 
         tienda.actualizarDatos("Tienda Central Renovada", "Zona 2", "8765-4321", "nueva@market.demo");
 
         assertThat(tienda.getCodigo()).isEqualTo("CENTRAL");
         assertThat(tienda.getNombre()).isEqualTo("Tienda Central Renovada");
         assertThat(tienda.getDireccion()).isEqualTo("Zona 2");
+    }
+
+    @Test
+    void reasignarGrupoCambiaElGrupoId() {
+        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", null, null, null, 1L);
+
+        tienda.reasignarGrupo(2L);
+
+        assertThat(tienda.getGrupoId()).isEqualTo(2L);
     }
 }

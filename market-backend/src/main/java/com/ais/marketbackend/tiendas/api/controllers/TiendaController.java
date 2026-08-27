@@ -37,7 +37,8 @@ public class TiendaController {
     @RequiresPermission("TIENDAS_CREAR")
     public ResponseEntity<TiendaResponse> crear(@Valid @RequestBody CrearTiendaRequest request) {
         TiendaResponse creada = mapper.toResponse(tiendaService.crear(
-                request.codigo(), request.nombre(), request.direccion(), request.telefono(), request.correo()));
+                request.codigo(), request.nombre(), request.direccion(), request.telefono(), request.correo(),
+                request.grupoId()));
         return ResponseEntity.status(HttpStatus.CREATED).body(creada);
     }
 
@@ -46,7 +47,8 @@ public class TiendaController {
     public ResponseEntity<TiendaResponse> actualizar(
             @PathVariable Long id, @Valid @RequestBody ActualizarTiendaRequest request) {
         TiendaResponse actualizada = mapper.toResponse(tiendaService.actualizar(
-                id, request.nombre(), request.direccion(), request.telefono(), request.correo()));
+                id, request.nombre(), request.direccion(), request.telefono(), request.correo(),
+                request.grupoId()));
         return ResponseEntity.ok(actualizada);
     }
 

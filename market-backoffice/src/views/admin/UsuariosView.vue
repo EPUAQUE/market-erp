@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useUsuarios } from '@/composables/useUsuarios'
 import { useTiendas } from '@/composables/useTiendas'
+import { useGruposTienda } from '@/composables/useGruposTienda'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { rolesService } from '@/services/roles.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
@@ -30,12 +31,20 @@ const {
   tiendasError,
   asignarLoading,
   asignarError,
+  gruposPorUsuario,
+  gruposLoading,
+  gruposError,
+  asignarGrupoLoading,
+  asignarGrupoError,
   cargar,
   crear,
   cargarTiendas,
   asignarTienda,
+  cargarGrupos,
+  asignarGrupo,
 } = useUsuarios()
 const { items: tiendas, cargar: cargarTiendasCatalogo } = useTiendas()
+const { items: grupos, cargar: cargarGruposCatalogo } = useGruposTienda()
 const permissions = usePermissionsStore()
 
 const search = ref('')
@@ -55,9 +64,15 @@ const roles = ref<Rol[]>([])
 const expandedUsuarioId = ref<number | null>(null)
 const nuevaAsignacionTiendaId = ref<number | ''>('')
 const nuevaAsignacionRolId = ref<number | ''>('')
+const nuevaAsignacionGrupoId = ref<number | ''>('')
+const nuevaAsignacionGrupoRolId = ref<number | ''>('')
 
 function nombreTienda(tiendaId: number): string {
   return tiendas.value.find((t) => t.id === tiendaId)?.nombre ?? `#${tiendaId}`
+}
+
+function nombreGrupo(grupoTiendaId: number): string {
+  return grupos.value.find((g) => g.id === grupoTiendaId)?.nombre ?? `#${grupoTiendaId}`
 }
 
 async function toggleTiendas(usuario: Usuario) {
@@ -68,7 +83,10 @@ async function toggleTiendas(usuario: Usuario) {
   expandedUsuarioId.value = usuario.id
   nuevaAsignacionTiendaId.value = ''
   nuevaAsignacionRolId.value = ''
+  nuevaAsignacionGrupoId.value = ''
+  nuevaAsignacionGrupoRolId.value = ''
   if (!tiendasPorUsuario.value[usuario.id]) await cargarTiendas(usuario.id)
+  if (!gruposPorUsuario.value[usuario.id]) await cargarGrupos(usuario.id)
 }
 
 async function onAsignarTienda(usuarioId: number) {
@@ -77,6 +95,15 @@ async function onAsignarTienda(usuarioId: number) {
   if (ok) {
     nuevaAsignacionTiendaId.value = ''
     nuevaAsignacionRolId.value = ''
+  }
+}
+
+async function onAsignarGrupo(usuarioId: number) {
+  if (!nuevaAsignacionGrupoId.value || !nuevaAsignacionGrupoRolId.value) return
+  const ok = await asignarGrupo(usuarioId, Number(nuevaAsignacionGrupoId.value), Number(nuevaAsignacionGrupoRolId.value))
+  if (ok) {
+    nuevaAsignacionGrupoId.value = ''
+    nuevaAsignacionGrupoRolId.value = ''
   }
 }
 
@@ -118,7 +145,12 @@ async function onCrear() {
 }
 
 onMounted(async () => {
-  await Promise.all([cargar(), cargarTiendasCatalogo(), rolesService.listar().then((r) => (roles.value = r))])
+  await Promise.all([
+    cargar(),
+    cargarTiendasCatalogo(),
+    cargarGruposCatalogo(),
+    rolesService.listar().then((r) => (roles.value = r)),
+  ])
 })
 </script>
 
@@ -267,64 +299,119 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-2">
                 <button
-                  v-if="permissions.can('USUARIOS_ASIGNAR_TIENDA')"
+                  v-if="permissions.canAny(['USUARIOS_ASIGNAR_TIENDA', 'USUARIOS_ASIGNAR_GRUPO'])"
                   type="button"
                   class="text-mk-primary hover:underline"
                   @click="toggleTiendas(usuario)"
                 >
-                  {{ expandedUsuarioId === usuario.id ? 'Ocultar tiendas' : 'Tiendas' }}
+                  {{ expandedUsuarioId === usuario.id ? 'Ocultar accesos' : 'Accesos' }}
                 </button>
               </td>
             </tr>
             <tr v-if="expandedUsuarioId === usuario.id" class="border-b border-mk-border bg-mk-surface">
               <td colspan="6" class="px-4 py-4">
-                <div class="space-y-3">
-                  <div v-if="tiendasLoading" class="text-sm text-mk-text/60">Cargando…</div>
-                  <ul v-else-if="(tiendasPorUsuario[usuario.id] ?? []).length > 0" class="space-y-1 text-sm">
-                    <li v-for="asignacion in tiendasPorUsuario[usuario.id]" :key="asignacion.id">
-                      {{ nombreTienda(asignacion.tiendaId) }} — {{ asignacion.rolNombre }}
-                    </li>
-                  </ul>
-                  <p v-else class="text-sm text-mk-text/60">Sin tiendas asignadas todavía.</p>
+                <div class="grid gap-6 sm:grid-cols-2">
+                  <div class="space-y-3">
+                    <p class="text-sm font-medium text-mk-text">Tiendas asignadas</p>
+                    <div v-if="tiendasLoading" class="text-sm text-mk-text/60">Cargando…</div>
+                    <ul v-else-if="(tiendasPorUsuario[usuario.id] ?? []).length > 0" class="space-y-1 text-sm">
+                      <li v-for="asignacion in tiendasPorUsuario[usuario.id]" :key="asignacion.id">
+                        {{ nombreTienda(asignacion.tiendaId) }} — {{ asignacion.rolNombre }}
+                      </li>
+                    </ul>
+                    <p v-else class="text-sm text-mk-text/60">Sin tiendas asignadas todavía.</p>
 
-                  <form
-                    class="flex flex-wrap items-end gap-2"
-                    @submit.prevent="onAsignarTienda(usuario.id)"
-                  >
-                    <div class="space-y-1">
-                      <label class="text-xs font-medium">Tienda</label>
-                      <select
-                        v-model="nuevaAsignacionTiendaId"
-                        required
-                        class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
-                      >
-                        <option value="" disabled>Seleccione…</option>
-                        <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">
-                          {{ tienda.nombre }}
-                        </option>
-                      </select>
-                    </div>
-                    <div class="space-y-1">
-                      <label class="text-xs font-medium">Rol</label>
-                      <select
-                        v-model="nuevaAsignacionRolId"
-                        required
-                        class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
-                      >
-                        <option value="" disabled>Seleccione…</option>
-                        <option v-for="rol in roles" :key="rol.id" :value="rol.id">{{ rol.nombre }}</option>
-                      </select>
-                    </div>
-                    <button
-                      type="submit"
-                      :disabled="asignarLoading"
-                      class="mk-btn mk-btn-primary rounded bg-mk-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                    <form
+                      v-if="permissions.can('USUARIOS_ASIGNAR_TIENDA')"
+                      class="flex flex-wrap items-end gap-2"
+                      @submit.prevent="onAsignarTienda(usuario.id)"
                     >
-                      {{ asignarLoading ? 'Asignando…' : 'Asignar' }}
-                    </button>
-                  </form>
-                  <p v-if="tiendasError" class="text-sm text-mk-danger" role="alert">{{ tiendasError }}</p>
-                  <p v-if="asignarError" class="text-sm text-mk-danger" role="alert">{{ asignarError }}</p>
+                      <div class="space-y-1">
+                        <label class="text-xs font-medium">Tienda</label>
+                        <select
+                          v-model="nuevaAsignacionTiendaId"
+                          required
+                          class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+                        >
+                          <option value="" disabled>Seleccione…</option>
+                          <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">
+                            {{ tienda.nombre }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="space-y-1">
+                        <label class="text-xs font-medium">Rol</label>
+                        <select
+                          v-model="nuevaAsignacionRolId"
+                          required
+                          class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+                        >
+                          <option value="" disabled>Seleccione…</option>
+                          <option v-for="rol in roles" :key="rol.id" :value="rol.id">{{ rol.nombre }}</option>
+                        </select>
+                      </div>
+                      <button
+                        type="submit"
+                        :disabled="asignarLoading"
+                        class="mk-btn mk-btn-primary rounded bg-mk-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      >
+                        {{ asignarLoading ? 'Asignando…' : 'Asignar' }}
+                      </button>
+                    </form>
+                    <p v-if="tiendasError" class="text-sm text-mk-danger" role="alert">{{ tiendasError }}</p>
+                    <p v-if="asignarError" class="text-sm text-mk-danger" role="alert">{{ asignarError }}</p>
+                  </div>
+
+                  <div class="space-y-3 border-t border-mk-border pt-3 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+                    <p class="text-sm font-medium text-mk-text">Grupos de tiendas asignados</p>
+                    <div v-if="gruposLoading" class="text-sm text-mk-text/60">Cargando…</div>
+                    <ul v-else-if="(gruposPorUsuario[usuario.id] ?? []).length > 0" class="space-y-1 text-sm">
+                      <li v-for="asignacion in gruposPorUsuario[usuario.id]" :key="asignacion.id">
+                        {{ nombreGrupo(asignacion.grupoTiendaId) }} — {{ asignacion.rolNombre }}
+                      </li>
+                    </ul>
+                    <p v-else class="text-sm text-mk-text/60">Sin grupos asignados todavía.</p>
+
+                    <form
+                      v-if="permissions.can('USUARIOS_ASIGNAR_GRUPO')"
+                      class="flex flex-wrap items-end gap-2"
+                      @submit.prevent="onAsignarGrupo(usuario.id)"
+                    >
+                      <div class="space-y-1">
+                        <label class="text-xs font-medium">Grupo</label>
+                        <select
+                          v-model="nuevaAsignacionGrupoId"
+                          required
+                          class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+                        >
+                          <option value="" disabled>Seleccione…</option>
+                          <option v-for="grupo in grupos" :key="grupo.id" :value="grupo.id">
+                            {{ grupo.nombre }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="space-y-1">
+                        <label class="text-xs font-medium">Rol</label>
+                        <select
+                          v-model="nuevaAsignacionGrupoRolId"
+                          required
+                          class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+                        >
+                          <option value="" disabled>Seleccione…</option>
+                          <option v-for="rol in roles" :key="rol.id" :value="rol.id">{{ rol.nombre }}</option>
+                        </select>
+                      </div>
+                      <button
+                        type="submit"
+                        :disabled="asignarGrupoLoading"
+                        class="mk-btn mk-btn-primary rounded bg-mk-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      >
+                        {{ asignarGrupoLoading ? 'Asignando…' : 'Asignar' }}
+                      </button>
+                    </form>
+                    <p v-if="gruposError" class="text-sm text-mk-danger" role="alert">{{ gruposError }}</p>
+                    <p v-if="asignarGrupoError" class="text-sm text-mk-danger" role="alert">{{ asignarGrupoError }}</p>
+                  </div>
                 </div>
               </td>
             </tr>

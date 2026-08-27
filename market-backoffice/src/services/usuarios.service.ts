@@ -1,6 +1,6 @@
 import { apiClient } from '@/services/http/ApiClient'
 import { API_ENDPOINTS } from '@/config/endpoints'
-import type { Usuario, UsuarioTienda } from '@/types/usuario'
+import type { Usuario, UsuarioGrupo, UsuarioTienda } from '@/types/usuario'
 
 class UsuariosService {
   listar() {
@@ -17,6 +17,14 @@ class UsuariosService {
 
   asignarTienda(usuarioId: number, tiendaId: number, rolId: number) {
     return apiClient.post<void>(API_ENDPOINTS.usuarios.tiendas(usuarioId), { tiendaId, rolId })
+  }
+
+  listarGrupos(usuarioId: number) {
+    return apiClient.get<UsuarioGrupo[]>(API_ENDPOINTS.usuarios.grupos(usuarioId))
+  }
+
+  asignarGrupo(usuarioId: number, grupoTiendaId: number, rolId: number) {
+    return apiClient.post<void>(API_ENDPOINTS.usuarios.grupos(usuarioId), { grupoTiendaId, rolId })
   }
 }
 

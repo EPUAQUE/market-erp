@@ -46,6 +46,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, permission: 'TIENDAS_VER', title: 'Tiendas' },
       },
       {
+        path: 'grupos-tienda',
+        name: 'grupos-tienda',
+        component: () => import('@/views/admin/GruposTiendaView.vue'),
+        meta: { requiresAuth: true, permission: 'GRUPOS_TIENDA_VER', title: 'Grupos de tiendas' },
+      },
+      {
         path: 'unidades-medida',
         name: 'unidades-medida',
         component: () => import('@/views/admin/UnidadesMedidaView.vue'),

@@ -15,3 +15,10 @@ export interface UsuarioTienda {
   rolId: number
   rolNombre: string
 }
+
+export interface UsuarioGrupo {
+  id: number
+  grupoTiendaId: number
+  rolId: number
+  rolNombre: string
+}

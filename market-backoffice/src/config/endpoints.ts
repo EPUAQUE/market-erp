@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
     base: '/api/v1/usuarios',
     // Mismo endpoint para GET (listar asignaciones) y POST (asignar) — ver usuarios.service.ts.
     tiendas: (usuarioId: number) => `/api/v1/usuarios/${usuarioId}/tiendas`,
+    grupos: (usuarioId: number) => `/api/v1/usuarios/${usuarioId}/grupos`,
   },
   roles: {
     base: '/api/v1/roles',
@@ -19,9 +20,11 @@ export const API_ENDPOINTS = {
     activar: (id: number) => `/api/v1/tiendas/${id}/activar`,
     desactivar: (id: number) => `/api/v1/tiendas/${id}/desactivar`,
   },
-  // El resto del CRUD (porId/activar/desactivar) se agrega cuando exista su UI dedicada.
   gruposTienda: {
     base: '/api/v1/grupos-tienda',
+    porId: (id: number) => `/api/v1/grupos-tienda/${id}`,
+    activar: (id: number) => `/api/v1/grupos-tienda/${id}/activar`,
+    desactivar: (id: number) => `/api/v1/grupos-tienda/${id}/desactivar`,
   },
   unidadesMedida: {
     base: '/api/v1/unidades-medida',

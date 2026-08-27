@@ -1081,9 +1081,13 @@ domain/IP before building) and `10.0.2.2` (the emulator's host-loopback
 alias, already used successfully this session per "Android emulator" above).
 Never `usesCleartextTraffic="true"` globally. Referenced from
 `AndroidManifest.xml` via `android:networkSecurityConfig="@xml/network_security_config"`.
-Revert (delete the file + the manifest attribute) once the backend deploy
-has real TLS — see `market-backend/deploy/README.md`, "Pendiente: TLS/reverse
-proxy". Verified the same release build above: AAPT would have failed at
+**Update 2026-08-27**: backend deploy now has real TLS (Caddy reverse proxy,
+automatic cert, `https://inven365.com.gt` — see `market-backend/deploy/README.md`,
+section "TLS"). The `test-server.local` cleartext entry is no longer needed
+for the production domain; the `10.0.2.2` entry (emulator loopback) can stay
+for local dev against a non-TLS backend. Revert/trim this file once the app
+is confirmed pointing at the real HTTPS domain end-to-end. Verified the same
+release build above: AAPT would have failed at
 compile time if the XML were malformed or the resource reference broken —
 it didn't, and the merged manifest carries the attribute (resource itself
 gets renamed to an obfuscated path by the release resource shrinker, so it

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/config/environment.dart';
 import '../../auth/application/auth_notifier.dart';
+import '../../auth/presentation/logout_confirm.dart';
 import '../../productos/application/catalogo_provider.dart';
 import '../../productos/application/categorias_provider.dart';
 import '../../productos/data/producto_catalogo.dart';
@@ -71,7 +72,7 @@ class PosScreen extends ConsumerWidget {
       _AccionPos(
         icono: Icons.logout,
         etiqueta: 'Salir',
-        onTap: () => ref.read(authNotifierProvider.notifier).logout(),
+        onTap: () => cerrarSesionConConfirmacion(context, ref),
       ),
     ];
 

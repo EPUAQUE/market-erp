@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../application/auth_notifier.dart';
+import 'logout_confirm.dart';
 
 /// Se muestra solo si el usuario tiene más de una tienda asignada. La
 /// elección queda fija para toda la sesión — el POS, a diferencia del
@@ -45,7 +46,7 @@ class TiendaPickerScreen extends ConsumerWidget {
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () =>
-                            ref.read(authNotifierProvider.notifier).logout(),
+                            cerrarSesionConConfirmacion(context, ref),
                         child: const Text('Salir'),
                       ),
                     ),

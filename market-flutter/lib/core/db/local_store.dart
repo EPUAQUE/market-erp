@@ -68,4 +68,10 @@ abstract class LocalStore {
   Future<void> eliminarClientePendiente(int id);
 
   Future<int> contarClientesPendientes();
+
+  /// Borra catálogo y las 3 colas pendientes. Llamado solo al cerrar sesión
+  /// — nunca antes de confirmar que no hay pendientes sin sincronizar (ver
+  /// `AuthNotifier.logout`), para no perder ventas/movimientos/clientes
+  /// reales que un usuario haya generado offline.
+  Future<void> limpiarTodo();
 }

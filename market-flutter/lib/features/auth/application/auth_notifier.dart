@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/db/local_store_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/token_service.dart';
 import '../data/auth_api.dart';
@@ -36,6 +37,10 @@ class AuthNotifier extends AsyncNotifier<SesionUsuario?> {
     });
   }
 
+  /// No limpia sola sin más: quien la llama (`cerrarSesionConConfirmacion`)
+  /// ya confirmó que no hay pendientes sin sincronizar, o que el usuario
+  /// aceptó perderlos — de lo contrario un logout borraría ventas/
+  /// movimientos/clientes offline reales, no solo el mirror de catálogo.
   Future<void> logout() async {
     final api = ref.read(authApiProvider);
     try {
@@ -43,6 +48,8 @@ class AuthNotifier extends AsyncNotifier<SesionUsuario?> {
     } finally {
       TokenService.instance.clear();
       await ApiClient.instance.clearCookies();
+      final store = await ref.read(localStoreProvider.future);
+      await store.limpiarTodo();
       ref.read(tiendaActivaProvider.notifier).seleccionar(null);
       state = const AsyncData(null);
     }

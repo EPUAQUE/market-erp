@@ -295,6 +295,16 @@ class IsarLocalStore implements LocalStore {
   Future<int> contarClientesPendientes() =>
       _isar.clientePendienteIsars.count();
 
+  @override
+  Future<void> limpiarTodo() async {
+    await _isar.writeTxn(() async {
+      await _isar.productoCatalogoIsars.clear();
+      await _isar.ventaPendienteIsars.clear();
+      await _isar.movimientoCajaPendienteIsars.clear();
+      await _isar.clientePendienteIsars.clear();
+    });
+  }
+
   ClientePendienteLocal _aPlanoCliente(ClientePendienteIsar c) {
     return ClientePendienteLocal(
       id: c.id,

@@ -5,9 +5,12 @@ import com.ais.marketbackend.grupostienda.application.services.interfaces.GrupoT
 import com.ais.marketbackend.grupostienda.domain.exception.GrupoTiendaDuplicadoException;
 import com.ais.marketbackend.grupostienda.domain.model.GrupoTienda;
 import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
+import com.ais.marketbackend.seguridad.application.services.interfaces.AutorizacionTiendaService;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,9 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class GrupoTiendaServiceImpl implements GrupoTiendaService {
 
     private final GrupoTiendaRepository grupoTiendaRepository;
+    private final AutorizacionTiendaService autorizacionTiendaService;
 
-    public GrupoTiendaServiceImpl(GrupoTiendaRepository grupoTiendaRepository) {
+    public GrupoTiendaServiceImpl(
+            GrupoTiendaRepository grupoTiendaRepository, AutorizacionTiendaService autorizacionTiendaService) {
         this.grupoTiendaRepository = grupoTiendaRepository;
+        this.autorizacionTiendaService = autorizacionTiendaService;
     }
 
     @Override
@@ -34,6 +40,7 @@ public class GrupoTiendaServiceImpl implements GrupoTiendaService {
     @Override
     @Transactional
     public GrupoTiendaResumen actualizar(Long id, String nombre) {
+        autorizacionTiendaService.exigirAccesoAGrupo(id);
         GrupoTienda grupoTienda = obtenerORequerido(id);
         grupoTienda.actualizarDatos(nombre);
         return toResumen(grupoTiendaRepository.save(grupoTienda));
@@ -42,6 +49,7 @@ public class GrupoTiendaServiceImpl implements GrupoTiendaService {
     @Override
     @Transactional
     public void activar(Long id) {
+        autorizacionTiendaService.exigirAccesoAGrupo(id);
         GrupoTienda grupoTienda = obtenerORequerido(id);
         grupoTienda.activar();
         grupoTiendaRepository.save(grupoTienda);
@@ -50,6 +58,7 @@ public class GrupoTiendaServiceImpl implements GrupoTiendaService {
     @Override
     @Transactional
     public void desactivar(Long id) {
+        autorizacionTiendaService.exigirAccesoAGrupo(id);
         GrupoTienda grupoTienda = obtenerORequerido(id);
         grupoTienda.desactivar();
         grupoTiendaRepository.save(grupoTienda);
@@ -57,7 +66,11 @@ public class GrupoTiendaServiceImpl implements GrupoTiendaService {
 
     @Override
     public List<GrupoTiendaResumen> listar() {
-        return grupoTiendaRepository.findAll().stream().map(this::toResumen).toList();
+        Optional<Set<Long>> grupoIdsPermitidas = autorizacionTiendaService.grupoIdsPermitidas();
+        return grupoTiendaRepository.findAll().stream()
+                .filter(grupo -> grupoIdsPermitidas.isEmpty() || grupoIdsPermitidas.get().contains(grupo.getId()))
+                .map(this::toResumen)
+                .toList();
     }
 
     private GrupoTienda obtenerORequerido(Long id) {

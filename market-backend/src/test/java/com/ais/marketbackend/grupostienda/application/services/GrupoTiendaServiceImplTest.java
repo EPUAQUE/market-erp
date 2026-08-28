@@ -13,6 +13,7 @@ import com.ais.marketbackend.grupostienda.domain.exception.GrupoTiendaDuplicadoE
 import com.ais.marketbackend.grupostienda.domain.model.EstadoGrupoTienda;
 import com.ais.marketbackend.grupostienda.domain.model.GrupoTienda;
 import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
+import com.ais.marketbackend.seguridad.application.services.interfaces.AutorizacionTiendaService;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,13 +22,16 @@ import org.junit.jupiter.api.Test;
 class GrupoTiendaServiceImplTest {
 
     private GrupoTiendaRepository grupoTiendaRepository;
+    private AutorizacionTiendaService autorizacionTiendaService;
     private GrupoTiendaServiceImpl grupoTiendaService;
 
     @BeforeEach
     void setUp() {
         grupoTiendaRepository = mock(GrupoTiendaRepository.class);
-        grupoTiendaService = new GrupoTiendaServiceImpl(grupoTiendaRepository);
+        autorizacionTiendaService = mock(AutorizacionTiendaService.class);
+        grupoTiendaService = new GrupoTiendaServiceImpl(grupoTiendaRepository, autorizacionTiendaService);
         when(grupoTiendaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(autorizacionTiendaService.grupoIdsPermitidas()).thenReturn(Optional.empty());
     }
 
     @Test

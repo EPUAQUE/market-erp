@@ -34,4 +34,7 @@ public interface AutorizacionTiendaService {
      * Vacío = alcance global, sin restricción. Presente = solo esas tiendas.
      */
     Optional<Set<Long>> tiendaIdsPermitidas();
+
+    /** Igual que {@link #tiendaIdsPermitidas()} pero para grupos de tiendas completos. */
+    Optional<Set<Long>> grupoIdsPermitidas();
 }

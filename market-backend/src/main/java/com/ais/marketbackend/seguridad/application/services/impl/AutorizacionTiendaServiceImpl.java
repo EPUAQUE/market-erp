@@ -53,4 +53,10 @@ public class AutorizacionTiendaServiceImpl implements AutorizacionTiendaService 
         PermisosEfectivos permisos = permisosEfectivosResolver.resolver(contextoAutenticacion.usuarioIdActual());
         return permisos.alcanceGlobal() ? Optional.empty() : Optional.of(permisos.tiendaIds());
     }
+
+    @Override
+    public Optional<Set<Long>> grupoIdsPermitidas() {
+        PermisosEfectivos permisos = permisosEfectivosResolver.resolver(contextoAutenticacion.usuarioIdActual());
+        return permisos.alcanceGlobal() ? Optional.empty() : Optional.of(permisos.grupoIds());
+    }
 }

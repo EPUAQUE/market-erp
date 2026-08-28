@@ -298,7 +298,21 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
   contra un escenario real de actualización (requiere dispositivo real con una versión
   anterior instalada, no solo tests unitarios) — ver `market-flutter/CLAUDE.md`,
   "Versión de esquema local Isar".
-- [ ] Evaluar cifrado de datos locales o minimizar los datos personales persistidos.
+- [x] Evaluar cifrado de datos locales o minimizar los datos personales persistidos —
+  resuelto (2026-08-28, parte C). Evaluado: `isar_community` no tiene cifrado nativo
+  (verificado en su código fuente, cero mención de `encrypt`); cifrar de verdad
+  requeriría cifrar campos a mano con una librería nueva. Inventariada la PII real en
+  Isar: solo `ClientePendienteIsar.nombre/telefono/nit` (clientes dados de alta
+  offline) — el resto de las colecciones (ventas, movimientos, catálogo) no guardan
+  PII directa. **Decisión del usuario:** minimizar en vez de cifrar — se implementó
+  `LocalStore.limpiarClientesPendientesSincronizadosSinReferencia()` (llamada al
+  final de cada drenado), que borra un cliente ya sincronizado en cuanto ninguna
+  venta pendiente sigue referenciándolo, en vez de conservarlo indefinidamente.
+  Cifrado de campo (AES vía `flutter_secure_storage`) quedó evaluado y descartado por
+  ahora — el cifrado de disco del sistema operativo (activo de fábrica en Android
+  moderno) ya cubre el escenario real de riesgo ("tablet robada/perdida apagada") sin
+  agregar una librería de cifrado nueva ni manejo de llaves para un dato de exposición
+  ya acotada y ahora de vida corta.
 
 ### Pruebas requeridas
 
@@ -780,7 +794,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | Fase | Estado | PR/commit | Resultado de pruebas | Observaciones |
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
-| 2 — Idempotencia POS | Partes A y B resueltas; parte C: dependencias de cola y versión de esquema Isar resueltas, cifrado local y bloqueo logout/desinstalación pendientes de decisión | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar) listos. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
+| 2 — Idempotencia POS | Partes A y B resueltas; parte C: dependencias de cola, versión de esquema Isar y cifrado/minimización resueltas; solo falta bloqueo de logout/desinstalación (pendiente de decisión) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local) listos. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | Pendiente | | | |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |

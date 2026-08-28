@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.ais.marketbackend.grupostienda.domain.model.EstadoGrupoTienda;
 import com.ais.marketbackend.grupostienda.domain.model.GrupoTienda;
 import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
+import com.ais.marketbackend.seguridad.application.services.interfaces.AutorizacionTiendaService;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.tiendas.application.dtos.TiendaResumen;
 import com.ais.marketbackend.tiendas.application.services.impl.TiendaServiceImpl;
@@ -25,16 +26,19 @@ class TiendaServiceImplTest {
 
     private TiendaRepository tiendaRepository;
     private GrupoTiendaRepository grupoTiendaRepository;
+    private AutorizacionTiendaService autorizacionTiendaService;
     private TiendaServiceImpl tiendaService;
 
     @BeforeEach
     void setUp() {
         tiendaRepository = mock(TiendaRepository.class);
         grupoTiendaRepository = mock(GrupoTiendaRepository.class);
-        tiendaService = new TiendaServiceImpl(tiendaRepository, grupoTiendaRepository);
+        autorizacionTiendaService = mock(AutorizacionTiendaService.class);
+        tiendaService = new TiendaServiceImpl(tiendaRepository, grupoTiendaRepository, autorizacionTiendaService);
         when(tiendaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(grupoTiendaRepository.findById(1L)).thenReturn(
                 Optional.of(new GrupoTienda(1L, "PRINCIPAL", "Grupo Principal", EstadoGrupoTienda.ACTIVO)));
+        when(autorizacionTiendaService.tiendaIdsPermitidas()).thenReturn(Optional.empty());
     }
 
     @Test

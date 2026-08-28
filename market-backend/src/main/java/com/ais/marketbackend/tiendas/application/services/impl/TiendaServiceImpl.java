@@ -39,6 +39,7 @@ public class TiendaServiceImpl implements TiendaService {
             throw new TiendaDuplicadaException(codigoCanonico);
         }
         exigirGrupoExistente(grupoId);
+        autorizacionTiendaService.exigirAccesoAGrupo(grupoId);
         Tienda tienda = Tienda.nueva(codigoCanonico, nombre, direccion, telefono, correo, grupoId);
         return toResumen(tiendaRepository.save(tienda));
     }
@@ -47,8 +48,10 @@ public class TiendaServiceImpl implements TiendaService {
     @Transactional
     public TiendaResumen actualizar(
             Long id, String nombre, String direccion, String telefono, String correo, Long grupoId) {
+        autorizacionTiendaService.exigirAcceso(id);
         Tienda tienda = obtenerORequerido(id);
         exigirGrupoExistente(grupoId);
+        autorizacionTiendaService.exigirAccesoAGrupo(grupoId);
         tienda.actualizarDatos(nombre, direccion, telefono, correo);
         tienda.reasignarGrupo(grupoId);
         return toResumen(tiendaRepository.save(tienda));
@@ -57,6 +60,7 @@ public class TiendaServiceImpl implements TiendaService {
     @Override
     @Transactional
     public void activar(Long id) {
+        autorizacionTiendaService.exigirAcceso(id);
         Tienda tienda = obtenerORequerido(id);
         tienda.activar();
         tiendaRepository.save(tienda);
@@ -65,6 +69,7 @@ public class TiendaServiceImpl implements TiendaService {
     @Override
     @Transactional
     public void desactivar(Long id) {
+        autorizacionTiendaService.exigirAcceso(id);
         Tienda tienda = obtenerORequerido(id);
         tienda.desactivar();
         tiendaRepository.save(tienda);

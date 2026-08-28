@@ -11,7 +11,9 @@ import '../../features/productos/data/producto_catalogo_isar.dart';
 import '../../features/ventas/data/venta_pendiente_isar.dart';
 import '../../features/ventas/data/venta_pendiente_local.dart';
 import '../../features/ventas/domain/carrito.dart';
+import 'local_schema_version.dart';
 import 'local_store.dart';
+import 'metadato_local_isar.dart';
 
 Future<LocalStore> crearLocalStore() async {
   final directorio = await getApplicationDocumentsDirectory();
@@ -20,8 +22,54 @@ Future<LocalStore> crearLocalStore() async {
     VentaPendienteIsarSchema,
     MovimientoCajaPendienteIsarSchema,
     ClientePendienteIsarSchema,
+    MetadatoLocalIsarSchema,
   ], directory: directorio.path);
+  await _aplicarMigracionSiHaceFalta(isar);
   return IsarLocalStore(isar);
+}
+
+/// Ver `local_schema_version.dart` para la política completa. Corre una vez
+/// por apertura de Isar, antes de que cualquier otra parte de la app lea o
+/// escriba — así una limpieza (cuando es segura) nunca compite con una
+/// escritura real a mitad de vuelo.
+Future<void> _aplicarMigracionSiHaceFalta(Isar isar) async {
+  final metadato = await isar.metadatoLocalIsars.get(0);
+  if (metadato != null && metadato.esquemaVersion == esquemaLocalVersionActual) {
+    return;
+  }
+
+  if (metadato != null) {
+    // Hay una versión anterior registrada y no coincide — solo es seguro
+    // limpiar el mirror local si no hay ninguna venta/cliente/movimiento
+    // real todavía sin sincronizar (ver local_schema_version.dart).
+    final hayPendientes = await _hayAlgoPendiente(isar);
+    if (!hayPendientes) {
+      await isar.writeTxn(() async {
+        await isar.productoCatalogoIsars.clear();
+        await isar.ventaPendienteIsars.clear();
+        await isar.movimientoCajaPendienteIsars.clear();
+        await isar.clientePendienteIsars.clear();
+      });
+    }
+  }
+
+  await isar.writeTxn(
+    () => isar.metadatoLocalIsars.put(
+      MetadatoLocalIsar()..esquemaVersion = esquemaLocalVersionActual,
+    ),
+  );
+}
+
+Future<bool> _hayAlgoPendiente(Isar isar) async {
+  final ventas = await isar.ventaPendienteIsars.count();
+  final movimientos = await isar.movimientoCajaPendienteIsars.count();
+  // clienteServidorIdIsNull(): un cliente ya sincronizado se conserva
+  // solo como mapeo (ver ClientePendienteIsar) — no cuenta como pendiente.
+  final clientes = await isar.clientePendienteIsars
+      .filter()
+      .clienteServidorIdIsNull()
+      .count();
+  return ventas > 0 || movimientos > 0 || clientes > 0;
 }
 
 class IsarLocalStore implements LocalStore {

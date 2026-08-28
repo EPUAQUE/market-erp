@@ -738,6 +738,63 @@ still hardcodes `disponible = false`, so this can't be exercised in Chrome.
 Same open item as the rest of this file's offline story: verify on a real
 device before considering this closed end-to-end.
 
+### Versión de esquema local Isar — built this phase (Fase 2 parte C, PLAN_MEJORAS.md)
+
+Before this phase there was no versioning at all for the local Isar
+database — a schema change that wasn't purely additive (Isar migrates a new
+nullable field or a whole new `@collection` on its own; renaming/removing/
+retyping an existing field is NOT something Isar reconciles for you) had no
+defined behavior on a device upgrading from an older build. The real risk
+isn't the catálogo mirror (a network-first cache, safe to lose) — it's the
+three pending queues (ventas/clientes/movimientos), which hold real
+unsynced business data that must never be silently dropped.
+
+`core/db/local_schema_version.dart` defines `esquemaLocalVersionActual` (an
+`int`, bump it whenever a change to any `@collection` isn't purely
+additive) and documents the policy in full. `core/db/metadato_local_isar.dart`
+is a new one-row `@collection` (`MetadatoLocalIsar`, fixed `id = 0`)
+recording which version wrote the current on-disk database.
+`crearLocalStore()` runs `_aplicarMigracionSiHaceFalta` right after
+`Isar.open` and before returning the store to the rest of the app:
+
+- No metadato row at all → first run of this versioning mechanism on this
+  device (either a genuinely fresh install, or a device upgrading from a
+  pre-versioning build). Never wipes anything here — just stamps the
+  current version and starts tracking from now on, since there's no prior
+  version to compare against and doing so would be indistinguishable from
+  "just trust whatever Isar already has" for existing data.
+- Stored version matches current → no-op, the common case on every normal
+  launch.
+- Stored version differs → only safe to reset if **nothing is truly
+  pending** (`_hayAlgoPendiente`: any ventas/movimientos, or any cliente
+  still unsynced — `clienteServidorIdIsNull()`, ver "Dependencias de cola
+  offline" arriba). If so, clears catálogo + all three queues and restamps
+  the version — a clean slate with zero real data at risk. If something
+  IS pending, nothing gets deleted — the version is still restamped (so
+  this doesn't re-trigger every launch), but no automatic reconciliation
+  happens. This is intentionally the honest boundary of what a *generic*
+  mechanism can safely do: an actual non-additive change to, say,
+  `VentaPendienteIsar` needs its own explicit migration step written into
+  `_aplicarMigracionSiHaceFalta` for that specific version bump before it
+  ships — there's no way to auto-derive "how do I convert old field X into
+  new shape Y" without knowing what X and Y actually are.
+
+**Convention for future schema changes**: prefer additive-only changes
+(new nullable field, new collection) whenever possible — they need no
+version bump and no migration code at all, Isar just handles them. Only
+bump `esquemaLocalVersionActual` for a genuinely breaking change, and when
+you do, decide explicitly whether `_aplicarMigracionSiHaceFalta` needs a
+real migration step for that version or whether "wipe if nothing pending,
+otherwise leave alone" is an acceptable answer for that specific change.
+
+Verified: `dart run build_runner build` generated the new collection
+cleanly; `flutter analyze`/`flutter test` clean. **Not tested against a
+real upgrade scenario** — this project has no existing Isar-level test
+infrastructure at all (same gap noted elsewhere in this file for
+`SyncEngineNotifier`), and simulating "device has an old on-disk Isar file,
+app now ships a newer schema" realistically needs a real device/emulator
+with a prior APK installed, not just unit tests.
+
 ### Cobros sueltos (`cuentas_por_cobrar` feature) — built this phase
 
 New feature, `lib/features/cuentas_por_cobrar/`. Before this phase there was

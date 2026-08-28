@@ -22,11 +22,16 @@ import com.ais.marketbackend.seguridad.domain.service.TipoEventoAuditoria;
 import com.ais.marketbackend.seguridad.domain.service.UsernameCanonicalizer;
 import com.ais.marketbackend.seguridad.application.services.interfaces.UsuarioService;
 import com.ais.marketbackend.seguridad.infrastructure.security.SeguridadProperties;
+import com.ais.marketbackend.seguridad.application.services.interfaces.AutorizacionTiendaService;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.tiendas.domain.model.Tienda;
 import com.ais.marketbackend.tiendas.domain.repository.TiendaRepository;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +49,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final PermisosEfectivosResolver permisosEfectivosResolver;
     private final SecurityAuditPublisher auditPublisher;
     private final SeguridadProperties properties;
+    private final AutorizacionTiendaService autorizacionTiendaService;
 
     public UsuarioServiceImpl(
             UsuarioRepository usuarioRepository,
@@ -55,7 +61,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             PasswordEncoder passwordEncoder,
             PermisosEfectivosResolver permisosEfectivosResolver,
             SecurityAuditPublisher auditPublisher,
-            SeguridadProperties properties) {
+            SeguridadProperties properties,
+            AutorizacionTiendaService autorizacionTiendaService) {
         this.usuarioRepository = usuarioRepository;
         this.usuarioTiendaRepository = usuarioTiendaRepository;
         this.usuarioGrupoTiendaRepository = usuarioGrupoTiendaRepository;
@@ -66,6 +73,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         this.permisosEfectivosResolver = permisosEfectivosResolver;
         this.auditPublisher = auditPublisher;
         this.properties = properties;
+        this.autorizacionTiendaService = autorizacionTiendaService;
     }
 
     @Override
@@ -97,6 +105,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));
         Tienda tienda = tiendaRepository.findById(tiendaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tienda no encontrada: " + tiendaId));
+        autorizacionTiendaService.exigirAcceso(tiendaId);
+        exigirNoEscalaAlcanceGlobal(rol);
 
         boolean yaTieneElGrupoDeEstaTienda = usuarioGrupoTiendaRepository.findByUsuarioId(usuarioId).stream()
                 .anyMatch(ug -> ug.getGrupoTiendaId().equals(tienda.getGrupoId()));
@@ -126,6 +136,8 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));
         grupoTiendaRepository.findById(grupoTiendaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Grupo de tiendas no encontrado: " + grupoTiendaId));
+        autorizacionTiendaService.exigirAccesoAGrupo(grupoTiendaId);
+        exigirNoEscalaAlcanceGlobal(rol);
 
         List<Long> tiendaIdsDelGrupo = tiendaRepository.listarIdsPorGrupo(grupoTiendaId);
         boolean yaTieneUnaTiendaDeEsteGrupo = usuarioTiendaRepository.findByUsuarioId(usuarioId).stream()
@@ -169,7 +181,25 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     public List<UsuarioResumen> listar() {
-        return usuarioRepository.findAll().stream().map(this::toResumen).toList();
+        Optional<Set<Long>> tiendaIdsPermitidas = autorizacionTiendaService.tiendaIdsPermitidas();
+        if (tiendaIdsPermitidas.isEmpty()) {
+            return usuarioRepository.findAll().stream().map(this::toResumen).toList();
+        }
+        Set<Long> grupoIdsPermitidas = autorizacionTiendaService.grupoIdsPermitidas().orElse(Set.of());
+        Set<Long> usuarioIdsEnAlcance = new HashSet<>();
+        usuarioIdsEnAlcance.addAll(usuarioTiendaRepository.listarUsuarioIdsPorTiendas(tiendaIdsPermitidas.get()));
+        usuarioIdsEnAlcance.addAll(usuarioGrupoTiendaRepository.listarUsuarioIdsPorGrupos(grupoIdsPermitidas));
+
+        return usuarioRepository.findAll().stream()
+                .filter(usuario -> usuarioIdsEnAlcance.contains(usuario.getId()))
+                .map(this::toResumen)
+                .toList();
+    }
+
+    private void exigirNoEscalaAlcanceGlobal(Rol rol) {
+        if (rol.isAlcanceGlobal() && autorizacionTiendaService.tiendaIdsPermitidas().isPresent()) {
+            throw new AccessDeniedException("No autorizado a asignar un rol de alcance global: " + rol.getNombre());
+        }
     }
 
     private UsuarioResumen toResumen(Usuario usuario) {

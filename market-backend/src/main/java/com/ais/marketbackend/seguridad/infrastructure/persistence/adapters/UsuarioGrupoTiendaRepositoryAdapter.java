@@ -9,6 +9,7 @@ import com.ais.marketbackend.seguridad.infrastructure.persistence.mappers.RolEnt
 import com.ais.marketbackend.seguridad.infrastructure.persistence.repositories.RolJpaRepository;
 import com.ais.marketbackend.seguridad.infrastructure.persistence.repositories.UsuarioGrupoTiendaJpaRepository;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,17 @@ public class UsuarioGrupoTiendaRepositoryAdapter implements UsuarioGrupoTiendaRe
     @Transactional(readOnly = true)
     public List<UsuarioGrupoTienda> findByUsuarioId(Long usuarioId) {
         return jpaRepository.findByUsuarioId(usuarioId).stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public List<Long> listarUsuarioIdsPorGrupos(Collection<Long> grupoTiendaIds) {
+        if (grupoTiendaIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findByGrupoTiendaIdIn(grupoTiendaIds).stream()
+                .map(UsuarioGrupoTiendaEntity::getUsuarioId)
+                .distinct()
+                .toList();
     }
 
     private UsuarioGrupoTienda toDomain(UsuarioGrupoTiendaEntity entity) {

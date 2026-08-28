@@ -55,11 +55,30 @@ abstract class LocalStore {
 
   Future<int> contarMovimientosCajaPendientes();
 
-  Future<void> encolarClientePendiente(NuevoClientePendiente cliente);
+  /// Devuelve el id local (Isar) asignado — una venta offline lo usa como
+  /// `clientePendienteLocalId` para referenciar este cliente antes de que
+  /// tenga id real de servidor (ver `ClienteSelectorSheet`).
+  Future<int> encolarClientePendiente(NuevoClientePendiente cliente);
 
+  /// Solo los que ni fallaron ni ya sincronizaron (`clienteServidorId` nulo)
+  /// — un cliente ya sincronizado se conserva en Isar (ver
+  /// `marcarClientePendienteSincronizado`) pero no debe reintentarse.
   Future<List<ClientePendienteLocal>> listarClientesPendientes();
 
   Future<void> marcarClientePendienteConError(int id, String mensaje);
+
+  /// A diferencia de `eliminarClientePendiente`, esto NO borra la fila: una
+  /// venta que todavía la referencia por `clientePendienteLocalId` necesita
+  /// poder leer `clienteServidorId` después de que este cliente sincronice.
+  Future<void> marcarClientePendienteSincronizado(
+    int id,
+    int clienteServidorId,
+  );
+
+  /// Usado por `SyncEngineNotifier._sincronizarVenta` para resolver el
+  /// `clienteServidorId` de una venta que referencia un cliente por
+  /// `clientePendienteLocalId`. `null` si el id no existe (no debería pasar).
+  Future<ClientePendienteLocal?> obtenerClientePendiente(int id);
 
   Future<List<ClientePendienteLocal>> listarClientesPendientesConError();
 

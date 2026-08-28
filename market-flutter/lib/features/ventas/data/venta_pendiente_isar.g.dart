@@ -23,39 +23,44 @@ const VentaPendienteIsarSchema = CollectionSchema(
       name: r'clienteId',
       type: IsarType.long,
     ),
-    r'correlationId': PropertySchema(
+    r'clientePendienteLocalId': PropertySchema(
       id: 1,
+      name: r'clientePendienteLocalId',
+      type: IsarType.long,
+    ),
+    r'correlationId': PropertySchema(
+      id: 2,
       name: r'correlationId',
       type: IsarType.string,
     ),
     r'creadaEn': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'creadaEn',
       type: IsarType.dateTime,
     ),
     r'lineas': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'lineas',
       type: IsarType.objectList,
 
       target: r'LineaCarritoIsar',
     ),
     r'mensajeError': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'mensajeError',
       type: IsarType.string,
     ),
     r'metodoPago': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'metodoPago',
       type: IsarType.string,
     ),
     r'montoACobrar': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'montoACobrar',
       type: IsarType.string,
     ),
-    r'tiendaId': PropertySchema(id: 7, name: r'tiendaId', type: IsarType.long),
+    r'tiendaId': PropertySchema(id: 8, name: r'tiendaId', type: IsarType.long),
   },
 
   estimateSize: _ventaPendienteIsarEstimateSize,
@@ -115,18 +120,19 @@ void _ventaPendienteIsarSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.clienteId);
-  writer.writeString(offsets[1], object.correlationId);
-  writer.writeDateTime(offsets[2], object.creadaEn);
+  writer.writeLong(offsets[1], object.clientePendienteLocalId);
+  writer.writeString(offsets[2], object.correlationId);
+  writer.writeDateTime(offsets[3], object.creadaEn);
   writer.writeObjectList<LineaCarritoIsar>(
-    offsets[3],
+    offsets[4],
     allOffsets,
     LineaCarritoIsarSchema.serialize,
     object.lineas,
   );
-  writer.writeString(offsets[4], object.mensajeError);
-  writer.writeString(offsets[5], object.metodoPago);
-  writer.writeString(offsets[6], object.montoACobrar);
-  writer.writeLong(offsets[7], object.tiendaId);
+  writer.writeString(offsets[5], object.mensajeError);
+  writer.writeString(offsets[6], object.metodoPago);
+  writer.writeString(offsets[7], object.montoACobrar);
+  writer.writeLong(offsets[8], object.tiendaId);
 }
 
 VentaPendienteIsar _ventaPendienteIsarDeserialize(
@@ -136,22 +142,23 @@ VentaPendienteIsar _ventaPendienteIsarDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = VentaPendienteIsar();
-  object.clienteId = reader.readLong(offsets[0]);
-  object.correlationId = reader.readString(offsets[1]);
-  object.creadaEn = reader.readDateTime(offsets[2]);
+  object.clienteId = reader.readLongOrNull(offsets[0]);
+  object.clientePendienteLocalId = reader.readLongOrNull(offsets[1]);
+  object.correlationId = reader.readString(offsets[2]);
+  object.creadaEn = reader.readDateTime(offsets[3]);
   object.id = id;
   object.lineas =
       reader.readObjectList<LineaCarritoIsar>(
-        offsets[3],
+        offsets[4],
         LineaCarritoIsarSchema.deserialize,
         allOffsets,
         LineaCarritoIsar(),
       ) ??
       [];
-  object.mensajeError = reader.readStringOrNull(offsets[4]);
-  object.metodoPago = reader.readString(offsets[5]);
-  object.montoACobrar = reader.readStringOrNull(offsets[6]);
-  object.tiendaId = reader.readLong(offsets[7]);
+  object.mensajeError = reader.readStringOrNull(offsets[5]);
+  object.metodoPago = reader.readString(offsets[6]);
+  object.montoACobrar = reader.readStringOrNull(offsets[7]);
+  object.tiendaId = reader.readLong(offsets[8]);
   return object;
 }
 
@@ -163,12 +170,14 @@ P _ventaPendienteIsarDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 3:
+      return (reader.readDateTime(offset)) as P;
+    case 4:
       return (reader.readObjectList<LineaCarritoIsar>(
                 offset,
                 LineaCarritoIsarSchema.deserialize,
@@ -177,13 +186,13 @@ P _ventaPendienteIsarDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 4:
-      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
-    case 6:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
     case 7:
+      return (reader.readStringOrNull(offset)) as P;
+    case 8:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -290,7 +299,25 @@ extension VentaPendienteIsarQueryWhere
 extension VentaPendienteIsarQueryFilter
     on QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QFilterCondition> {
   QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
-  clienteIdEqualTo(int value) {
+  clienteIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'clienteId'),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clienteIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'clienteId'),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clienteIdEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'clienteId', value: value),
@@ -299,7 +326,7 @@ extension VentaPendienteIsarQueryFilter
   }
 
   QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
-  clienteIdGreaterThan(int value, {bool include = false}) {
+  clienteIdGreaterThan(int? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(
@@ -312,7 +339,7 @@ extension VentaPendienteIsarQueryFilter
   }
 
   QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
-  clienteIdLessThan(int value, {bool include = false}) {
+  clienteIdLessThan(int? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.lessThan(
@@ -326,8 +353,8 @@ extension VentaPendienteIsarQueryFilter
 
   QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
   clienteIdBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -335,6 +362,82 @@ extension VentaPendienteIsarQueryFilter
       return query.addFilterCondition(
         FilterCondition.between(
           property: r'clienteId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clientePendienteLocalIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'clientePendienteLocalId'),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clientePendienteLocalIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'clientePendienteLocalId'),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clientePendienteLocalIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'clientePendienteLocalId',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clientePendienteLocalIdGreaterThan(int? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'clientePendienteLocalId',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clientePendienteLocalIdLessThan(int? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'clientePendienteLocalId',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterFilterCondition>
+  clientePendienteLocalIdBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'clientePendienteLocalId',
           lower: lower,
           includeLower: includeLower,
           upper: upper,
@@ -1193,6 +1296,20 @@ extension VentaPendienteIsarQuerySortBy
   }
 
   QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterSortBy>
+  sortByClientePendienteLocalId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clientePendienteLocalId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterSortBy>
+  sortByClientePendienteLocalIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clientePendienteLocalId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterSortBy>
   sortByCorrelationId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'correlationId', Sort.asc);
@@ -1290,6 +1407,20 @@ extension VentaPendienteIsarQuerySortThenBy
   thenByClienteIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'clienteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterSortBy>
+  thenByClientePendienteLocalId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clientePendienteLocalId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QAfterSortBy>
+  thenByClientePendienteLocalIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clientePendienteLocalId', Sort.desc);
     });
   }
 
@@ -1402,6 +1533,13 @@ extension VentaPendienteIsarQueryWhereDistinct
   }
 
   QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QDistinct>
+  distinctByClientePendienteLocalId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'clientePendienteLocalId');
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, VentaPendienteIsar, QDistinct>
   distinctByCorrelationId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -1455,9 +1593,16 @@ extension VentaPendienteIsarQueryProperty
     });
   }
 
-  QueryBuilder<VentaPendienteIsar, int, QQueryOperations> clienteIdProperty() {
+  QueryBuilder<VentaPendienteIsar, int?, QQueryOperations> clienteIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'clienteId');
+    });
+  }
+
+  QueryBuilder<VentaPendienteIsar, int?, QQueryOperations>
+  clientePendienteLocalIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'clientePendienteLocalId');
     });
   }
 

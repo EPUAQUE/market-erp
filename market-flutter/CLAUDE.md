@@ -641,33 +641,21 @@ same limitation as the pre-existing ventas offline path.
 - **Clientes nuevos** (`ClienteSelectorSheet._guardarClienteNuevo`): offline,
   queues a `NuevoClientePendiente` instead of calling `ClientesApi.crear`,
   shows a snackbar, and pops the sheet with **no** `Cliente` (`pop()`
-  instead of `pop(cliente)`). This is the one real design constraint: a
-  cliente created offline has no server id yet (only a local Isar
-  autoIncrement id, meaningless to the backend), and `ClienteSelectorSheet`
-  is only ever reached from `CobroSheet`'s crédito flow, which needs a real
-  `clienteId` *immediately* to attach to the venta being confirmed. Rather
-  than build client-side temporary-id tracking + id-resolution in
-  `SyncEngine` (a much bigger feature — the cliente would need to sync
-  before the venta that references it, and the venta would need to carry a
-  placeholder id to resolve later), this phase keeps it simple and honest:
-  the new cliente is queued for creation on next reconnect, but **can't be
-  used for a credit sale in the same offline session** — the sheet's own
-  message tells the vendedor to use Consumidor Final for now. A vendedor
-  who needs to sell to a genuinely new client on credit while offline still
-  can't — that's the real, deliberately-accepted scope cut here.
+  instead of `pop(cliente)`). ~~This is the one real design constraint: a
+  cliente created offline has no server id yet... can't be used for a
+  credit sale in the same offline session.~~ **Closed — see "Dependencias
+  de cola offline" below.**
 
-`SyncEngineNotifier._drenarCola()` now drains three independent queues
-(clientes → ventas → movimientos de caja; order doesn't matter, nothing in
-any queue references anything in another — offline ventas never carry a
-pending-cliente reference, per the constraint above). Each queue's own
-network-vs-business-failure handling is unchanged from the ventas
-pattern (network failure stops that queue's drain and retries next
-reconnect; business failure — e.g. `ClienteDuplicadoException` — marks that
-item with `mensajeError` for manual review and moves on). The connectivity
-badge's pending-count provider was renamed `ventasPendientesProvider` →
-`pendientesSincronizarProvider` and now sums all three queues, with the
-tooltip wording generalized from "N venta(s) pendiente(s)" to "N
-elemento(s) pendiente(s)".
+`SyncEngineNotifier._drenarCola()` drains three queues (clientes → ventas →
+movimientos de caja) — **the order now matters** (see below), it's not just
+FIFO-per-queue anymore. Each queue's own network-vs-business-failure
+handling is unchanged from the ventas pattern (network failure stops that
+queue's drain and retries next reconnect; business failure — e.g.
+`ClienteDuplicadoException` — marks that item with `mensajeError` for manual
+review and moves on). The connectivity badge's pending-count provider was
+renamed `ventasPendientesProvider` → `pendientesSincronizarProvider` and now
+sums all three queues, with the tooltip wording generalized from "N
+venta(s) pendiente(s)" to "N elemento(s) pendiente(s)".
 
 Verified: `dart run build_runner build` generated the two new Isar
 collections cleanly; `flutter analyze` passes across
@@ -689,6 +677,66 @@ session's error budget before a real offline-mode click-test could happen;
 combined with `LocalStore.disponible` being hardcoded `false` on web
 regardless, offline queuing for these two actions needs verification on a
 real Android device/emulator, same as the rest of the offline story.
+
+### Dependencias de cola offline — built this phase (Fase 2 parte C, PLAN_MEJORAS.md)
+
+Closes the gap above: a cliente created offline **can now be used
+immediately** for a venta a crédito in the same offline session, before
+either one has synced. Previously `ClienteSelectorSheet` popped with no
+`Cliente` at all when offline — the vendedor had no way to attach a
+brand-new client to a credit sale until reconnecting and trying again.
+
+**`ClienteSeleccionado`** (`clientes/data/cliente.dart`) replaces `Cliente`
+as what `ClienteSelectorSheet` returns — either `.sincronizado(cliente)` (a
+real server id) or `.pendienteLocal(pendienteLocalId: ..., nombre: ...,
+limiteCredito: ...)` (the local Isar id of a `ClientePendienteIsar` just
+queued, no server id yet). `CobroSheet._clienteCredito` is now typed
+`ClienteSeleccionado?`, shows a "se creará al reconectar" note under the
+límite de crédito line when `esPendienteLocal`, and passes
+`clientePendienteLocalId` through to `CheckoutNotifier.confirmar`.
+
+**Forcing the offline path**: `CheckoutNotifier.confirmar` ANDs
+`clientePendienteLocalId == null` into its `hayRed` check — a venta
+referencing a not-yet-synced local cliente always queues (`_confirmarOffline`),
+even if the backend is reachable at that exact moment, since the referenced
+client has no real id to send yet either way. `NuevaVentaPendiente`/
+`VentaPendienteIsar.clienteId` is now nullable — exactly one of `clienteId`
+(real id) or `clientePendienteLocalId` (local id) is set per queued venta.
+
+**Resolving the reference at sync time**: `ClientePendienteIsar` gained
+`clienteServidorId` (nullable) — a synced cliente is no longer deleted after
+`_sincronizarCliente` succeeds (unlike ventas/movimientos), it's kept with
+`clienteServidorId` set so a venta that still references it by
+`clientePendienteLocalId` can resolve the real id even across an app
+restart mid-drain. `listarClientesPendientes`/`contarClientesPendientes`
+exclude these already-synced rows (`clienteServidorIdIsNull()`), so they
+don't get resynced or double-counted as pending — they're pure historical
+mapping at that point, cleaned up whenever `limpiarTodo()` next runs (only
+once every real pendiente, including any venta still waiting on them, is
+gone — see `LocalStore.limpiarTodo` doc).
+
+`SyncEngineNotifier._sincronizarVenta` resolves the dependency via a new
+`_resolverClientePendiente`, one of three outcomes
+(`_ResolucionClientePendiente` sealed hierarchy): the pending cliente's own
+sync already failed for good → mark the venta itself with a
+`mensajeError` explaining which cliente failed and why (surfaces in
+`PendientesErrorScreen`, doesn't retry forever silently); it hasn't
+synced yet (clientes always drain before ventas in the same
+`_drenarCola()` pass, so this only happens if *that* drain itself stopped
+early on a network failure) → treat exactly like this venta's own network
+failure, return `false` (stop the ventas queue here, retry next
+reconnect, order preserved); resolved → use the real
+`clienteServidorId` for `VentaApi.crear`.
+
+Verified: `dart run build_runner build` regenerated both Isar schemas
+cleanly (`ClientePendienteIsar.clienteServidorId`,
+`VentaPendienteIsar.clientePendienteLocalId` + nullable `clienteId`).
+`flutter analyze`/`flutter test` clean across the whole project. **Not
+click-tested** — this requires driving the actual offline branch (Isar
+`disponible == true`), which needs a real Android device/emulator; `WebLocalStore`
+still hardcodes `disponible = false`, so this can't be exercised in Chrome.
+Same open item as the rest of this file's offline story: verify on a real
+device before considering this closed end-to-end.
 
 ### Cobros sueltos (`cuentas_por_cobrar` feature) — built this phase
 

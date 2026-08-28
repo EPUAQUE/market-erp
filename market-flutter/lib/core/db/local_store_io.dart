@@ -91,6 +91,7 @@ class IsarLocalStore implements LocalStore {
       ..correlationId = venta.correlationId
       ..tiendaId = venta.tiendaId
       ..clienteId = venta.clienteId
+      ..clientePendienteLocalId = venta.clientePendienteLocalId
       ..lineas = venta.lineas
           .map(
             (l) => LineaCarritoIsar()
@@ -238,14 +239,14 @@ class IsarLocalStore implements LocalStore {
   }
 
   @override
-  Future<void> encolarClientePendiente(NuevoClientePendiente cliente) async {
+  Future<int> encolarClientePendiente(NuevoClientePendiente cliente) async {
     final pendiente = ClientePendienteIsar()
       ..nombre = cliente.nombre
       ..telefono = cliente.telefono
       ..nit = cliente.nit
       ..limiteCredito = cliente.limiteCredito?.toString()
       ..creadaEn = cliente.creadaEn;
-    await _isar.writeTxn(() => _isar.clientePendienteIsars.put(pendiente));
+    return _isar.writeTxn(() => _isar.clientePendienteIsars.put(pendiente));
   }
 
   @override
@@ -254,6 +255,8 @@ class IsarLocalStore implements LocalStore {
         .where()
         .filter()
         .mensajeErrorIsNull()
+        .and()
+        .clienteServidorIdIsNull()
         .sortByCreadaEn()
         .findAll();
     return pendientes.map(_aPlanoCliente).toList();
@@ -265,6 +268,23 @@ class IsarLocalStore implements LocalStore {
     if (cliente == null) return;
     cliente.mensajeError = mensaje;
     await _isar.writeTxn(() => _isar.clientePendienteIsars.put(cliente));
+  }
+
+  @override
+  Future<void> marcarClientePendienteSincronizado(
+    int id,
+    int clienteServidorId,
+  ) async {
+    final cliente = await _isar.clientePendienteIsars.get(id);
+    if (cliente == null) return;
+    cliente.clienteServidorId = clienteServidorId;
+    await _isar.writeTxn(() => _isar.clientePendienteIsars.put(cliente));
+  }
+
+  @override
+  Future<ClientePendienteLocal?> obtenerClientePendiente(int id) async {
+    final cliente = await _isar.clientePendienteIsars.get(id);
+    return cliente == null ? null : _aPlanoCliente(cliente);
   }
 
   @override
@@ -291,9 +311,12 @@ class IsarLocalStore implements LocalStore {
     await _isar.writeTxn(() => _isar.clientePendienteIsars.delete(id));
   }
 
+  /// Excluye los ya sincronizados (`clienteServidorId` no nulo) — esas filas
+  /// se conservan solo como mapeo para ventas que aún las referencian (ver
+  /// `marcarClientePendienteSincronizado`), no cuentan como "pendiente".
   @override
   Future<int> contarClientesPendientes() =>
-      _isar.clientePendienteIsars.count();
+      _isar.clientePendienteIsars.filter().clienteServidorIdIsNull().count();
 
   @override
   Future<void> limpiarTodo() async {
@@ -316,6 +339,7 @@ class IsarLocalStore implements LocalStore {
           : null,
       creadaEn: c.creadaEn,
       mensajeError: c.mensajeError,
+      clienteServidorId: c.clienteServidorId,
     );
   }
 
@@ -325,6 +349,7 @@ class IsarLocalStore implements LocalStore {
       correlationId: v.correlationId,
       tiendaId: v.tiendaId,
       clienteId: v.clienteId,
+      clientePendienteLocalId: v.clientePendienteLocalId,
       lineas: v.lineas
           .map(
             (l) => LineaCarrito(

@@ -83,7 +83,7 @@ class WebLocalStore implements LocalStore {
   Future<int> contarMovimientosCajaPendientes() async => 0;
 
   @override
-  Future<void> encolarClientePendiente(NuevoClientePendiente cliente) async {
+  Future<int> encolarClientePendiente(NuevoClientePendiente cliente) async {
     throw UnsupportedError(
       'No hay almacenamiento local disponible en web para encolar clientes offline.',
     );
@@ -95,6 +95,15 @@ class WebLocalStore implements LocalStore {
 
   @override
   Future<void> marcarClientePendienteConError(int id, String mensaje) async {}
+
+  @override
+  Future<void> marcarClientePendienteSincronizado(
+    int id,
+    int clienteServidorId,
+  ) async {}
+
+  @override
+  Future<ClientePendienteLocal?> obtenerClientePendiente(int id) async => null;
 
   @override
   Future<List<ClientePendienteLocal>> listarClientesPendientesConError() async =>

@@ -10,7 +10,8 @@ import '../data/cliente_pendiente_local.dart';
 const _primary = Color(0xFF2E8B57);
 
 /// Hoja de selección/alta rápida de cliente — usada por el flujo de venta a
-/// crédito. Devuelve el [Cliente] elegido/creado vía `Navigator.pop`.
+/// crédito. Devuelve un [ClienteSeleccionado] elegido/creado vía
+/// `Navigator.pop`.
 class ClienteSelectorSheet extends ConsumerStatefulWidget {
   const ClienteSelectorSheet({super.key});
 
@@ -82,7 +83,9 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
             limiteCredito: limiteCredito,
           );
       ref.invalidate(clientesProvider);
-      if (mounted) Navigator.of(context).pop(cliente);
+      if (mounted) {
+        Navigator.of(context).pop(ClienteSeleccionado.sincronizado(cliente));
+      }
     } catch (_) {
       setState(() {
         _guardando = false;
@@ -92,10 +95,12 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
   }
 
   /// Sin conexión no se puede asignar un id real de cliente, así que el
-  /// alta queda encolada para sincronizar (ver `SyncEngine`) pero no se
-  /// puede usar de inmediato en la venta actual — la hoja se cierra sin
-  /// devolver un [Cliente] (`pop(null)`), igual que si el usuario hubiera
-  /// cancelado. Ver CLAUDE.md.
+  /// alta queda encolada para sincronizar (ver `SyncEngine`) — pero SÍ se
+  /// puede usar de inmediato en la venta actual: la hoja devuelve una
+  /// referencia pendiente (`ClienteSeleccionado.pendienteLocal`) con el id
+  /// local recién asignado. `CheckoutNotifier` la guarda junto con la venta
+  /// y `SyncEngineNotifier` la resuelve al id real una vez que este cliente
+  /// sincronice (clientes siempre se drenan antes que ventas).
   Future<void> _guardarClienteNuevoOffline({
     required String nombre,
     required String? telefono,
@@ -112,7 +117,7 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
         });
         return;
       }
-      await store.encolarClientePendiente(
+      final pendienteLocalId = await store.encolarClientePendiente(
         NuevoClientePendiente(
           nombre: nombre,
           telefono: telefono,
@@ -125,12 +130,19 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Cliente guardado — se creará al reconectar. Usa Consumidor '
-            'Final por ahora si necesitas facturar de inmediato.',
+            'Cliente guardado — se creará al reconectar y ya puedes usarlo '
+            'en esta venta.',
           ),
         ),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(
+        ClienteSeleccionado.pendienteLocal(
+          pendienteLocalId: pendienteLocalId,
+          nombre: nombre,
+          nit: nit,
+          limiteCredito: limiteCredito,
+        ),
+      );
     } catch (_) {
       setState(() {
         _guardando = false;
@@ -200,7 +212,9 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
                         if (cliente.telefono != null) cliente.telefono!,
                       ].join(' · '),
                     ),
-                    onTap: () => Navigator.of(context).pop(cliente),
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pop(ClienteSeleccionado.sincronizado(cliente)),
                   );
                 },
               );

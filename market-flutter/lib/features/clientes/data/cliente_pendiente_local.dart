@@ -11,6 +11,7 @@ class ClientePendienteLocal {
     required this.limiteCredito,
     required this.creadaEn,
     required this.mensajeError,
+    required this.clienteServidorId,
   });
 
   final int id;
@@ -20,6 +21,9 @@ class ClientePendienteLocal {
   final Decimal? limiteCredito;
   final DateTime creadaEn;
   final String? mensajeError;
+
+  /// `null` mientras no se haya sincronizado — ver `ClientePendienteIsar`.
+  final int? clienteServidorId;
 }
 
 /// Datos de un cliente nuevo por encolar — sin `id` todavía.

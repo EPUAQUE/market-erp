@@ -18,25 +18,30 @@ const ClientePendienteIsarSchema = CollectionSchema(
   name: r'ClientePendienteIsar',
   id: 5995156034749508888,
   properties: {
-    r'creadaEn': PropertySchema(
+    r'clienteServidorId': PropertySchema(
       id: 0,
+      name: r'clienteServidorId',
+      type: IsarType.long,
+    ),
+    r'creadaEn': PropertySchema(
+      id: 1,
       name: r'creadaEn',
       type: IsarType.dateTime,
     ),
     r'limiteCredito': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'limiteCredito',
       type: IsarType.string,
     ),
     r'mensajeError': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'mensajeError',
       type: IsarType.string,
     ),
-    r'nit': PropertySchema(id: 3, name: r'nit', type: IsarType.string),
-    r'nombre': PropertySchema(id: 4, name: r'nombre', type: IsarType.string),
+    r'nit': PropertySchema(id: 4, name: r'nit', type: IsarType.string),
+    r'nombre': PropertySchema(id: 5, name: r'nombre', type: IsarType.string),
     r'telefono': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'telefono',
       type: IsarType.string,
     ),
@@ -97,12 +102,13 @@ void _clientePendienteIsarSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.creadaEn);
-  writer.writeString(offsets[1], object.limiteCredito);
-  writer.writeString(offsets[2], object.mensajeError);
-  writer.writeString(offsets[3], object.nit);
-  writer.writeString(offsets[4], object.nombre);
-  writer.writeString(offsets[5], object.telefono);
+  writer.writeLong(offsets[0], object.clienteServidorId);
+  writer.writeDateTime(offsets[1], object.creadaEn);
+  writer.writeString(offsets[2], object.limiteCredito);
+  writer.writeString(offsets[3], object.mensajeError);
+  writer.writeString(offsets[4], object.nit);
+  writer.writeString(offsets[5], object.nombre);
+  writer.writeString(offsets[6], object.telefono);
 }
 
 ClientePendienteIsar _clientePendienteIsarDeserialize(
@@ -112,13 +118,14 @@ ClientePendienteIsar _clientePendienteIsarDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = ClientePendienteIsar();
-  object.creadaEn = reader.readDateTime(offsets[0]);
+  object.clienteServidorId = reader.readLongOrNull(offsets[0]);
+  object.creadaEn = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.limiteCredito = reader.readStringOrNull(offsets[1]);
-  object.mensajeError = reader.readStringOrNull(offsets[2]);
-  object.nit = reader.readStringOrNull(offsets[3]);
-  object.nombre = reader.readString(offsets[4]);
-  object.telefono = reader.readStringOrNull(offsets[5]);
+  object.limiteCredito = reader.readStringOrNull(offsets[2]);
+  object.mensajeError = reader.readStringOrNull(offsets[3]);
+  object.nit = reader.readStringOrNull(offsets[4]);
+  object.nombre = reader.readString(offsets[5]);
+  object.telefono = reader.readStringOrNull(offsets[6]);
   return object;
 }
 
@@ -130,16 +137,18 @@ P _clientePendienteIsarDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
+      return (reader.readString(offset)) as P;
+    case 6:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -251,6 +260,103 @@ extension ClientePendienteIsarQueryFilter
           ClientePendienteIsar,
           QFilterCondition
         > {
+  QueryBuilder<
+    ClientePendienteIsar,
+    ClientePendienteIsar,
+    QAfterFilterCondition
+  >
+  clienteServidorIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'clienteServidorId'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ClientePendienteIsar,
+    ClientePendienteIsar,
+    QAfterFilterCondition
+  >
+  clienteServidorIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'clienteServidorId'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ClientePendienteIsar,
+    ClientePendienteIsar,
+    QAfterFilterCondition
+  >
+  clienteServidorIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'clienteServidorId', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ClientePendienteIsar,
+    ClientePendienteIsar,
+    QAfterFilterCondition
+  >
+  clienteServidorIdGreaterThan(int? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'clienteServidorId',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ClientePendienteIsar,
+    ClientePendienteIsar,
+    QAfterFilterCondition
+  >
+  clienteServidorIdLessThan(int? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'clienteServidorId',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ClientePendienteIsar,
+    ClientePendienteIsar,
+    QAfterFilterCondition
+  >
+  clienteServidorIdBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'clienteServidorId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
   QueryBuilder<
     ClientePendienteIsar,
     ClientePendienteIsar,
@@ -1422,6 +1528,20 @@ extension ClientePendienteIsarQueryLinks
 extension ClientePendienteIsarQuerySortBy
     on QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QSortBy> {
   QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QAfterSortBy>
+  sortByClienteServidorId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clienteServidorId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QAfterSortBy>
+  sortByClienteServidorIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clienteServidorId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QAfterSortBy>
   sortByCreadaEn() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'creadaEn', Sort.asc);
@@ -1508,6 +1628,20 @@ extension ClientePendienteIsarQuerySortBy
 
 extension ClientePendienteIsarQuerySortThenBy
     on QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QSortThenBy> {
+  QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QAfterSortBy>
+  thenByClienteServidorId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clienteServidorId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QAfterSortBy>
+  thenByClienteServidorIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'clienteServidorId', Sort.desc);
+    });
+  }
+
   QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QAfterSortBy>
   thenByCreadaEn() {
     return QueryBuilder.apply(this, (query) {
@@ -1610,6 +1744,13 @@ extension ClientePendienteIsarQuerySortThenBy
 extension ClientePendienteIsarQueryWhereDistinct
     on QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QDistinct> {
   QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QDistinct>
+  distinctByClienteServidorId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'clienteServidorId');
+    });
+  }
+
+  QueryBuilder<ClientePendienteIsar, ClientePendienteIsar, QDistinct>
   distinctByCreadaEn() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'creadaEn');
@@ -1665,6 +1806,13 @@ extension ClientePendienteIsarQueryProperty
   QueryBuilder<ClientePendienteIsar, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<ClientePendienteIsar, int?, QQueryOperations>
+  clienteServidorIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'clienteServidorId');
     });
   }
 

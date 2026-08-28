@@ -76,11 +76,19 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   /// idempotencia: un reintento manual tras un timeout debe mandar la MISMA
   /// clave que el intento original para que el backend lo reconozca como el
   /// mismo intento, no como una venta nueva.
+  ///
+  /// [clientePendienteLocalId]: id local de un cliente creado offline en esta
+  /// misma sesión, todavía sin id real de servidor (ver
+  /// `ClienteSeleccionado.pendienteLocal`). Si viene presente, la venta SIEMPRE
+  /// se encola offline sin importar `hayRed` — el cliente no tiene id real
+  /// todavía, así que no hay forma de mandarla al backend hasta que
+  /// `SyncEngineNotifier` sincronice primero ese cliente y resuelva su id.
   Future<void> confirmar({
     required int tiendaId,
     required MetodoPago metodo,
     required String correlationId,
     int? clienteId,
+    int? clientePendienteLocalId,
     Map<MetodoPago, Decimal>? desglose,
   }) async {
     final carrito = ref.read(carritoProvider);
@@ -91,7 +99,9 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
     state = const CheckoutState(loading: true);
     try {
-      final hayRed = ref.read(backendAlcanzableProvider).value ?? true;
+      final hayRed =
+          (ref.read(backendAlcanzableProvider).value ?? true) &&
+          clientePendienteLocalId == null;
       if (metodo == MetodoPago.mixto && !hayRed) {
         throw ApiException(
           message: 'El pago mixto requiere conexión a internet.',
@@ -111,6 +121,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
           tiendaId: tiendaId,
           metodo: metodo,
           clienteId: clienteId,
+          clientePendienteLocalId: clientePendienteLocalId,
           carrito: carrito,
           correlationId: correlationId,
         );
@@ -154,6 +165,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     required MetodoPago metodo,
     required String correlationId,
     int? clienteId,
+    int? clientePendienteLocalId,
     required CarritoState carrito,
   }) async {
     final store = await ref.read(localStoreProvider.future);
@@ -167,7 +179,14 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       NuevaVentaPendiente(
         correlationId: correlationId,
         tiendaId: tiendaId,
-        clienteId: clienteId ?? _clienteConsumidorFinalIdFallback,
+        // Exactamente uno de los dos: si hay un cliente pendiente de
+        // sincronizar, esta venta lo referencia por su id local y espera a
+        // que SyncEngineNotifier resuelva el id real — nunca cae en
+        // Consumidor Final solo porque clienteId venga nulo en ese caso.
+        clienteId: clientePendienteLocalId == null
+            ? (clienteId ?? _clienteConsumidorFinalIdFallback)
+            : null,
+        clientePendienteLocalId: clientePendienteLocalId,
         lineas: carrito.lineas,
         metodoPago: metodo.name,
         montoACobrar: metodo == MetodoPago.credito ? null : carrito.total,

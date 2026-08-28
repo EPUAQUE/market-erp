@@ -28,7 +28,7 @@ const _metodosMixto = [
 
 class _CobroSheetState extends ConsumerState<CobroSheet> {
   MetodoPago _metodo = MetodoPago.efectivo;
-  Cliente? _clienteCredito;
+  ClienteSeleccionado? _clienteCredito;
 
   /// Una sola clave de idempotencia para todos los intentos de cobro de esta
   /// hoja abierta — generada al abrirla, reutilizada si el usuario reintenta
@@ -73,7 +73,7 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
   }
 
   Future<void> _elegirCliente() async {
-    final cliente = await showModalBottomSheet<Cliente>(
+    final cliente = await showModalBottomSheet<ClienteSeleccionado>(
       context: context,
       isScrollControlled: true,
       builder: (_) => const ClienteSelectorSheet(),
@@ -89,6 +89,7 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
           metodo: _metodo,
           correlationId: _correlationId,
           clienteId: _clienteCredito?.id,
+          clientePendienteLocalId: _clienteCredito?.pendienteLocalId,
           desglose: _metodo == MetodoPago.mixto ? _desgloseMixto : null,
         );
   }
@@ -227,9 +228,13 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  _clienteCredito!.limiteCredito != null
-                      ? 'Límite de crédito: Q ${_clienteCredito!.limiteCredito}'
-                      : 'Sin límite de crédito definido para este cliente.',
+                  [
+                    _clienteCredito!.limiteCredito != null
+                        ? 'Límite de crédito: Q ${_clienteCredito!.limiteCredito}'
+                        : 'Sin límite de crédito definido para este cliente.',
+                    if (_clienteCredito!.esPendienteLocal)
+                      'Se creará al reconectar — esta venta espera a que sincronice.',
+                  ].join(' '),
                   style: const TextStyle(fontSize: 12, color: Colors.black54),
                 ),
               ),

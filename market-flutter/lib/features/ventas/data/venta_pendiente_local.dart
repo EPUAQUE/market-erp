@@ -12,6 +12,7 @@ class VentaPendienteLocal {
     required this.correlationId,
     required this.tiendaId,
     required this.clienteId,
+    required this.clientePendienteLocalId,
     required this.lineas,
     required this.metodoPago,
     required this.montoACobrar,
@@ -22,7 +23,12 @@ class VentaPendienteLocal {
   final int id;
   final String correlationId;
   final int tiendaId;
-  final int clienteId;
+
+  /// `null` cuando `clientePendienteLocalId` no lo es — ver
+  /// `VentaPendienteIsar`.
+  final int? clienteId;
+
+  final int? clientePendienteLocalId;
   final List<LineaCarrito> lineas;
   final String metodoPago;
 
@@ -45,6 +51,7 @@ class NuevaVentaPendiente {
     required this.correlationId,
     required this.tiendaId,
     required this.clienteId,
+    required this.clientePendienteLocalId,
     required this.lineas,
     required this.metodoPago,
     required this.montoACobrar,
@@ -53,7 +60,10 @@ class NuevaVentaPendiente {
 
   final String correlationId;
   final int tiendaId;
-  final int clienteId;
+
+  /// Exactamente uno de `clienteId`/`clientePendienteLocalId` es no-nulo.
+  final int? clienteId;
+  final int? clientePendienteLocalId;
   final List<LineaCarrito> lineas;
   final String metodoPago;
   final Decimal? montoACobrar;

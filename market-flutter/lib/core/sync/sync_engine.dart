@@ -17,14 +17,20 @@ import '../db/local_store_provider.dart';
 import '../network/api_exception.dart';
 
 /// Drena las colas offline (clientes, ventas, movimientos de caja) al
-/// reconectar — cada una FIFO por `creadaEn`, y las tres son independientes
-/// entre sí (una venta offline nunca referencia un cliente offline todavía
-/// sin sincronizar — ver `ClienteSelectorSheet`/CLAUDE.md — así que el orden
-/// entre colas no importa). Un fallo de *red* detiene el drenado de ESA cola
-/// (se reintenta en la próxima reconexión, sin perder el orden); un fallo de
-/// *negocio* (ej. producto ya no vendible, cliente duplicado) marca ese
-/// ítem con `mensajeError` y sigue con los siguientes — no bloquea la cola
-/// por un ítem que un encargado debe revisar a mano.
+/// reconectar — cada una FIFO por `creadaEn`. El orden entre colas SÍ
+/// importa ahora: clientes siempre antes que ventas, porque una venta
+/// offline puede referenciar un cliente creado en la misma sesión offline
+/// todavía sin sincronizar (`VentaPendienteLocal.clientePendienteLocalId`,
+/// ver `ClienteSelectorSheet`) — `_sincronizarVenta` necesita que ese
+/// cliente ya haya tenido su oportunidad de sincronizar en esta misma
+/// pasada para poder resolver su id real. Un fallo de *red* detiene el
+/// drenado de ESA cola (se reintenta en la próxima reconexión, sin perder
+/// el orden); un fallo de *negocio* (ej. producto ya no vendible, cliente
+/// duplicado) marca ese ítem con `mensajeError` y sigue con los
+/// siguientes — no bloquea la cola por un ítem que un encargado debe
+/// revisar a mano. Una venta cuyo cliente pendiente todavía no sincroniza
+/// (ni con éxito ni con error) se trata como un fallo de red: se reintenta
+/// en el próximo drenado sin marcar error.
 class SyncEngineNotifier extends Notifier<EstadoConexion> {
   bool _drenando = false;
 
@@ -121,12 +127,31 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
     LocalStore store,
     VentaPendienteLocal venta,
   ) async {
+    int clienteId;
+    if (venta.clientePendienteLocalId == null) {
+      clienteId = venta.clienteId!;
+    } else {
+      final resuelto = await _resolverClientePendiente(
+        store,
+        venta,
+        venta.clientePendienteLocalId!,
+      );
+      switch (resuelto) {
+        case _ClientePendienteAunNoListo():
+          return false;
+        case _ClientePendienteFalloPermanente():
+          return true;
+        case _ClientePendienteResuelto(:final clienteServidorId):
+          clienteId = clienteServidorId;
+      }
+    }
+
     final ventaApi = ref.read(ventaApiProvider);
     final Venta creada;
     try {
       creada = await ventaApi.crear(
         tiendaId: venta.tiendaId,
-        clienteId: venta.clienteId,
+        clienteId: clienteId,
         lineas: venta.lineas,
         metodoPago: metodoPagoFromJson(venta.metodoPago),
         correlationId: venta.correlationId,
@@ -165,6 +190,46 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
     return true;
   }
 
+  /// Resuelve el id real de servidor de un cliente creado offline en la
+  /// misma sesión, referenciado por `clientePendienteLocalId`. Nunca lanza:
+  /// cada desenlace posible (todavía no sincroniza / falló para siempre /
+  /// resuelto) es un caso explícito de [_ResolucionClientePendiente].
+  Future<_ResolucionClientePendiente> _resolverClientePendiente(
+    LocalStore store,
+    VentaPendienteLocal venta,
+    int clientePendienteLocalId,
+  ) async {
+    final clientePendiente = await store.obtenerClientePendiente(
+      clientePendienteLocalId,
+    );
+    if (clientePendiente == null) {
+      // No debería pasar (nada borra un ClientePendienteIsar mientras algo
+      // lo referencie), pero si pasa no hay nada que reintentar solo.
+      await store.marcarVentaPendienteConError(
+        venta.id,
+        'El cliente asociado a esta venta ya no existe localmente.',
+      );
+      return const _ClientePendienteFalloPermanente();
+    }
+    if (clientePendiente.mensajeError != null) {
+      await store.marcarVentaPendienteConError(
+        venta.id,
+        'El cliente asociado no se pudo sincronizar: '
+        '${clientePendiente.mensajeError}',
+      );
+      return const _ClientePendienteFalloPermanente();
+    }
+    final clienteServidorId = clientePendiente.clienteServidorId;
+    if (clienteServidorId == null) {
+      // Todavía no sincroniza. Clientes siempre se drenan antes que ventas
+      // en la misma pasada de _drenarCola, así que si sigue nulo aquí es
+      // porque ese drenado se detuvo antes de llegar a este cliente (fallo
+      // de red), no porque haya fallado — se reintenta en el próximo.
+      return const _ClientePendienteAunNoListo();
+    }
+    return _ClientePendienteResuelto(clienteServidorId);
+  }
+
   /// `null` (red caída al confirmar) se trata igual que "no, no está
   /// completada" — el llamador la marca con error y un encargado la revisa a
   /// mano; más seguro que asumir éxito sin poder confirmarlo.
@@ -186,7 +251,7 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
     ClientePendienteLocal cliente,
   ) async {
     try {
-      await ref
+      final creado = await ref
           .read(clientesApiProvider)
           .crear(
             nombre: cliente.nombre,
@@ -195,7 +260,11 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
             limiteCredito: cliente.limiteCredito,
           );
       ref.invalidate(clientesProvider);
-      await store.eliminarClientePendiente(cliente.id);
+      // No se borra (a diferencia de ventas/movimientos): una venta
+      // encolada puede seguir referenciando este cliente por
+      // clientePendienteLocalId hasta que ella misma sincronice — ver
+      // _resolverClientePendiente.
+      await store.marcarClientePendienteSincronizado(cliente.id, creado.id);
       return true;
     } on ApiException catch (error) {
       if (error.isNetworkError) return false;
@@ -315,3 +384,22 @@ Decimal _totalVenta(VentaPendienteLocal venta) => venta.lineas.fold(
   Decimal.zero,
   (total, linea) => total + linea.precioUnitario * linea.cantidad,
 );
+
+/// Desenlaces posibles de resolver el cliente pendiente de una venta offline
+/// — ver `SyncEngineNotifier._resolverClientePendiente`.
+sealed class _ResolucionClientePendiente {
+  const _ResolucionClientePendiente();
+}
+
+class _ClientePendienteAunNoListo extends _ResolucionClientePendiente {
+  const _ClientePendienteAunNoListo();
+}
+
+class _ClientePendienteFalloPermanente extends _ResolucionClientePendiente {
+  const _ClientePendienteFalloPermanente();
+}
+
+class _ClientePendienteResuelto extends _ResolucionClientePendiente {
+  const _ClientePendienteResuelto(this.clienteServidorId);
+  final int clienteServidorId;
+}

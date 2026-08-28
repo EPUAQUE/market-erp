@@ -23,7 +23,17 @@ class VentaPendienteIsar {
 
   late String correlationId;
   late int tiendaId;
-  late int clienteId;
+
+  /// `null` cuando la venta referencia un cliente todavía no sincronizado —
+  /// ver `clientePendienteLocalId`. Exactamente uno de los dos es no-nulo.
+  int? clienteId;
+
+  /// Id local (Isar) de un `ClientePendienteIsar` creado en la misma sesión
+  /// offline, cuando el cliente elegido para esta venta todavía no tiene id
+  /// real de servidor. `SyncEngineNotifier._sincronizarVenta` lo resuelve
+  /// antes de mandar la venta — nunca se manda este id al backend.
+  int? clientePendienteLocalId;
+
   late List<LineaCarritoIsar> lineas;
 
   /// Nombre del enum `MetodoPago` — solo para mostrarlo en el historial local,

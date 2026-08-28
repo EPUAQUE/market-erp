@@ -288,7 +288,16 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
 - [ ] Evitar el ID fijo `1` para “Consumidor Final”; resolverlo por código estable
   expuesto por la API o configuración de tienda.
 - [ ] Impedir o advertir logout/desinstalación cuando existan operaciones pendientes.
-- [ ] Definir migración y versión del esquema Isar.
+- [x] Definir migración y versión del esquema Isar — resuelto (2026-08-28, parte C):
+  `esquemaLocalVersionActual` + colección `MetadatoLocalIsar` (una fila) registran con
+  qué versión se escribió la base local. Un cambio de versión detectado sin nada
+  pendiente real limpia el mirror y reinicia limpio (cero riesgo, es solo caché); con
+  algo pendiente, nunca se borra solo — cualquier migración real que un cambio no
+  aditivo necesite se agrega a mano en `_aplicarMigracionSiHaceFalta` para esa versión
+  específica antes de publicarla, no hay forma de derivarla genéricamente. Sin probar
+  contra un escenario real de actualización (requiere dispositivo real con una versión
+  anterior instalada, no solo tests unitarios) — ver `market-flutter/CLAUDE.md`,
+  "Versión de esquema local Isar".
 - [ ] Evaluar cifrado de datos locales o minimizar los datos personales persistidos.
 
 ### Pruebas requeridas
@@ -771,7 +780,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | Fase | Estado | PR/commit | Resultado de pruebas | Observaciones |
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
-| 2 — Idempotencia POS | Partes A, B y C (dependencias de cola) resueltas; resto de parte C (versión Isar, cifrado, bloqueo logout/desinstalación) pendiente | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C (dependencias de cola) solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión) listos. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
+| 2 — Idempotencia POS | Partes A y B resueltas; parte C: dependencias de cola y versión de esquema Isar resueltas, cifrado local y bloqueo logout/desinstalación pendientes de decisión | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar) listos. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | Pendiente | | | |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |

@@ -59,9 +59,16 @@ public class CajaSesionEntity {
     @OneToMany(mappedBy = "sesion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<MovimientoCajaEntity> movimientos = new ArrayList<>();
 
+    @Column(name = "correlation_id_apertura", length = 100)
+    private String correlationIdApertura;
+
+    @Column(name = "correlation_id_cierre", length = 100)
+    private String correlationIdCierre;
+
     public CajaSesionEntity(
             Long id, Long tiendaId, Instant fechaApertura, Instant fechaCierre, BigDecimal montoInicial,
-            BigDecimal montoFinalContado, EstadoCajaSesion estado) {
+            BigDecimal montoFinalContado, EstadoCajaSesion estado, String correlationIdApertura,
+            String correlationIdCierre) {
         this.id = id;
         this.tiendaId = tiendaId;
         this.fechaApertura = fechaApertura;
@@ -69,5 +76,7 @@ public class CajaSesionEntity {
         this.montoInicial = montoInicial;
         this.montoFinalContado = montoFinalContado;
         this.estado = estado;
+        this.correlationIdApertura = correlationIdApertura;
+        this.correlationIdCierre = correlationIdCierre;
     }
 }

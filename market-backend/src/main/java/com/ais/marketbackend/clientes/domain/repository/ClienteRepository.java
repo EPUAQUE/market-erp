@@ -12,5 +12,7 @@ public interface ClienteRepository {
 
     boolean existsByNit(String nit);
 
+    Optional<Cliente> findByCorrelationId(String correlationId);
+
     Pagina<Cliente> findAll(int pagina, int tamano);
 }

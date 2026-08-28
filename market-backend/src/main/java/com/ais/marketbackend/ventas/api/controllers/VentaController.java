@@ -13,6 +13,7 @@ import com.ais.marketbackend.ventas.application.dtos.PagoInmediato;
 import com.ais.marketbackend.ventas.application.services.interfaces.VentaService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +51,21 @@ public class VentaController {
     @RequiresPermission("VENTAS_VER")
     public ResponseEntity<VentaResponse> obtener(@PathVariable Long tiendaId, @PathVariable Long id) {
         return ResponseEntity.ok(mapper.toResponse(ventaService.obtener(tiendaId, id)));
+    }
+
+    /**
+     * Para resolver una respuesta incierta sin reintentar el {@code POST} a ciegas:
+     * el vendedor autenticado (nunca uno arbitrario) consulta si ya existe una
+     * venta con este {@code correlationId} antes de reenviar la creación.
+     */
+    @GetMapping("/correlation/{correlationId}")
+    @RequiresPermission("VENTAS_VER")
+    public ResponseEntity<VentaResponse> buscarPorCorrelationId(
+            @PathVariable Long tiendaId, @PathVariable String correlationId, Authentication authentication) {
+        Long vendedorId = usuarioService.obtenerPorUsername(authentication.getName()).id();
+        Optional<VentaResponse> encontrada = ventaService.buscarPorCorrelationId(tiendaId, vendedorId, correlationId)
+                .map(mapper::toResponse);
+        return encontrada.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping

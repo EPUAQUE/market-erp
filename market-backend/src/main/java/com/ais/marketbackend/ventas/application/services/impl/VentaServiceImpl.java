@@ -266,6 +266,17 @@ public class VentaServiceImpl implements VentaService {
     }
 
     @Override
+    public Optional<VentaResumen> buscarPorCorrelationId(Long tiendaId, Long vendedorId, String correlationId) {
+        String correlationIdNormalizado = normalizarCorrelationId(correlationId);
+        if (correlationIdNormalizado == null) {
+            return Optional.empty();
+        }
+        return ventaRepository
+                .findByTiendaIdAndVendedorIdAndCorrelationId(tiendaId, vendedorId, correlationIdNormalizado)
+                .map(this::toResumen);
+    }
+
+    @Override
     public List<VentaResumen> listarPorTienda(Long tiendaId) {
         return ventaRepository.findByTiendaId(tiendaId).stream().map(this::toResumen).toList();
     }

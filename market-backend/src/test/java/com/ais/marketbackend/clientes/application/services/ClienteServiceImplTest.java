@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 import com.ais.marketbackend.clientes.application.dtos.ClienteResumen;
 import com.ais.marketbackend.clientes.application.services.impl.ClienteServiceImpl;
 import com.ais.marketbackend.clientes.domain.exception.ClienteDuplicadoException;
+import com.ais.marketbackend.clientes.domain.exception.CorrelationIdReutilizadoException;
+import com.ais.marketbackend.clientes.domain.exception.ReferenciaInvalidaException;
 import com.ais.marketbackend.clientes.domain.model.Cliente;
 import com.ais.marketbackend.clientes.domain.repository.ClienteRepository;
 import com.ais.marketbackend.shared.domain.Pagina;
@@ -72,6 +74,46 @@ class ClienteServiceImplTest {
                 null, "Juan Pérez", null, null, null, new BigDecimal("2500.00"));
 
         assertThat(resumen.limiteCredito()).isEqualByComparingTo("2500.00");
+    }
+
+    @Test
+    void crearSinCorrelationIdNuncaConsultaPorCorrelationId() {
+        clienteService.crear(null, "Consumidor Final", null, null, null, null);
+
+        verify(clienteRepository, never()).findByCorrelationId(any());
+    }
+
+    @Test
+    void crearConCorrelationIdYaExistenteYMismosDatosDevuelveElClienteExistenteSinCrearOtro() {
+        Cliente existente = Cliente.nuevo(null, "Consumidor Final", null, null, null, null, "corr-1");
+        when(clienteRepository.findByCorrelationId("corr-1")).thenReturn(Optional.of(existente));
+
+        ClienteResumen resumen = clienteService.crear(null, "Consumidor Final", null, null, null, null, "corr-1");
+
+        assertThat(resumen.nombre()).isEqualTo("Consumidor Final");
+        verify(clienteRepository, never()).save(any());
+        verify(clienteRepository, never()).existsByNit(any());
+    }
+
+    @Test
+    void crearConCorrelationIdReutilizadoConDatosDistintosLanzaConflicto() {
+        Cliente existente = Cliente.nuevo(null, "Consumidor Final", null, null, null, null, "corr-1");
+        when(clienteRepository.findByCorrelationId("corr-1")).thenReturn(Optional.of(existente));
+
+        assertThatThrownBy(() -> clienteService.crear(null, "Otro Nombre", null, null, null, null, "corr-1"))
+                .isInstanceOf(CorrelationIdReutilizadoException.class);
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void crearConColisionDeInsercionConcurrenteReleeYDevuelveElClienteIdempotente() {
+        Cliente existente = Cliente.nuevo(null, "Consumidor Final", null, null, null, null, "corr-1");
+        when(clienteRepository.findByCorrelationId("corr-1")).thenReturn(Optional.empty(), Optional.of(existente));
+        when(clienteRepository.save(any())).thenThrow(new ReferenciaInvalidaException("colisión"));
+
+        ClienteResumen resumen = clienteService.crear(null, "Consumidor Final", null, null, null, null, "corr-1");
+
+        assertThat(resumen.nombre()).isEqualTo("Consumidor Final");
     }
 
     @Test

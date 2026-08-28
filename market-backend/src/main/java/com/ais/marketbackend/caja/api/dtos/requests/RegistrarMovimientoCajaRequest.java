@@ -4,6 +4,7 @@ import com.ais.marketbackend.caja.domain.model.TipoMovimientoCaja;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record RegistrarMovimientoCajaRequest(
@@ -13,5 +14,9 @@ public record RegistrarMovimientoCajaRequest(
 
         @NotNull(message = "El monto es obligatorio")
         @Positive(message = "El monto debe ser mayor que cero")
-        BigDecimal monto) {
+        BigDecimal monto,
+
+        /** Opcional — clave de idempotencia para reintentos seguros. */
+        @Size(max = 100, message = "El correlationId no puede superar 100 caracteres")
+        String correlationId) {
 }

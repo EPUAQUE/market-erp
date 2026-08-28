@@ -11,9 +11,31 @@ public interface CajaService {
 
     CajaSesionResumen abrir(Long tiendaId, BigDecimal montoInicial);
 
+    /**
+     * {@code correlationId} es opcional. Un reintento con el mismo monto inicial bajo
+     * la misma clave (tienda, correlationId) devuelve la sesión ya creada tal cual en
+     * vez de fallar con {@code CajaSesionAbiertaException}; el mismo correlationId con
+     * un monto distinto lanza {@code CorrelationIdReutilizadoException} (409).
+     */
+    CajaSesionResumen abrir(Long tiendaId, BigDecimal montoInicial, String correlationId);
+
     CajaSesionResumen registrarMovimiento(Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto);
 
+    /**
+     * {@code correlationId} es opcional, con la misma semántica de idempotencia que
+     * {@link #abrir(Long, BigDecimal, String)}, resuelta contra los movimientos ya
+     * registrados en la caja abierta actual.
+     */
+    CajaSesionResumen registrarMovimiento(
+            Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto, String correlationId);
+
     CajaSesionResumen cerrar(Long tiendaId, BigDecimal montoFinalContado);
+
+    /**
+     * {@code correlationId} es opcional, misma semántica de idempotencia — incluso
+     * después de que la caja ya haya quedado {@code CERRADA} por el intento anterior.
+     */
+    CajaSesionResumen cerrar(Long tiendaId, BigDecimal montoFinalContado, String correlationId);
 
     CajaSesionResumen obtenerAbierta(Long tiendaId);
 

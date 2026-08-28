@@ -50,7 +50,7 @@ class CajaControllerTest {
 
     @Test
     void abrirDevuelve201() throws Exception {
-        when(cajaService.abrir(1L, new BigDecimal("100.00"))).thenReturn(resumen(9L, EstadoCajaSesion.ABIERTA));
+        when(cajaService.abrir(1L, new BigDecimal("100.00"), null)).thenReturn(resumen(9L, EstadoCajaSesion.ABIERTA));
 
         mockMvc.perform(post("/api/v1/caja/tiendas/1/abrir")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -61,7 +61,7 @@ class CajaControllerTest {
 
     @Test
     void abrirConSesionYaAbiertaDevuelve409() throws Exception {
-        when(cajaService.abrir(1L, new BigDecimal("100.00"))).thenThrow(new CajaSesionAbiertaException(1L));
+        when(cajaService.abrir(1L, new BigDecimal("100.00"), null)).thenThrow(new CajaSesionAbiertaException(1L));
 
         mockMvc.perform(post("/api/v1/caja/tiendas/1/abrir")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -80,7 +80,7 @@ class CajaControllerTest {
 
     @Test
     void cerrarDevuelveLaSesionCerrada() throws Exception {
-        when(cajaService.cerrar(1L, new BigDecimal("95.00"))).thenReturn(resumen(9L, EstadoCajaSesion.CERRADA));
+        when(cajaService.cerrar(1L, new BigDecimal("95.00"), null)).thenReturn(resumen(9L, EstadoCajaSesion.CERRADA));
 
         mockMvc.perform(post("/api/v1/caja/tiendas/1/cerrar")
                         .contentType(MediaType.APPLICATION_JSON)

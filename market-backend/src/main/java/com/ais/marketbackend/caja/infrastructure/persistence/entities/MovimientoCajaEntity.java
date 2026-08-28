@@ -47,13 +47,18 @@ public class MovimientoCajaEntity {
     @Column(name = "monto", nullable = false, precision = 12, scale = 4)
     private BigDecimal monto;
 
+    @Column(name = "correlation_id", length = 100)
+    private String correlationId;
+
     public MovimientoCajaEntity(
-            Long id, CajaSesionEntity sesion, Instant fecha, TipoMovimientoCaja tipo, String concepto, BigDecimal monto) {
+            Long id, CajaSesionEntity sesion, Instant fecha, TipoMovimientoCaja tipo, String concepto,
+            BigDecimal monto, String correlationId) {
         this.id = id;
         this.sesion = sesion;
         this.fecha = fecha;
         this.tipo = tipo;
         this.concepto = concepto;
         this.monto = monto;
+        this.correlationId = correlationId;
     }
 }

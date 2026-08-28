@@ -181,6 +181,35 @@ class VentaServiceImplTest {
     }
 
     @Test
+    void buscarPorCorrelationIdSinCorrelationIdDevuelveVacioSinConsultar() {
+        Optional<VentaResumen> resultado = ventaService.buscarPorCorrelationId(1L, 3L, null);
+
+        assertThat(resultado).isEmpty();
+        verify(ventaRepository, never()).findByTiendaIdAndVendedorIdAndCorrelationId(any(), any(), any());
+    }
+
+    @Test
+    void buscarPorCorrelationIdExistenteDevuelveLaVenta() {
+        Venta existente = withId(Venta.nueva(2L, 1L, 3L, List.of(
+                LineaVenta.nueva(1L, BigDecimal.ONE, new BigDecimal("8.00"))), MetodoPago.EFECTIVO, "corr-1"), 9L, 1L);
+        when(ventaRepository.findByTiendaIdAndVendedorIdAndCorrelationId(1L, 3L, "corr-1"))
+                .thenReturn(Optional.of(existente));
+
+        Optional<VentaResumen> resultado = ventaService.buscarPorCorrelationId(1L, 3L, "corr-1");
+
+        assertThat(resultado).isPresent();
+        assertThat(resultado.get().id()).isEqualTo(9L);
+    }
+
+    @Test
+    void buscarPorCorrelationIdInexistenteDevuelveVacio() {
+        when(ventaRepository.findByTiendaIdAndVendedorIdAndCorrelationId(1L, 3L, "corr-x"))
+                .thenReturn(Optional.empty());
+
+        assertThat(ventaService.buscarPorCorrelationId(1L, 3L, "corr-x")).isEmpty();
+    }
+
+    @Test
     void crearConCorrelationIdNuevoLaGuardaEnLaVenta() {
         VentaResumen resumen = ventaService.crear(
                 1L, 2L, 3L, List.of(new NuevaLineaVenta(1L, new BigDecimal("10"), new BigDecimal("8.00"))),

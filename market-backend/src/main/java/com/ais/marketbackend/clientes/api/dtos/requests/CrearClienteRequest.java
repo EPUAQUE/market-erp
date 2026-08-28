@@ -26,5 +26,9 @@ public record CrearClienteRequest(
 
         /** Opcional — {@code null} significa que todavía no se le define un límite de crédito. */
         @DecimalMin(value = "0", message = "El límite de crédito no puede ser negativo")
-        BigDecimal limiteCredito) {
+        BigDecimal limiteCredito,
+
+        /** Opcional — clave de idempotencia para reintentos seguros (altas offline sin NIT). */
+        @Size(max = 100, message = "El correlationId no puede superar 100 caracteres")
+        String correlationId) {
 }

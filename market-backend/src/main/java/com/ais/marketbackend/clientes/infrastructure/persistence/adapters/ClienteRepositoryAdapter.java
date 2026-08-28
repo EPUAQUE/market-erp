@@ -1,5 +1,6 @@
 package com.ais.marketbackend.clientes.infrastructure.persistence.adapters;
 
+import com.ais.marketbackend.clientes.domain.exception.ReferenciaInvalidaException;
 import com.ais.marketbackend.clientes.domain.model.Cliente;
 import com.ais.marketbackend.clientes.domain.repository.ClienteRepository;
 import com.ais.marketbackend.clientes.infrastructure.persistence.mappers.ClienteEntityMapper;
@@ -7,6 +8,7 @@ import com.ais.marketbackend.clientes.infrastructure.persistence.repositories.Cl
 import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.infrastructure.persistence.PaginaMapper;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +25,11 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
 
     @Override
     public Cliente save(Cliente cliente) {
-        return mapper.toDomain(jpaRepository.save(mapper.toEntity(cliente)));
+        try {
+            return mapper.toDomain(jpaRepository.save(mapper.toEntity(cliente)));
+        } catch (DataIntegrityViolationException e) {
+            throw new ReferenciaInvalidaException("El NIT o el correlationId ya están en uso por otro cliente.");
+        }
     }
 
     @Override
@@ -34,6 +40,11 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
     @Override
     public boolean existsByNit(String nit) {
         return jpaRepository.existsByNit(nit);
+    }
+
+    @Override
+    public Optional<Cliente> findByCorrelationId(String correlationId) {
+        return jpaRepository.findByCorrelationId(correlationId).map(mapper::toDomain);
     }
 
     @Override

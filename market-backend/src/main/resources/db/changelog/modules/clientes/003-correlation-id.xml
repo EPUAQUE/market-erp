@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 2 del plan (PLAN_MEJORAS.md): idempotencia para el alta de clientes —
+         el único resguardo hoy es existsByNit, que no protege clientes sin NIT
+         (comunes en altas offline). Global, no por tienda: Cliente no está
+         escaneado por tienda (ver Cliente.java). NULL no cuenta para la
+         restricción única en Postgres, así que múltiples clientes sin
+         correlationId (todo el tráfico sin clave de idempotencia) conviven sin
+         problema. -->
+    <changeSet id="clientes-003-correlation-id" author="market-backend">
+        <addColumn tableName="cliente">
+            <column name="correlation_id" type="VARCHAR(100)"/>
+        </addColumn>
+
+        <addUniqueConstraint
+                tableName="cliente" columnNames="correlation_id"
+                constraintName="ux_cliente_correlation_id"/>
+    </changeSet>
+</databaseChangeLog>

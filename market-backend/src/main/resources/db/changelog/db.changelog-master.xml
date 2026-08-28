@@ -33,6 +33,7 @@
 
     <include file="db/changelog/modules/clientes/001-cliente.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/clientes/002-limite-credito.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/clientes/003-correlation-id.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/ventas/001-venta.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/ventas/002-venta-vendedor.xml" relativeToChangelogFile="false"/>
@@ -47,6 +48,7 @@
 
     <include file="db/changelog/modules/caja/001-caja.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/caja/002-indices.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/caja/003-idempotencia.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/traslados/001-traslado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/traslados/002-indices.xml" relativeToChangelogFile="false"/>

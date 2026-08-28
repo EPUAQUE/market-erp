@@ -13,6 +13,10 @@ public interface CajaSesionRepository {
 
     Optional<CajaSesion> findAbiertaByTiendaId(Long tiendaId);
 
+    Optional<CajaSesion> findByTiendaIdAndCorrelationIdApertura(Long tiendaId, String correlationIdApertura);
+
+    Optional<CajaSesion> findByTiendaIdAndCorrelationIdCierre(Long tiendaId, String correlationIdCierre);
+
     /** Sin paginar — uso interno (ej. agregados del dashboard). */
     List<CajaSesion> findByTiendaId(Long tiendaId);
 

@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ais.marketbackend.caja.application.dtos.CajaSesionResumen;
 import com.ais.marketbackend.caja.application.services.impl.CajaServiceImpl;
 import com.ais.marketbackend.caja.domain.exception.CajaSesionAbiertaException;
+import com.ais.marketbackend.caja.domain.exception.CorrelationIdReutilizadoException;
+import com.ais.marketbackend.caja.domain.exception.ReferenciaInvalidaException;
 import com.ais.marketbackend.caja.domain.model.CajaSesion;
 import com.ais.marketbackend.caja.domain.model.EstadoCajaSesion;
 import com.ais.marketbackend.caja.domain.model.TipoMovimientoCaja;
@@ -97,6 +101,94 @@ class CajaServiceImplTest {
         CajaSesionResumen resumen = cajaService.cerrar(1L, new BigDecimal("100.00"));
 
         assertThat(resumen.estado()).isEqualTo(EstadoCajaSesion.CERRADA);
+    }
+
+    @Test
+    void abrirConCorrelationIdYaExistenteYMismoMontoDevuelveLaSesionExistenteSinCrearOtra() {
+        CajaSesion existente = CajaSesion.nueva(1L, new BigDecimal("100.00"), "corr-1");
+        when(cajaSesionRepository.findByTiendaIdAndCorrelationIdApertura(1L, "corr-1"))
+                .thenReturn(Optional.of(existente));
+
+        CajaSesionResumen resumen = cajaService.abrir(1L, new BigDecimal("100.00"), "corr-1");
+
+        assertThat(resumen.estado()).isEqualTo(EstadoCajaSesion.ABIERTA);
+        verify(cajaSesionRepository, never()).findAbiertaByTiendaId(any());
+        verify(cajaSesionRepository, never()).save(any());
+    }
+
+    @Test
+    void abrirConCorrelationIdReutilizadoConMontoDistintoLanzaConflicto() {
+        CajaSesion existente = CajaSesion.nueva(1L, new BigDecimal("100.00"), "corr-1");
+        when(cajaSesionRepository.findByTiendaIdAndCorrelationIdApertura(1L, "corr-1"))
+                .thenReturn(Optional.of(existente));
+
+        assertThatThrownBy(() -> cajaService.abrir(1L, new BigDecimal("999.00"), "corr-1"))
+                .isInstanceOf(CorrelationIdReutilizadoException.class);
+        verify(cajaSesionRepository, never()).save(any());
+    }
+
+    @Test
+    void abrirConColisionDeInsercionConcurrenteReleeYDevuelveLaSesionIdempotente() {
+        CajaSesion existente = CajaSesion.nueva(1L, new BigDecimal("100.00"), "corr-1");
+        when(cajaSesionRepository.findByTiendaIdAndCorrelationIdApertura(1L, "corr-1"))
+                .thenReturn(Optional.empty(), Optional.of(existente));
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.save(any())).thenThrow(new ReferenciaInvalidaException("colisión"));
+
+        CajaSesionResumen resumen = cajaService.abrir(1L, new BigDecimal("100.00"), "corr-1");
+
+        assertThat(resumen.estado()).isEqualTo(EstadoCajaSesion.ABIERTA);
+    }
+
+    @Test
+    void registrarMovimientoConCorrelationIdYaExistenteYMismoContenidoNoDuplicaElMovimiento() {
+        CajaSesion sesion = CajaSesion.nueva(1L, new BigDecimal("100.00"));
+        sesion.registrarMovimiento(TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("25.00"), "corr-1");
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.of(sesion));
+
+        CajaSesionResumen resumen = cajaService.registrarMovimiento(
+                1L, TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("25.00"), "corr-1");
+
+        assertThat(resumen.saldoEsperado()).isEqualByComparingTo(new BigDecimal("125.00"));
+        verify(cajaSesionRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarMovimientoConCorrelationIdReutilizadoConMontoDistintoLanzaConflicto() {
+        CajaSesion sesion = CajaSesion.nueva(1L, new BigDecimal("100.00"));
+        sesion.registrarMovimiento(TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("25.00"), "corr-1");
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.of(sesion));
+
+        assertThatThrownBy(() -> cajaService.registrarMovimiento(
+                1L, TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("999.00"), "corr-1"))
+                .isInstanceOf(CorrelationIdReutilizadoException.class);
+        verify(cajaSesionRepository, never()).save(any());
+    }
+
+    @Test
+    void cerrarConCorrelationIdYaExistenteEnCajaYaCerradaDevuelveLaSesionIdempotente() {
+        CajaSesion cerrada = CajaSesion.nueva(1L, new BigDecimal("100.00"));
+        cerrada.cerrar(new BigDecimal("95.00"), "corr-1");
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.findByTiendaIdAndCorrelationIdCierre(1L, "corr-1"))
+                .thenReturn(Optional.of(cerrada));
+
+        CajaSesionResumen resumen = cajaService.cerrar(1L, new BigDecimal("95.00"), "corr-1");
+
+        assertThat(resumen.estado()).isEqualTo(EstadoCajaSesion.CERRADA);
+        verify(cajaSesionRepository, never()).save(any());
+    }
+
+    @Test
+    void cerrarConCorrelationIdReutilizadoConMontoDistintoLanzaConflicto() {
+        CajaSesion cerrada = CajaSesion.nueva(1L, new BigDecimal("100.00"));
+        cerrada.cerrar(new BigDecimal("95.00"), "corr-1");
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.findByTiendaIdAndCorrelationIdCierre(1L, "corr-1"))
+                .thenReturn(Optional.of(cerrada));
+
+        assertThatThrownBy(() -> cajaService.cerrar(1L, new BigDecimal("999.00"), "corr-1"))
+                .isInstanceOf(CorrelationIdReutilizadoException.class);
     }
 
     @Test

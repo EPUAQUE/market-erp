@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 2 del plan (PLAN_MEJORAS.md): idempotencia para abrir/cerrar caja y
+         registrar movimientos, mismo principio que venta.correlation_id — NULL no
+         cuenta para la restricción única en Postgres, así que múltiples filas sin
+         correlationId (todo el tráfico sin clave de idempotencia) conviven sin
+         problema. -->
+    <changeSet id="caja-003-correlation-id-sesion" author="market-backend">
+        <addColumn tableName="caja_sesion">
+            <column name="correlation_id_apertura" type="VARCHAR(100)"/>
+            <column name="correlation_id_cierre" type="VARCHAR(100)"/>
+        </addColumn>
+
+        <addUniqueConstraint
+                tableName="caja_sesion" columnNames="tienda_id, correlation_id_apertura"
+                constraintName="ux_caja_sesion_tienda_correlation_apertura"/>
+        <addUniqueConstraint
+                tableName="caja_sesion" columnNames="tienda_id, correlation_id_cierre"
+                constraintName="ux_caja_sesion_tienda_correlation_cierre"/>
+    </changeSet>
+
+    <changeSet id="caja-003-correlation-id-movimiento" author="market-backend">
+        <addColumn tableName="movimiento_caja">
+            <column name="correlation_id" type="VARCHAR(100)"/>
+        </addColumn>
+
+        <addUniqueConstraint
+                tableName="movimiento_caja" columnNames="caja_sesion_id, correlation_id"
+                constraintName="ux_movimiento_caja_sesion_correlation"/>
+    </changeSet>
+</databaseChangeLog>

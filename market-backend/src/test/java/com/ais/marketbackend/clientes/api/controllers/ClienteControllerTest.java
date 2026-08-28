@@ -64,7 +64,7 @@ class ClienteControllerTest {
 
     @Test
     void crearSinNitDevuelve201() throws Exception {
-        when(clienteService.crear(any(), anyString(), any(), any(), any(), any()))
+        when(clienteService.crear(any(), anyString(), any(), any(), any(), any(), any()))
                 .thenReturn(
                         new ClienteResumen(2L, null, "Consumidor Final", null, null, null, EstadoCliente.ACTIVO, null));
 
@@ -77,7 +77,7 @@ class ClienteControllerTest {
 
     @Test
     void crearConNitDuplicadoDevuelve409() throws Exception {
-        when(clienteService.crear(any(), anyString(), any(), any(), any(), any()))
+        when(clienteService.crear(any(), anyString(), any(), any(), any(), any(), any()))
                 .thenThrow(new ClienteDuplicadoException("12345678-9"));
 
         mockMvc.perform(post("/api/v1/clientes")

@@ -44,7 +44,7 @@ public class ClienteController {
     public ResponseEntity<ClienteResponse> crear(@Valid @RequestBody CrearClienteRequest request) {
         ClienteResponse creado = mapper.toResponse(clienteService.crear(
                 request.nit(), request.nombre(), request.direccion(), request.telefono(), request.correo(),
-                request.limiteCredito()));
+                request.limiteCredito(), request.correlationId()));
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 

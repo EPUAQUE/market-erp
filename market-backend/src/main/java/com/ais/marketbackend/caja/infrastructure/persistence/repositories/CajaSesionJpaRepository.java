@@ -12,6 +12,10 @@ public interface CajaSesionJpaRepository extends JpaRepository<CajaSesionEntity,
 
     Optional<CajaSesionEntity> findByTiendaIdAndEstado(Long tiendaId, EstadoCajaSesion estado);
 
+    Optional<CajaSesionEntity> findByTiendaIdAndCorrelationIdApertura(Long tiendaId, String correlationIdApertura);
+
+    Optional<CajaSesionEntity> findByTiendaIdAndCorrelationIdCierre(Long tiendaId, String correlationIdCierre);
+
     List<CajaSesionEntity> findByTiendaId(Long tiendaId);
 
     Page<CajaSesionEntity> findByTiendaId(Long tiendaId, Pageable pageable);

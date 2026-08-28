@@ -12,8 +12,11 @@ public class MovimientoCaja {
     private final TipoMovimientoCaja tipo;
     private final String concepto;
     private final BigDecimal monto;
+    private final String correlationId;
 
-    public MovimientoCaja(Long id, Instant fecha, TipoMovimientoCaja tipo, String concepto, BigDecimal monto) {
+    public MovimientoCaja(
+            Long id, Instant fecha, TipoMovimientoCaja tipo, String concepto, BigDecimal monto,
+            String correlationId) {
         this.id = id;
         this.fecha = Objects.requireNonNull(fecha, "fecha");
         this.tipo = Objects.requireNonNull(tipo, "tipo");
@@ -26,10 +29,15 @@ public class MovimientoCaja {
             throw new IllegalArgumentException("El monto debe ser mayor que cero.");
         }
         this.monto = monto;
+        this.correlationId = correlationId;
     }
 
     public static MovimientoCaja nuevo(TipoMovimientoCaja tipo, String concepto, BigDecimal monto) {
-        return new MovimientoCaja(null, Instant.now(), tipo, concepto, monto);
+        return nuevo(tipo, concepto, monto, null);
+    }
+
+    public static MovimientoCaja nuevo(TipoMovimientoCaja tipo, String concepto, BigDecimal monto, String correlationId) {
+        return new MovimientoCaja(null, Instant.now(), tipo, concepto, monto, correlationId);
     }
 
     public Long getId() {
@@ -50,5 +58,9 @@ public class MovimientoCaja {
 
     public BigDecimal getMonto() {
         return monto;
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
     }
 }

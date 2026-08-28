@@ -57,7 +57,8 @@ public class CajaController {
     @RequiresPermission("CAJA_ABRIR")
     public ResponseEntity<CajaSesionResponse> abrir(
             @PathVariable Long tiendaId, @Valid @RequestBody AbrirCajaRequest request) {
-        CajaSesionResponse creada = mapper.toResponse(cajaService.abrir(tiendaId, request.montoInicial()));
+        CajaSesionResponse creada =
+                mapper.toResponse(cajaService.abrir(tiendaId, request.montoInicial(), request.correlationId()));
         return ResponseEntity.status(HttpStatus.CREATED).body(creada);
     }
 
@@ -65,8 +66,8 @@ public class CajaController {
     @RequiresPermission("CAJA_REGISTRAR_MOVIMIENTO")
     public ResponseEntity<CajaSesionResponse> registrarMovimiento(
             @PathVariable Long tiendaId, @Valid @RequestBody RegistrarMovimientoCajaRequest request) {
-        CajaSesionResponse actualizada = mapper.toResponse(
-                cajaService.registrarMovimiento(tiendaId, request.tipo(), request.concepto(), request.monto()));
+        CajaSesionResponse actualizada = mapper.toResponse(cajaService.registrarMovimiento(
+                tiendaId, request.tipo(), request.concepto(), request.monto(), request.correlationId()));
         return ResponseEntity.ok(actualizada);
     }
 
@@ -74,6 +75,7 @@ public class CajaController {
     @RequiresPermission("CAJA_CERRAR")
     public ResponseEntity<CajaSesionResponse> cerrar(
             @PathVariable Long tiendaId, @Valid @RequestBody CerrarCajaRequest request) {
-        return ResponseEntity.ok(mapper.toResponse(cajaService.cerrar(tiendaId, request.montoFinalContado())));
+        return ResponseEntity.ok(
+                mapper.toResponse(cajaService.cerrar(tiendaId, request.montoFinalContado(), request.correlationId())));
     }
 }

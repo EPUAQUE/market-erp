@@ -6,6 +6,7 @@ import com.ais.marketbackend.ventas.application.dtos.PagoInmediato;
 import com.ais.marketbackend.ventas.application.dtos.VentaResumen;
 import com.ais.marketbackend.ventas.domain.model.MetodoPago;
 import java.util.List;
+import java.util.Optional;
 
 public interface VentaService {
 
@@ -46,6 +47,13 @@ public interface VentaService {
     VentaResumen anular(Long tiendaId, Long id);
 
     VentaResumen obtener(Long tiendaId, Long id);
+
+    /**
+     * Resuelve una respuesta incierta (timeout, caída de red tras el request) sin
+     * volver a emitir a ciegas: el cliente reintenta primero esta consulta y solo
+     * hace {@code POST} de nuevo si viene vacía.
+     */
+    Optional<VentaResumen> buscarPorCorrelationId(Long tiendaId, Long vendedorId, String correlationId);
 
     /** Sin paginar — uso interno (ej. agregados del dashboard). El endpoint público usa la variante paginada. */
     List<VentaResumen> listarPorTienda(Long tiendaId);

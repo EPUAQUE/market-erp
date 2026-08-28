@@ -98,6 +98,24 @@ class VentaControllerTest {
     }
 
     @Test
+    void buscarPorCorrelationIdExistenteDevuelve200() throws Exception {
+        when(ventaService.buscarPorCorrelationId(1L, 3L, "corr-abc"))
+                .thenReturn(java.util.Optional.of(resumen(5L, EstadoVenta.BORRADOR)));
+
+        mockMvc.perform(get("/api/v1/ventas/tiendas/1/correlation/corr-abc").principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5));
+    }
+
+    @Test
+    void buscarPorCorrelationIdInexistenteDevuelve404() throws Exception {
+        when(ventaService.buscarPorCorrelationId(1L, 3L, "corr-x")).thenReturn(java.util.Optional.empty());
+
+        mockMvc.perform(get("/api/v1/ventas/tiendas/1/correlation/corr-x").principal(authentication))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void crearSinLineasDevuelve400() throws Exception {
         mockMvc.perform(post("/api/v1/ventas/tiendas/1")
                         .principal(authentication)

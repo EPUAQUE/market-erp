@@ -25,10 +25,11 @@ public class Cliente {
     private String correo;
     private EstadoCliente estado;
     private BigDecimal limiteCredito;
+    private final String correlationId;
 
     public Cliente(
             Long id, String nit, String nombre, String direccion, String telefono, String correo,
-            EstadoCliente estado, BigDecimal limiteCredito) {
+            EstadoCliente estado, BigDecimal limiteCredito, String correlationId) {
         this.id = id;
         this.nit = nit;
         this.nombre = Objects.requireNonNull(nombre, "nombre");
@@ -37,12 +38,21 @@ public class Cliente {
         this.correo = correo;
         this.estado = Objects.requireNonNull(estado, "estado");
         this.limiteCredito = limiteCredito;
+        this.correlationId = correlationId;
     }
 
     public static Cliente nuevo(
             String nit, String nombre, String direccion, String telefono, String correo,
             BigDecimal limiteCredito) {
-        return new Cliente(null, nit, nombre, direccion, telefono, correo, EstadoCliente.ACTIVO, limiteCredito);
+        return nuevo(nit, nombre, direccion, telefono, correo, limiteCredito, null);
+    }
+
+    /** {@code correlationId} identifica esta intención de alta para idempotencia — ver {@code ClienteServiceImpl}. */
+    public static Cliente nuevo(
+            String nit, String nombre, String direccion, String telefono, String correo, BigDecimal limiteCredito,
+            String correlationId) {
+        return new Cliente(
+                null, nit, nombre, direccion, telefono, correo, EstadoCliente.ACTIVO, limiteCredito, correlationId);
     }
 
     public boolean estaActivo() {
@@ -96,5 +106,9 @@ public class Cliente {
 
     public BigDecimal getLimiteCredito() {
         return limiteCredito;
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
     }
 }

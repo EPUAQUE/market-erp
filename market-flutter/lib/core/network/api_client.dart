@@ -118,6 +118,29 @@ class ApiClient {
     }
   }
 
+  /// Sonda liviana para saber si el backend responde de verdad — no solo si
+  /// el dispositivo tiene una interfaz de red arriba (ver
+  /// `backend_reachability_provider.dart`). Nunca lanza: cualquier fallo
+  /// (timeout, DNS, TLS, 5xx) es simplemente "no alcanzable" para este
+  /// propósito. Timeout corto propio (no `Environment.apiTimeout`, pensado
+  /// para requests reales) para que la sonda no bloquee la UI si el backend
+  /// está genuinamente caído.
+  Future<bool> ping() async {
+    try {
+      final response = await dio.get<dynamic>(
+        '/actuator/health',
+        options: Options(
+          extra: {'requiresAuth': false},
+          sendTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
+        ),
+      );
+      return response.statusCode == 200;
+    } on DioException {
+      return false;
+    }
+  }
+
   Future<T> get<T>(
     String path, {
     Map<String, dynamic>? query,

@@ -1,6 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/connectivity/connectivity_provider.dart';
+import '../../../core/connectivity/backend_reachability_provider.dart';
 import '../../../core/db/local_store_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
@@ -49,7 +49,7 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
     required String concepto,
     required Decimal monto,
   }) async {
-    final hayRed = ref.read(redDisponibleProvider).value ?? true;
+    final hayRed = ref.read(backendAlcanzableProvider).value ?? true;
     if (!hayRed) {
       return _registrarMovimientoOffline(
         tiendaId: tiendaId,

@@ -1,7 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/connectivity/connectivity_provider.dart';
+import '../../../core/connectivity/backend_reachability_provider.dart';
 import '../../../core/db/local_store_provider.dart';
 import '../application/clientes_provider.dart';
 import '../data/cliente.dart';
@@ -61,7 +61,7 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
       _limiteCreditoController.text.trim(),
     );
 
-    final hayRed = ref.read(redDisponibleProvider).value ?? true;
+    final hayRed = ref.read(backendAlcanzableProvider).value ?? true;
     if (!hayRed) {
       await _guardarClienteNuevoOffline(
         nombre: nombre,

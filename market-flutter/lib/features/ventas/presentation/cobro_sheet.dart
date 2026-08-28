@@ -29,6 +29,13 @@ const _metodosMixto = [
 class _CobroSheetState extends ConsumerState<CobroSheet> {
   MetodoPago _metodo = MetodoPago.efectivo;
   Cliente? _clienteCredito;
+
+  /// Una sola clave de idempotencia para todos los intentos de cobro de esta
+  /// hoja abierta — generada al abrirla, reutilizada si el usuario reintenta
+  /// tras un error (mismo intento), nunca regenerada. Cerrar y reabrir la
+  /// hoja para un carrito distinto crea otra instancia de este estado y, por
+  /// tanto, otra clave — correcto, es una venta distinta.
+  final String _correlationId = nuevoCorrelationId();
   final _montoController = TextEditingController();
   final _montoMixtoControllers = {
     for (final m in _metodosMixto) m: TextEditingController(),
@@ -80,6 +87,7 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
         .confirmar(
           tiendaId: widget.tiendaId,
           metodo: _metodo,
+          correlationId: _correlationId,
           clienteId: _clienteCredito?.id,
           desglose: _metodo == MetodoPago.mixto ? _desgloseMixto : null,
         );

@@ -10,6 +10,7 @@ import '../../features/ventas/application/checkout_notifier.dart';
 import '../../features/ventas/data/venta.dart';
 import '../../features/ventas/data/venta_api.dart';
 import '../../features/ventas/data/venta_pendiente_local.dart';
+import '../connectivity/backend_reachability_provider.dart';
 import '../connectivity/connectivity_provider.dart';
 import '../db/local_store.dart';
 import '../db/local_store_provider.dart';
@@ -29,16 +30,20 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
 
   @override
   EstadoConexion build() {
-    ref.listen(redDisponibleProvider, (previous, next) {
-      final hayRed = next.value;
-      if (hayRed == null) return;
-      if (hayRed) {
+    // Escucha alcanzabilidad real del backend, no solo la interfaz de red:
+    // "Wi-Fi activo con backend caído" ahora también deja el estado en
+    // `sinConexion` (antes se quedaba `conectado` sin intentar drenar nunca,
+    // porque `redDisponibleProvider` no distinguía ese caso).
+    ref.listen(backendAlcanzableProvider, (previous, next) {
+      final alcanzable = next.value;
+      if (alcanzable == null) return;
+      if (alcanzable) {
         _drenarCola();
       } else {
         state = EstadoConexion.sinConexion;
       }
     });
-    final actual = ref.read(redDisponibleProvider).value ?? false;
+    final actual = ref.read(backendAlcanzableProvider).value ?? false;
     return actual ? EstadoConexion.conectado : EstadoConexion.sinConexion;
   }
 

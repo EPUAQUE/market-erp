@@ -1,6 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/connectivity/connectivity_provider.dart';
+import 'package:uuid/uuid.dart';
+import '../../../core/connectivity/backend_reachability_provider.dart';
 import '../../../core/db/local_store_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
@@ -23,6 +24,19 @@ final cuentaPorCobrarApiProvider = Provider<CuentaPorCobrarApi>(
 /// de resolverlo por nombre contra la lista de clientes (esa lista también
 /// requiere red). Ver CLAUDE.md.
 const _clienteConsumidorFinalIdFallback = 1;
+
+/// UUID v4 criptográficamente aleatorio para toda venta, online u offline —
+/// antes solo la cola offline generaba uno (con
+/// `DateTime.now().microsecondsSinceEpoch`, no aleatorio de verdad: dos
+/// dispositivos con relojes cercanos podían, en teoría, colisionar). Expuesto
+/// para que quien llama a [CheckoutNotifier.confirmar] (una sola vez por
+/// intento de cobro, ver `CobroSheet`) genere la clave de idempotencia antes
+/// del primer request y la reutilice si el usuario reintenta manualmente tras
+/// un error — regenerarla en cada reintento anularía la protección contra
+/// duplicados que esto existe para dar.
+final _uuid = Uuid();
+
+String nuevoCorrelationId() => _uuid.v4();
 
 class CheckoutState {
   const CheckoutState({
@@ -55,9 +69,17 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   @override
   CheckoutState build() => const CheckoutState();
 
+  /// [correlationId]: una clave por intento de cobro, generada UNA VEZ por
+  /// quien llama (ver `nuevoCorrelationId()` y `CobroSheet`, que la genera al
+  /// abrir la hoja y la reutiliza en cada reintento) — nunca generada aquí
+  /// adentro, porque regenerarla en cada llamada anularía la protección de
+  /// idempotencia: un reintento manual tras un timeout debe mandar la MISMA
+  /// clave que el intento original para que el backend lo reconozca como el
+  /// mismo intento, no como una venta nueva.
   Future<void> confirmar({
     required int tiendaId,
     required MetodoPago metodo,
+    required String correlationId,
     int? clienteId,
     Map<MetodoPago, Decimal>? desglose,
   }) async {
@@ -69,7 +91,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
     state = const CheckoutState(loading: true);
     try {
-      final hayRed = ref.read(redDisponibleProvider).value ?? true;
+      final hayRed = ref.read(backendAlcanzableProvider).value ?? true;
       if (metodo == MetodoPago.mixto && !hayRed) {
         throw ApiException(
           message: 'El pago mixto requiere conexión a internet.',
@@ -82,6 +104,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
           clienteId: clienteId,
           desglose: desglose,
           carrito: carrito,
+          correlationId: correlationId,
         );
       } else {
         await _confirmarOffline(
@@ -89,6 +112,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
           metodo: metodo,
           clienteId: clienteId,
           carrito: carrito,
+          correlationId: correlationId,
         );
       }
 
@@ -104,6 +128,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   Future<void> _confirmarOnline({
     required int tiendaId,
     required MetodoPago metodo,
+    required String correlationId,
     int? clienteId,
     Map<MetodoPago, Decimal>? desglose,
     required CarritoState carrito,
@@ -115,6 +140,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       clienteId: clienteFinal,
       lineas: carrito.lineas,
       metodoPago: metodo,
+      correlationId: correlationId,
     );
     await ventaApi.completar(
       tiendaId: tiendaId,
@@ -126,6 +152,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   Future<void> _confirmarOffline({
     required int tiendaId,
     required MetodoPago metodo,
+    required String correlationId,
     int? clienteId,
     required CarritoState carrito,
   }) async {
@@ -138,7 +165,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     }
     await store.encolarVentaPendiente(
       NuevaVentaPendiente(
-        correlationId: '${DateTime.now().microsecondsSinceEpoch}-$tiendaId',
+        correlationId: correlationId,
         tiendaId: tiendaId,
         clienteId: clienteId ?? _clienteConsumidorFinalIdFallback,
         lineas: carrito.lineas,

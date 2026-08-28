@@ -215,7 +215,7 @@ todavía no lo envía en ese flujo — obligarlo ahora habría roto la venta onl
 ### Tareas de Flutter
 
 **Resuelto (2026-08-28) — parte B (Flutter) de la fase, alcance acotado a UUID +
-conectividad real, sin tocar la cola offline profunda (parte C, aún no iniciada):**
+conectividad real (parte C — cola offline profunda — se aborda por separado más abajo):**
 `checkout_notifier.dart` ya no usa `DateTime.now().microsecondsSinceEpoch` para nada
 — toda venta (online y offline) genera un UUID v4 real (paquete `uuid`,
 `nuevoCorrelationId()`). La venta online ahora también manda `correlationId` al
@@ -275,8 +275,16 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
 - [x] Distinguir sin interfaz de red / red disponible pero API inalcanzable (las otras
   tres — error de autenticación, error de negocio permanente, respuesta incierta — ya
   las distinguía `ApiException`/`SyncEngine` antes de esta fase, sin cambios aquí).
-- [ ] Procesar dependencias de cola explícitamente; por ejemplo, un cliente local debe
-  sincronizarse antes de una venta que lo referencia — parte C, no iniciada.
+- [x] Procesar dependencias de cola explícitamente; por ejemplo, un cliente local debe
+  sincronizarse antes de una venta que lo referencia — resuelto (2026-08-28, parte C):
+  `ClienteSeleccionado` (real o `pendienteLocal`), `VentaPendienteIsar.clientePendienteLocalId`,
+  `ClientePendienteIsar.clienteServidorId` (fila conservada tras sincronizar, no
+  borrada, para que la venta pueda resolver el id real después). Una venta que
+  referencia un cliente offline SIEMPRE se encola (nunca intenta ir online), y su
+  sincronización espera a que ese cliente sincronice primero (mismo orden ya
+  existente clientes→ventas). Sin verificar en dispositivo real (requiere
+  `LocalStore.disponible == true`, no probable en Chrome — ver
+  `market-flutter/CLAUDE.md`, "Dependencias de cola offline").
 - [ ] Evitar el ID fijo `1` para “Consumidor Final”; resolverlo por código estable
   expuesto por la API o configuración de tienda.
 - [ ] Impedir o advertir logout/desinstalación cuando existan operaciones pendientes.
@@ -763,7 +771,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | Fase | Estado | PR/commit | Resultado de pruebas | Observaciones |
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
-| 2 — Idempotencia POS | Parte A y B resueltas, parte C (cola offline profunda) pendiente | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios + verificado en Chrome contra backend/Postgres reales (venta online, correlationId persistido, badge conectividad real) | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real) listos. De paso se encontró y arregló un bug preexistente en `ClientesApi.listar()` (pagination) que rompía toda venta online sin cliente explícito. |
+| 2 — Idempotencia POS | Partes A, B y C (dependencias de cola) resueltas; resto de parte C (versión Isar, cifrado, bloqueo logout/desinstalación) pendiente | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C (dependencias de cola) solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión) listos. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | Pendiente | | | |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |

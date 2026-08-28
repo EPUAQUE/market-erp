@@ -99,15 +99,31 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public void asignarTienda(Long usuarioId, Long tiendaId, Long rolId) {
-        usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
-        Rol rol = rolRepository.findById(rolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));
+        Rol rol = validarUsuarioYRolParaAsignacion(usuarioId, rolId);
         Tienda tienda = tiendaRepository.findById(tiendaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tienda no encontrada: " + tiendaId));
         autorizacionTiendaService.exigirAcceso(tiendaId);
         exigirNoEscalaAlcanceGlobal(rol);
+        ejecutarAsignacionTienda(usuarioId, tiendaId, rolId, rol, tienda);
+    }
 
+    @Override
+    @Transactional
+    public void asignarTiendaSistema(Long usuarioId, Long tiendaId, Long rolId) {
+        Rol rol = validarUsuarioYRolParaAsignacion(usuarioId, rolId);
+        Tienda tienda = tiendaRepository.findById(tiendaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tienda no encontrada: " + tiendaId));
+        ejecutarAsignacionTienda(usuarioId, tiendaId, rolId, rol, tienda);
+    }
+
+    private Rol validarUsuarioYRolParaAsignacion(Long usuarioId, Long rolId) {
+        usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+        return rolRepository.findById(rolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));
+    }
+
+    private void ejecutarAsignacionTienda(Long usuarioId, Long tiendaId, Long rolId, Rol rol, Tienda tienda) {
         boolean yaTieneElGrupoDeEstaTienda = usuarioGrupoTiendaRepository.findByUsuarioId(usuarioId).stream()
                 .anyMatch(ug -> ug.getGrupoTiendaId().equals(tienda.getGrupoId()));
         if (yaTieneElGrupoDeEstaTienda) {

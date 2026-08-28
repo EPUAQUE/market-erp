@@ -55,7 +55,7 @@ public class AdminUserSeeder implements ApplicationRunner {
                 usernameCanonico, seedProperties.adminPassword(), "Administrador", null, null);
         var rolAdmin = rolRepository.findByNombre("ADMIN")
                 .orElseThrow(() -> new IllegalStateException("Rol ADMIN no encontrado; revisar migraciones."));
-        usuarioService.asignarTienda(admin.id(), TIENDA_CENTRAL_ID, rolAdmin.getId());
+        usuarioService.asignarTiendaSistema(admin.id(), TIENDA_CENTRAL_ID, rolAdmin.getId());
 
         log.warn("Usuario ADMIN de desarrollo creado: {}. Deshabilite app.seed.enabled en producción.", usernameCanonico);
     }

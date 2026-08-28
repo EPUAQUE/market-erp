@@ -124,6 +124,25 @@ class UsuarioServiceImplTest {
     }
 
     @Test
+    void asignarTiendaSistemaNoExigeAutorizacionDelLlamador() {
+        // AdminUserSeeder llama esto al arrancar la app, sin ningún usuario
+        // autenticado en SecurityContextHolder — a diferencia de asignarTienda, no
+        // debe consultar en absoluto autorizacionTiendaService.
+        Usuario usuario = Usuario.nuevo("admin", "hash");
+        Rol rolAdmin = new Rol(1L, "ADMIN", true, Set.of());
+        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", null, null, null, 1L);
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(rolRepository.findById(1L)).thenReturn(Optional.of(rolAdmin));
+        when(tiendaRepository.findById(1L)).thenReturn(Optional.of(tienda));
+
+        usuarioService.asignarTiendaSistema(1L, 1L, 1L);
+
+        verify(usuarioTiendaRepository).save(any());
+        verify(autorizacionTiendaService, org.mockito.Mockito.never()).exigirAcceso(any());
+        verify(autorizacionTiendaService, org.mockito.Mockito.never()).tiendaIdsPermitidas();
+    }
+
+    @Test
     void asignarTiendaConRolInexistenteLanzaNoEncontrado() {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));

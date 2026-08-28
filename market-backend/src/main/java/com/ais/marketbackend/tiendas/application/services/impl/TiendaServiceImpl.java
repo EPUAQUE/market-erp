@@ -1,6 +1,7 @@
 package com.ais.marketbackend.tiendas.application.services.impl;
 
 import com.ais.marketbackend.grupostienda.domain.repository.GrupoTiendaRepository;
+import com.ais.marketbackend.seguridad.application.services.interfaces.AutorizacionTiendaService;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.tiendas.application.dtos.TiendaResumen;
 import com.ais.marketbackend.tiendas.application.services.interfaces.TiendaService;
@@ -9,6 +10,8 @@ import com.ais.marketbackend.tiendas.domain.model.Tienda;
 import com.ais.marketbackend.tiendas.domain.repository.TiendaRepository;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +20,14 @@ public class TiendaServiceImpl implements TiendaService {
 
     private final TiendaRepository tiendaRepository;
     private final GrupoTiendaRepository grupoTiendaRepository;
+    private final AutorizacionTiendaService autorizacionTiendaService;
 
-    public TiendaServiceImpl(TiendaRepository tiendaRepository, GrupoTiendaRepository grupoTiendaRepository) {
+    public TiendaServiceImpl(
+            TiendaRepository tiendaRepository, GrupoTiendaRepository grupoTiendaRepository,
+            AutorizacionTiendaService autorizacionTiendaService) {
         this.tiendaRepository = tiendaRepository;
         this.grupoTiendaRepository = grupoTiendaRepository;
+        this.autorizacionTiendaService = autorizacionTiendaService;
     }
 
     @Override
@@ -65,7 +72,11 @@ public class TiendaServiceImpl implements TiendaService {
 
     @Override
     public List<TiendaResumen> listar() {
-        return tiendaRepository.findAll().stream().map(this::toResumen).toList();
+        Optional<Set<Long>> tiendaIdsPermitidas = autorizacionTiendaService.tiendaIdsPermitidas();
+        return tiendaRepository.findAll().stream()
+                .filter(tienda -> tiendaIdsPermitidas.isEmpty() || tiendaIdsPermitidas.get().contains(tienda.getId()))
+                .map(this::toResumen)
+                .toList();
     }
 
     private Tienda obtenerORequerido(Long id) {

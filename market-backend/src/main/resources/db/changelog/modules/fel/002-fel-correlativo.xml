@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="fel-002-correlativo" author="market-backend">
+        <createTable tableName="fel_correlativo">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tienda_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="serie" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="siguiente_numero" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+                tableName="fel_correlativo" columnNames="tienda_id, serie"
+                constraintName="ux_fel_correlativo_tienda_serie"/>
+
+        <addForeignKeyConstraint
+                baseTableName="fel_correlativo" baseColumnNames="tienda_id"
+                referencedTableName="tienda" referencedColumnNames="id"
+                constraintName="fk_fel_correlativo_tienda" onDelete="RESTRICT"/>
+    </changeSet>
+</databaseChangeLog>

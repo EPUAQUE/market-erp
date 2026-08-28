@@ -89,6 +89,21 @@ class ProfileStartupIT {
         assertThatThrownBy(builder::run).hasStackTraceContaining("rechazado por configuración insegura");
     }
 
+    @Test
+    void perfilProdSinCertificadorFelRealNoArranca() {
+        // Configuración por lo demás válida: DevCertificadorFelAdapter (el único
+        // CertificadorFelPort del código) está restringido a @Profile("!prod"), así
+        // que en 'prod' no hay ningún bean que satisfaga el puerto.
+        SpringApplicationBuilder builder = builder("prod")
+                .properties(propiedadesDeBaseDeDatos())
+                .properties(propiedadesJwtValidas())
+                .properties("SEED_ENABLED=false");
+
+        assertThatThrownBy(builder::run)
+                .hasStackTraceContaining("rechazado por configuración insegura")
+                .hasStackTraceContaining("CertificadorFelPort");
+    }
+
     private SpringApplicationBuilder builder(String perfil) {
         // SERVLET, no NONE: RequiresPermissionStartupValidator depende de que exista
         // infraestructura de Spring MVC (RequestMappingHandlerMapping) — con NONE ese

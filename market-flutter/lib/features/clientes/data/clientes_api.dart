@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/paginacion.dart';
 import 'cliente.dart';
 
 class ClientesApi {
@@ -7,10 +8,19 @@ class ClientesApi {
 
   final ApiClient _client;
 
+  /// El POS necesita la lista completa (resolución de "Consumidor Final",
+  /// búsqueda O(n) en `ClienteSelectorSheet`), no paginar de verdad — mismo
+  /// patrón que `ProductosApi`/`CuentaPorCobrarApi` (ver
+  /// `core/network/paginacion.dart`). Antes de este fix pedía la página sin
+  /// `size` y trataba el envelope `{contenido, pagina, ...}` como si fuera un
+  /// array plano, lo que rompía con un `TypeError` en cuanto había algún
+  /// cliente (incluido el "Consumidor Final" seedeado) — toda venta online
+  /// sin cliente explícito fallaba.
   Future<List<Cliente>> listar() {
     return _client.get<List<Cliente>>(
       '/api/v1/clientes',
-      parser: (data) => (data as List<dynamic>)
+      query: {'size': tamanoPaginaCompleta},
+      parser: (data) => contenidoDePagina(data)
           .map((json) => Cliente.fromJson(json as Map<String, dynamic>))
           .toList(),
     );

@@ -119,5 +119,8 @@ class WebLocalStore implements LocalStore {
   Future<int> contarClientesPendientes() async => 0;
 
   @override
+  Future<void> limpiarClientesPendientesSincronizadosSinReferencia() async {}
+
+  @override
   Future<void> limpiarTodo() async {}
 }

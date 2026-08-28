@@ -795,6 +795,44 @@ infrastructure at all (same gap noted elsewhere in this file for
 app now ships a newer schema" realistically needs a real device/emulator
 with a prior APK installed, not just unit tests.
 
+### Cifrado de datos locales — evaluated this phase (Fase 2 parte C, PLAN_MEJORAS.md)
+
+`isar_community` (the fork this app uses) has **no built-in encryption at
+all** — confirmed by grepping its source for `encrypt` (nothing; `Isar.open`
+takes no encryption-key parameter). Real field/database encryption would
+mean hand-rolling AES around specific fields with a new crypto dependency
+and key management (`flutter_secure_storage`, already a dependency, would
+hold the key) — not something to add silently without the user picking
+that tradeoff, same reasoning as the earlier remote-logging evaluation
+above.
+
+Inventoried what PII actually lives in Isar before deciding: only
+`ClientePendienteIsar.nombre/telefono/nit` (a cliente created offline).
+Every other collection (`VentaPendienteIsar`, `MovimientoCajaPendienteIsar`,
+`ProductoCatalogoIsar`, `MetadatoLocalIsar`) stores ids/amounts/catalog
+data, no direct PII.
+
+**Decision (user, this phase): minimize instead of encrypt.** OS-level disk
+encryption (on by default on modern Android) already covers the realistic
+threat here — a lost/stolen tablet, powered off or locked. Field-level
+encryption would additionally protect against someone with access to an
+unlocked/rooted device reading the raw Isar file (this session did exactly
+that, `run-as cat` on `default.isar`, per "Verified in a later session" note
+above) — judged not worth a new crypto dependency for 3 short text fields
+on a POS where physical device access is already controlled.
+
+What *did* ship: `LocalStore.limpiarClientesPendientesSincronizadosSinReferencia()`,
+called at the end of every `_drenarCola()` pass. A cliente row is kept
+after syncing only as long as some pending venta still needs its
+`clienteServidorId` (see "Dependencias de cola offline" above) — once
+nothing references it anymore, it's deleted instead of lingering
+indefinitely. Shrinks the exposure window for whatever PII does get
+persisted, without adding any new dependency.
+
+Verified: `flutter analyze`/`flutter test` clean. **Not click-tested** —
+same reasoning as the rest of this phase (needs `LocalStore.disponible ==
+true`, a real device/emulator).
+
 ### Cobros sueltos (`cuentas_por_cobrar` feature) — built this phase
 
 New feature, `lib/features/cuentas_por_cobrar/`. Before this phase there was

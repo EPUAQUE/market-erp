@@ -88,6 +88,16 @@ abstract class LocalStore {
 
   Future<int> contarClientesPendientes();
 
+  /// Borra los clientes ya sincronizados (`clienteServidorId` no nulo) que
+  /// ninguna venta pendiente sigue referenciando por
+  /// `clientePendienteLocalId` — la fila de mapeo que
+  /// `marcarClientePendienteSincronizado` conserva a propósito deja de
+  /// hacer falta en cuanto sincroniza la última venta que la necesitaba.
+  /// Minimiza cuánto tiempo vive en el dispositivo el nombre/teléfono/NIT
+  /// de un cliente dado de alta offline — llamado al final de cada
+  /// drenado (`SyncEngineNotifier`).
+  Future<void> limpiarClientesPendientesSincronizadosSinReferencia();
+
   /// Borra catálogo y las 3 colas pendientes. Llamado solo al cerrar sesión
   /// — nunca antes de confirmar que no hay pendientes sin sincronizar (ver
   /// `AuthNotifier.logout`), para no perder ventas/movimientos/clientes

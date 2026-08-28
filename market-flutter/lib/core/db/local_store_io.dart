@@ -367,6 +367,31 @@ class IsarLocalStore implements LocalStore {
       _isar.clientePendienteIsars.filter().clienteServidorIdIsNull().count();
 
   @override
+  Future<void> limpiarClientesPendientesSincronizadosSinReferencia() async {
+    final referenciados = await _isar.ventaPendienteIsars
+        .filter()
+        .clientePendienteLocalIdIsNotNull()
+        .findAll();
+    final idsReferenciados = referenciados
+        .map((v) => v.clientePendienteLocalId!)
+        .toSet();
+
+    final sincronizados = await _isar.clientePendienteIsars
+        .filter()
+        .clienteServidorIdIsNotNull()
+        .findAll();
+    final idsABorrar = sincronizados
+        .map((c) => c.id)
+        .where((id) => !idsReferenciados.contains(id))
+        .toList();
+    if (idsABorrar.isEmpty) return;
+
+    await _isar.writeTxn(
+      () => _isar.clientePendienteIsars.deleteAll(idsABorrar),
+    );
+  }
+
+  @override
   Future<void> limpiarTodo() async {
     await _isar.writeTxn(() async {
       await _isar.productoCatalogoIsars.clear();

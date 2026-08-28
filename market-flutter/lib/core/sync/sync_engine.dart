@@ -82,6 +82,12 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
         if (!exito) break;
       }
 
+      // Minimiza cuánto tiempo vive en el dispositivo el nombre/teléfono/NIT
+      // de un cliente dado de alta offline: una vez sincronizada la última
+      // venta que lo referenciaba, la fila de mapeo ya no hace falta (ver
+      // `marcarClientePendienteSincronizado`/`_resolverClientePendiente`).
+      await store.limpiarClientesPendientesSincronizadosSinReferencia();
+
       state = EstadoConexion.conectado;
     } finally {
       _drenando = false;

@@ -223,7 +223,7 @@ class VentaServiceImplTest {
     void completarRegistraUnMovimientoDeVentaConElCostoPromedioVigente() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(
                 LineaVenta.nueva(10L, new BigDecimal("2"), new BigDecimal("8.00"))), MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
 
@@ -237,7 +237,7 @@ class VentaServiceImplTest {
     void completarEfectivoNoCreaCuentaPorCobrarYRegistraIngresoEnCaja() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, new BigDecimal("2"), new BigDecimal("8.00"))),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
 
@@ -252,7 +252,7 @@ class VentaServiceImplTest {
     void completarTarjetaNoCreaCuentaPorCobrarYRegistraIngresoEnCaja() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, new BigDecimal("2"), new BigDecimal("8.00"))),
                 MetodoPago.TARJETA), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
 
@@ -267,7 +267,7 @@ class VentaServiceImplTest {
     void completarCreditoNoRegistraIngresoEnCajaYCreaCuentaPorElTotal() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, new BigDecimal("2"), new BigDecimal("8.00"))),
                 MetodoPago.CREDITO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(null));
@@ -282,7 +282,7 @@ class VentaServiceImplTest {
     void completarMixtaConDesgloseParcialRegistraIngresosYCreaCuentaSoloPorElSaldo() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, new BigDecimal("8.50"))),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
@@ -302,7 +302,7 @@ class VentaServiceImplTest {
     void completarMixtaCubiertaPorCompletoNoCreaCuentaPorCobrar() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, new BigDecimal("8.50"))),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
@@ -318,18 +318,18 @@ class VentaServiceImplTest {
     void completarMixtaSinDesgloseLanzaDesgloseInvalido() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, new BigDecimal("8.50"))),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
 
         assertThatThrownBy(() -> ventaService.completar(1L, 5L, List.of()))
                 .isInstanceOf(DesglosePagoInvalidoException.class);
-        assertThat(venta.getEstado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.BORRADOR);
+        verify(ventaRepository, never()).save(any());
     }
 
     @Test
     void completarMixtaConCanalCreditoEnElDesgloseLanzaDesgloseInvalido() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, new BigDecimal("8.50"))),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
 
         assertThatThrownBy(() -> ventaService.completar(
                 1L, 5L, List.of(new PagoInmediato(MetodoPago.CREDITO, new BigDecimal("8.50")))))
@@ -340,7 +340,7 @@ class VentaServiceImplTest {
     void completarMixtaConSumaMayorAlTotalLanzaDesgloseInvalido() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, new BigDecimal("8.50"))),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
 
         assertThatThrownBy(() -> ventaService.completar(
                 1L, 5L, List.of(new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("100")))))
@@ -351,7 +351,7 @@ class VentaServiceImplTest {
     void completarIgnoraElDesgloseDelClienteParaMetodosNoMixtos() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, new BigDecimal("8.50"))),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
 
@@ -366,7 +366,7 @@ class VentaServiceImplTest {
     void completarCuandoInventarioRechazaNoCreaLaCuentaPorCobrar() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(eq(1L), eq(10L))).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.ZERO, BigDecimal.ZERO));
         org.mockito.Mockito.doThrow(new StockInsuficienteException(10L, 1L))
@@ -380,7 +380,7 @@ class VentaServiceImplTest {
     void completarUnaVentaDeOtraTiendaLanzaNoEncontrada() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
 
         assertThatThrownBy(() -> ventaService.completar(99L, 5L)).isInstanceOf(ResourceNotFoundException.class);
         verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
@@ -390,7 +390,7 @@ class VentaServiceImplTest {
     void completarCuandoInventarioRechazaPorStockInsuficientePropagaLaExcepcion() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(eq(1L), eq(10L))).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.ZERO, BigDecimal.ZERO));
         org.mockito.Mockito.doThrow(new StockInsuficienteException(10L, 1L))
@@ -403,7 +403,7 @@ class VentaServiceImplTest {
     void completarCuandoVentaNoPermitidaPropagaLaExcepcion() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(eq(1L), eq(10L))).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
         org.mockito.Mockito.doThrow(new MovimientoNoPermitidoException("no permitido"))
@@ -414,7 +414,7 @@ class VentaServiceImplTest {
 
     @Test
     void anularConIdInexistenteLanzaNoEncontrado() {
-        when(ventaRepository.findById(99L)).thenReturn(Optional.empty());
+        when(ventaRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> ventaService.anular(1L, 99L)).isInstanceOf(ResourceNotFoundException.class);
     }
@@ -424,7 +424,7 @@ class VentaServiceImplTest {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)),
                 MetodoPago.EFECTIVO), 5L, 1L);
         venta.completar();
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
 
         assertThatThrownBy(() -> ventaService.anular(1L, 5L)).isInstanceOf(EstadoVentaInvalidoException.class);
     }
@@ -433,7 +433,7 @@ class VentaServiceImplTest {
     void completarVentaACreditoDentroDelLimitePermite() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.CREDITO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
@@ -448,13 +448,13 @@ class VentaServiceImplTest {
     void completarVentaACreditoQueExcedeElLimiteLanzaExcepcionYNoMutaNada() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.CREDITO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("5")));
 
         assertThatThrownBy(() -> ventaService.completar(1L, 5L))
                 .isInstanceOf(LimiteCreditoExcedidoException.class);
 
-        assertThat(venta.getEstado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.BORRADOR);
+        verify(ventaRepository, never()).save(any());
         verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
         verify(cuentaPorCobrarService, never()).crear(any(), any(), any(), any());
     }
@@ -463,7 +463,7 @@ class VentaServiceImplTest {
     void completarVentaACreditoSinLimiteDefinidoNoRestringe() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.CREDITO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(null));
@@ -477,7 +477,7 @@ class VentaServiceImplTest {
     void completarVentaACreditoSumaSaldoPendienteExistenteDelCliente() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.CREDITO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("15")));
         when(cuentaPorCobrarService.listarPorTienda(1L)).thenReturn(
                 List.of(cuentaPendiente(2L, new BigDecimal("10"))));
@@ -490,7 +490,7 @@ class VentaServiceImplTest {
     void completarVentaMixtaDentroDelLimitePermite() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
@@ -506,14 +506,14 @@ class VentaServiceImplTest {
     void completarVentaMixtaQueExcedeElLimiteLanzaExcepcionYNoMutaNada() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("5")));
 
         assertThatThrownBy(() -> ventaService.completar(
                 1L, 5L, List.of(new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("3")))))
                 .isInstanceOf(LimiteCreditoExcedidoException.class);
 
-        assertThat(venta.getEstado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.BORRADOR);
+        verify(ventaRepository, never()).save(any());
         verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
         verify(cuentaPorCobrarService, never()).crear(any(), any(), any(), any());
     }
@@ -522,7 +522,7 @@ class VentaServiceImplTest {
     void completarVentaEfectivoNoConsultaElLimiteDeCredito() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
 
@@ -535,12 +535,12 @@ class VentaServiceImplTest {
     void completarEfectivoSinCajaAbiertaLanzaCajaNoAbiertaYNoMutaNada() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.EFECTIVO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(cajaService.hayAbiertaPorTienda(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> ventaService.completar(1L, 5L)).isInstanceOf(CajaNoAbiertaException.class);
 
-        assertThat(venta.getEstado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.BORRADOR);
+        verify(ventaRepository, never()).save(any());
         verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
         verify(cajaService, never()).registrarMovimientoSiHayAbierta(any(), any(), any(), any());
     }
@@ -549,7 +549,7 @@ class VentaServiceImplTest {
     void completarMixtaSinCajaAbiertaLanzaCajaNoAbierta() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.MIXTO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(cajaService.hayAbiertaPorTienda(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> ventaService.completar(
@@ -562,7 +562,7 @@ class VentaServiceImplTest {
     void completarCreditoSinCajaAbiertaNoRequiereCajaAbierta() {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.CREDITO), 5L, 1L);
-        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
         when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(null));

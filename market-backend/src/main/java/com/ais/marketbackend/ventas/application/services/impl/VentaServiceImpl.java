@@ -180,7 +180,13 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional
     public VentaResumen completar(Long tiendaId, Long id, List<PagoInmediato> pagosInmediatos) {
-        Venta venta = obtenerORequerida(tiendaId, id);
+        Venta venta = obtenerConBloqueoORequerida(tiendaId, id);
+        // exigirBorrador() (dentro de completar()) va primero, antes de cualquier otra
+        // validación: si dos completar() concurrentes se serializan por el lock de
+        // findByIdConBloqueo, el segundo debe fallar con EstadoVentaInvalidoException —
+        // no con un error de límite de crédito confuso por leer la CxC que el primero
+        // ya creó (que sería lo que pasaría si esta línea fuera la última).
+        venta.completar();
         List<PagoInmediato> pagos = resolverPagosInmediatos(venta, pagosInmediatos);
         BigDecimal totalInmediato = pagos.stream().map(PagoInmediato::monto).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal saldo = venta.total().subtract(totalInmediato);
@@ -191,7 +197,6 @@ public class VentaServiceImpl implements VentaService {
         if (venta.getMetodoPago() == MetodoPago.CREDITO || venta.getMetodoPago() == MetodoPago.MIXTO) {
             validarLimiteCredito(tiendaId, venta, saldo);
         }
-        venta.completar();
         for (LineaVenta linea : venta.getLineas()) {
             InventarioResumen inventario = inventarioService.obtener(tiendaId, linea.getProductoId());
             inventarioService.registrarMovimiento(
@@ -255,7 +260,7 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional
     public VentaResumen anular(Long tiendaId, Long id) {
-        Venta venta = obtenerORequerida(tiendaId, id);
+        Venta venta = obtenerConBloqueoORequerida(tiendaId, id);
         venta.anular();
         return toResumen(ventaRepository.save(venta));
     }
@@ -329,6 +334,16 @@ public class VentaServiceImpl implements VentaService {
 
     private Venta obtenerORequerida(Long tiendaId, Long id) {
         Venta venta = ventaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada: " + id));
+        if (!venta.getTiendaId().equals(tiendaId)) {
+            throw new ResourceNotFoundException("Venta no encontrada: " + id);
+        }
+        return venta;
+    }
+
+    /** Igual que {@link #obtenerORequerida}, pero con {@code findByIdConBloqueo} — ver {@code VentaRepository}. */
+    private Venta obtenerConBloqueoORequerida(Long tiendaId, Long id) {
+        Venta venta = ventaRepository.findByIdConBloqueo(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada: " + id));
         if (!venta.getTiendaId().equals(tiendaId)) {
             throw new ResourceNotFoundException("Venta no encontrada: " + id);

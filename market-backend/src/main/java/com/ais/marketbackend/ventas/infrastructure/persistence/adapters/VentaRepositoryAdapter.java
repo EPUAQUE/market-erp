@@ -39,6 +39,11 @@ public class VentaRepositoryAdapter implements VentaRepository {
     }
 
     @Override
+    public Optional<Venta> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Venta> findByTiendaIdAndVendedorIdAndCorrelationId(
             Long tiendaId, Long vendedorId, String correlationId) {
         return jpaRepository.findByTiendaIdAndVendedorIdAndCorrelationId(tiendaId, vendedorId, correlationId)

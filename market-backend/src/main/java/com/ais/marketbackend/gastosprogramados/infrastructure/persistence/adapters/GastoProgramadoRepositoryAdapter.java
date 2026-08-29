@@ -37,6 +37,11 @@ public class GastoProgramadoRepositoryAdapter implements GastoProgramadoReposito
     }
 
     @Override
+    public Optional<GastoProgramado> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public List<GastoProgramado> findByTiendaId(Long tiendaId) {
         return jpaRepository.findByTiendaId(tiendaId).stream().map(mapper::toDomain).toList();
     }

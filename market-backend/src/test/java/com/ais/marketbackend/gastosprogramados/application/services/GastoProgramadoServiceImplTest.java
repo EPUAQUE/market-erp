@@ -50,7 +50,7 @@ class GastoProgramadoServiceImplTest {
     void generarPagoDeOtraTiendaLanzaNoEncontrado() {
         GastoProgramado gasto = withId(GastoProgramado.nuevo(1L, "Renta local", new BigDecimal("1500.00"),
                 FrecuenciaGasto.MENSUAL, Instant.parse("2026-01-01T00:00:00Z")), 9L);
-        when(gastoProgramadoRepository.findById(9L)).thenReturn(Optional.of(gasto));
+        when(gastoProgramadoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(gasto));
 
         assertThatThrownBy(() -> gastoProgramadoService.generarPago(99L, 9L))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -60,7 +60,7 @@ class GastoProgramadoServiceImplTest {
     void generarPagoAntesDeVencerLanzaGastoNoVencido() {
         GastoProgramado gasto = withId(GastoProgramado.nuevo(1L, "Renta local", new BigDecimal("1500.00"),
                 FrecuenciaGasto.MENSUAL, Instant.now().plusSeconds(3600)), 9L);
-        when(gastoProgramadoRepository.findById(9L)).thenReturn(Optional.of(gasto));
+        when(gastoProgramadoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(gasto));
 
         assertThatThrownBy(() -> gastoProgramadoService.generarPago(1L, 9L))
                 .isInstanceOf(GastoNoVencidoException.class);
@@ -70,7 +70,7 @@ class GastoProgramadoServiceImplTest {
     void generarPagoReflejaUnEgresoEnCaja() {
         GastoProgramado gasto = withId(GastoProgramado.nuevo(1L, "Renta local", new BigDecimal("1500.00"),
                 FrecuenciaGasto.MENSUAL, Instant.parse("2020-01-01T00:00:00Z")), 9L);
-        when(gastoProgramadoRepository.findById(9L)).thenReturn(Optional.of(gasto));
+        when(gastoProgramadoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(gasto));
 
         gastoProgramadoService.generarPago(1L, 9L);
 

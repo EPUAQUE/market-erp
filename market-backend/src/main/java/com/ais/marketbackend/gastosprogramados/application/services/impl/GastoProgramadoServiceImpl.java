@@ -68,7 +68,7 @@ public class GastoProgramadoServiceImpl implements GastoProgramadoService {
     @Override
     @Transactional
     public GastoProgramadoResumen generarPago(Long tiendaId, Long id) {
-        GastoProgramado gasto = obtenerORequerido(tiendaId, id);
+        GastoProgramado gasto = obtenerConBloqueoORequerido(tiendaId, id);
         BigDecimal monto = gasto.getMonto();
         String concepto = gasto.getConcepto();
         gasto.generarPago(Instant.now());
@@ -90,6 +90,16 @@ public class GastoProgramadoServiceImpl implements GastoProgramadoService {
 
     private GastoProgramado obtenerORequerido(Long tiendaId, Long id) {
         GastoProgramado gasto = gastoProgramadoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Gasto programado no encontrado: " + id));
+        if (!gasto.getTiendaId().equals(tiendaId)) {
+            throw new ResourceNotFoundException("Gasto programado no encontrado: " + id);
+        }
+        return gasto;
+    }
+
+    /** Igual que {@link #obtenerORequerido}, pero con {@code findByIdConBloqueo} — ver {@code GastoProgramadoRepository}. */
+    private GastoProgramado obtenerConBloqueoORequerido(Long tiendaId, Long id) {
+        GastoProgramado gasto = gastoProgramadoRepository.findByIdConBloqueo(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Gasto programado no encontrado: " + id));
         if (!gasto.getTiendaId().equals(tiendaId)) {
             throw new ResourceNotFoundException("Gasto programado no encontrado: " + id);

@@ -349,7 +349,7 @@ una operación de negocio y ninguna venta confirmada se pierde localmente.
 
 **Confirmado en código (2026-08-28):** Inventario ya tiene `PESSIMISTIC_WRITE`
 (`InventarioJpaRepository.java:23`, usado en `InventarioServiceImpl`) — esa parte de
-la fase ya está resuelta, mantenerla así. Caja, CxC, CxP y gasto programado NO tienen
+la fase ya está resuelta, mantenerla así. CxC, CxP y gasto programado NO tienen
 ninguna protección de concurrencia (solo `findById` + validación en memoria, sin
 `@Lock`, sin `@Version`, sin `CHECK` ni restricción única en BD). No existen tests
 de integración con Testcontainers para estos flujos, solo unitarios con mocks. El
@@ -367,10 +367,29 @@ el saldo ya actualizado. Cubierto por `ClienteServiceImplTest` (unitario) y por
 `VentaCreditoConcurrenciaIT` (Testcontainers/Postgres real): dos ventas a crédito
 concurrentes cercanas al límite — exactamente una tiene éxito, el saldo nunca lo supera.
 
+**Resuelto (2026-08-28) — Concurrencia de caja:** `CajaServiceImpl.abrir` solo
+comprobaba en memoria si ya había una caja abierta (sin bloqueo ni restricción en BD)
+— dos aperturas concurrentes para la misma tienda podían ambas pasar el chequeo y
+crear dos sesiones ABIERTA a la vez. `registrarMovimiento`/`cerrar` leían la sesión sin
+bloqueo — dos movimientos concurrentes podían perderse entre sí (la colección JPA de
+movimientos usa `orphanRemoval`, que en un merge concurrente sin lock puede borrar como
+"huérfano" un movimiento insertado por la otra transacción), y dos cierres concurrentes
+podían pisarse el monto contado sin ningún error. Se agregó el índice único parcial
+`ux_caja_sesion_abierta_por_tienda` (`caja/004-una-abierta-por-tienda.xml`, solo sobre
+filas con `estado = 'ABIERTA'`) — `abrir` traduce su violación a
+`CajaSesionAbiertaException` — y `CajaSesionRepository.findAbiertaByTiendaIdConBloqueo`
+(`@Lock(PESSIMISTIC_WRITE)`), usado por `registrarMovimiento`/`cerrar`/
+`registrarMovimientoSiHayAbierta` (ahora `@Transactional`, manteniendo el lock hasta el
+commit) — lo que además vuelve innecesario el patrón de detectar-colisión-y-releer para
+estos métodos, ya que la segunda solicitud concurrente espera el lock y relee el estado
+ya actualizado antes de intentar guardar. Cubierto por `CajaServiceImplTest`
+(unitario, incluida la colisión de apertura concurrente sin correlationId) y por
+`CajaConcurrenciaIT` (Testcontainers/Postgres real): dos aperturas concurrentes —
+exactamente una tiene éxito; diez movimientos concurrentes sobre la misma caja — saldo
+final exacto, sin movimientos perdidos.
+
 ### Problemas a cubrir
 
-- Aperturas concurrentes de caja.
-- Cierre de caja compitiendo con ventas o movimientos.
 - Cobros concurrentes que superen el saldo de una cuenta por cobrar.
 - Pagos concurrentes que superen el saldo de una cuenta por pagar.
 - Ventas concurrentes que excedan juntas el límite de crédito.
@@ -384,14 +403,16 @@ concurrentes cercanas al límite — exactamente una tiene éxito, el saldo nunc
 | Agregado | Estrategia inicial recomendada |
 | --- | --- |
 | Inventario | Mantener `PESSIMISTIC_WRITE` existente |
-| Caja | Bloqueo de sesión abierta + restricción única parcial |
+| Caja | [x] Bloqueo de sesión abierta + restricción única parcial |
 | CxC/CxP | `PESSIMISTIC_WRITE` o actualización condicional por saldo/estado |
 | Crédito cliente | [x] Serializar por cliente (`PESSIMISTIC_WRITE` vía `findByIdConBloqueo`) |
 | Gasto programado | Clave única por gasto y período generado |
 | FEL | Correlativo atómico + idempotencia externa |
 
-- [ ] Agregar una restricción PostgreSQL que permita una sola caja abierta por tienda.
-- [ ] Bloquear la caja durante registrar movimiento y cerrar.
+- [x] Agregar una restricción PostgreSQL que permita una sola caja abierta por tienda
+  (2026-08-28, índice único parcial `ux_caja_sesion_abierta_por_tienda`).
+- [x] Bloquear la caja durante registrar movimiento y cerrar (2026-08-28,
+  `findAbiertaByTiendaIdConBloqueo` + `@Transactional`).
 - [ ] Hacer atómico “validar saldo + registrar cobro/pago + actualizar saldo”.
 - [x] Hacer atómico "validar límite + crear exposición crediticia" (2026-08-28,
   `ClienteService.obtenerParaActualizarCredito` + `VentaServiceImpl.completar`).
@@ -402,9 +423,12 @@ concurrentes cercanas al límite — exactamente una tiene éxito, el saldo nunc
 
 ### Pruebas requeridas
 
-- [ ] Dos aperturas simultáneas: exactamente una tiene éxito.
-- [ ] Diez movimientos paralelos: saldo final exacto.
-- [ ] Cierre concurrente con venta: resultado serializable y auditable.
+- [x] Dos aperturas simultáneas: exactamente una tiene éxito (`CajaConcurrenciaIT`,
+  2026-08-28).
+- [x] Diez movimientos paralelos: saldo final exacto (`CajaConcurrenciaIT`, 2026-08-28).
+- [ ] Cierre concurrente con venta: resultado serializable y auditable (el lock ya
+  serializa `cerrar` contra `registrarMovimiento`/`registrarMovimientoSiHayAbierta`
+  sobre la misma sesión; falta un test específico que ejercite esta combinación).
 - [ ] Dos cobros sobre el último saldo: nunca hay saldo negativo.
 - [x] Dos ventas de crédito cercanas al límite: nunca se supera el límite
   (`VentaCreditoConcurrenciaIT`, 2026-08-28).
@@ -818,7 +842,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | Crédito de cliente resuelto, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 535 unitarios + 9 IT, `BUILD SUCCESS` (incluye `VentaCreditoConcurrenciaIT`) | Serialización por `PESSIMISTIC_WRITE` del cliente al validar límite de crédito en ventas CREDITO/MIXTO. Caja, CxC/CxP y gasto programado siguen sin protección de concurrencia. |
+| 3 — Concurrencia | Crédito de cliente y caja resueltos, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 535 unitarios + 11 IT, `BUILD SUCCESS` (incluye `VentaCreditoConcurrenciaIT` y `CajaConcurrenciaIT`) | Serialización por `PESSIMISTIC_WRITE` del cliente al validar límite de crédito en ventas CREDITO/MIXTO. Caja: índice único parcial para una sola sesión ABIERTA por tienda + lock de fila en registrar movimiento/cerrar. CxC/CxP y gasto programado siguen sin protección de concurrencia. |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

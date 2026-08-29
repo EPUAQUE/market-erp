@@ -409,9 +409,26 @@ Cubierto por `GastoProgramadoServiceImplTest` (unitario) y por
 concurrentes del mismo período — exactamente una tiene éxito, un solo pago
 registrado.
 
-### Problemas a cubrir
-
-- Cambios concurrentes en estados de compras, traslados y FEL.
+**Resuelto (2026-08-28) — Estados concurrentes de compras/traslados/FEL:**
+`CompraServiceImpl.recibir`/`anular`, `TrasladoServiceImpl.completar`/`anular` y
+`FelServiceImpl.reintentar`/`anular` leían el agregado con `findById` (sin
+bloqueo) — dos transiciones casi simultáneas sobre el mismo agregado podían
+ambas leer el mismo estado y pasar la validación: en Traslado esto duplicaba
+sin ningún control los movimientos de Inventario (salida/entrada) al no haber
+restricción de BD que lo impidiera; en Compra la restricción única de
+`cuenta_por_pagar.compra_id` abortaba la transacción perdedora completa pero
+con un mensaje de error engañoso ("proveedor/tienda no existe"); en FEL dos
+`anular`/`reintentar` podían pisarse el resultado sin ningún error. Se agregó
+`findByIdConBloqueo` (`@Lock(PESSIMISTIC_WRITE)`) en los tres repositorios,
+usado por las seis operaciones de transición de estado — la segunda solicitud
+ahora espera, relee el estado ya actualizado y falla con el error de negocio
+correcto (`EstadoCompraInvalidoException`/`EstadoTrasladoInvalidoException`/
+`EstadoDocumentoFelInvalidoException`) en vez de duplicar efectos o fallar con
+un mensaje engañoso. Cubierto por los unitarios existentes (mocks
+actualizados) y por `CompraConcurrenciaIT`/`TrasladoConcurrenciaIT`/
+`FelConcurrenciaIT` (Testcontainers/Postgres real): dos transiciones
+concurrentes sobre el mismo agregado — exactamente una tiene éxito, sin
+duplicar movimientos de inventario.
 
 ### Tareas
 
@@ -424,7 +441,7 @@ registrado.
 | CxC/CxP | [x] `PESSIMISTIC_WRITE` (`findByIdConBloqueo`) |
 | Crédito cliente | [x] Serializar por cliente (`PESSIMISTIC_WRITE` vía `findByIdConBloqueo`) |
 | Gasto programado | [x] `PESSIMISTIC_WRITE` (`findByIdConBloqueo`) |
-| FEL | Correlativo atómico + idempotencia externa |
+| FEL | [x] Correlativo atómico (Fase 1) + `PESSIMISTIC_WRITE` en reintentar/anular |
 
 - [x] Agregar una restricción PostgreSQL que permita una sola caja abierta por tienda
   (2026-08-28, índice único parcial `ux_caja_sesion_abierta_por_tienda`).
@@ -453,7 +470,11 @@ registrado.
   (`VentaCreditoConcurrenciaIT`, 2026-08-28).
 - [x] Dos ejecuciones del mismo gasto/período: un solo pago
   (`GastoProgramadoConcurrenciaIT`, 2026-08-28).
-- [ ] Ejecutar contra PostgreSQL real, no H2 ni únicamente mocks.
+- [x] Transiciones de estado concurrentes en compra/traslado/FEL: exactamente una
+  tiene éxito, sin duplicar movimientos de inventario
+  (`CompraConcurrenciaIT`/`TrasladoConcurrenciaIT`/`FelConcurrenciaIT`, 2026-08-28).
+- [x] Ejecutar contra PostgreSQL real, no H2 ni únicamente mocks (todos los IT de
+  esta fase usan Testcontainers con Postgres real).
 
 ### Criterio de aceptación
 
@@ -862,7 +883,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | Crédito de cliente, caja, CxC/CxP y gasto programado resueltos; queda compras/traslados/FEL y `CHECK` de BD | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 14 IT, `BUILD SUCCESS` | Serialización por `PESSIMISTIC_WRITE` del cliente al validar límite de crédito en ventas CREDITO/MIXTO. Caja: índice único parcial para una sola sesión ABIERTA por tienda + lock de fila en registrar movimiento/cerrar. CxC/CxP: lock de fila en registrar cobro/pago y anular. Gasto programado: lock de fila en generarPago. Estados concurrentes de compras/traslados/FEL y `CHECK` de BD siguen pendientes. |
+| 3 — Concurrencia | Completa salvo matriz de agregados formal, `CHECK` de BD y revisión general de flujos monetarios | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 17 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular) y FEL (reintentar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. Queda: `CHECK` de BD para montos/saldos/estados y una revisión sistemática de flujos `find -> validar -> save` monetarios fuera de los ya cubiertos. |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

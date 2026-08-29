@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 3 del plan (PLAN_MEJORAS.md): defensa en profundidad para invariantes
+         que el dominio ya exige (ProductoTienda), ahora también en BD — cualquier
+         escritura que las viole falla en el nivel más bajo, no solo en la capa de
+         aplicación. -->
+    <changeSet id="productos-002-check-producto-tienda" author="market-backend">
+        <sql>
+            ALTER TABLE producto_tienda ADD CONSTRAINT ck_producto_tienda_precio_venta CHECK (precio_venta >= 0);
+            ALTER TABLE producto_tienda ADD CONSTRAINT ck_producto_tienda_stock_minimo CHECK (stock_minimo >= 0);
+            ALTER TABLE producto_tienda ADD CONSTRAINT ck_producto_tienda_stock_maximo CHECK (stock_maximo >= 0);
+            ALTER TABLE producto_tienda ADD CONSTRAINT ck_producto_tienda_stock_min_le_max CHECK (stock_minimo &lt;= stock_maximo);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE producto_tienda DROP CONSTRAINT ck_producto_tienda_precio_venta;
+                ALTER TABLE producto_tienda DROP CONSTRAINT ck_producto_tienda_stock_minimo;
+                ALTER TABLE producto_tienda DROP CONSTRAINT ck_producto_tienda_stock_maximo;
+                ALTER TABLE producto_tienda DROP CONSTRAINT ck_producto_tienda_stock_min_le_max;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

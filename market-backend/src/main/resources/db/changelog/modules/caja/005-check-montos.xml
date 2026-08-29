@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 3 del plan (PLAN_MEJORAS.md): defensa en profundidad para invariantes
+         que el dominio ya exige (CajaSesion/MovimientoCaja), ahora también en BD.
+         monto_final_contado es nullable mientras la sesión está ABIERTA, así que su
+         CHECK debe admitir NULL explícitamente. -->
+    <changeSet id="caja-005-check-montos" author="market-backend">
+        <sql>
+            ALTER TABLE caja_sesion ADD CONSTRAINT ck_caja_sesion_monto_inicial CHECK (monto_inicial >= 0);
+            ALTER TABLE caja_sesion ADD CONSTRAINT ck_caja_sesion_monto_final_contado CHECK (monto_final_contado IS NULL OR monto_final_contado >= 0);
+            ALTER TABLE movimiento_caja ADD CONSTRAINT ck_movimiento_caja_monto CHECK (monto > 0);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE caja_sesion DROP CONSTRAINT ck_caja_sesion_monto_inicial;
+                ALTER TABLE caja_sesion DROP CONSTRAINT ck_caja_sesion_monto_final_contado;
+                ALTER TABLE movimiento_caja DROP CONSTRAINT ck_movimiento_caja_monto;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

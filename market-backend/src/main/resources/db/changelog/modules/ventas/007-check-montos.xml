@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 3 del plan (PLAN_MEJORAS.md): defensa en profundidad para invariantes
+         que el dominio ya exige (LineaVenta), ahora también en BD. -->
+    <changeSet id="ventas-007-check-linea-venta" author="market-backend">
+        <sql>
+            ALTER TABLE linea_venta ADD CONSTRAINT ck_linea_venta_cantidad CHECK (cantidad > 0);
+            ALTER TABLE linea_venta ADD CONSTRAINT ck_linea_venta_precio_unitario CHECK (precio_unitario >= 0);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE linea_venta DROP CONSTRAINT ck_linea_venta_cantidad;
+                ALTER TABLE linea_venta DROP CONSTRAINT ck_linea_venta_precio_unitario;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

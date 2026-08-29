@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 3 del plan (PLAN_MEJORAS.md): defensa en profundidad para invariantes
+         que el dominio ya exige (DocumentoFel, FelCorrelativoEntity vía
+         DocumentoFelRepositoryAdapter), ahora también en BD. -->
+    <changeSet id="fel-003-check-numero" author="market-backend">
+        <sql>
+            ALTER TABLE documento_fel ADD CONSTRAINT ck_documento_fel_numero CHECK (numero > 0);
+            ALTER TABLE fel_correlativo ADD CONSTRAINT ck_fel_correlativo_siguiente_numero CHECK (siguiente_numero > 0);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE documento_fel DROP CONSTRAINT ck_documento_fel_numero;
+                ALTER TABLE fel_correlativo DROP CONSTRAINT ck_fel_correlativo_siguiente_numero;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

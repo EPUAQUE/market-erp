@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 3 del plan (PLAN_MEJORAS.md): defensa en profundidad para invariantes
+         que el dominio ya exige (LineaTraslado), ahora también en BD. -->
+    <changeSet id="traslados-003-check-linea-traslado" author="market-backend">
+        <sql>
+            ALTER TABLE linea_traslado ADD CONSTRAINT ck_linea_traslado_cantidad CHECK (cantidad > 0);
+        </sql>
+        <rollback>
+            <sql>ALTER TABLE linea_traslado DROP CONSTRAINT ck_linea_traslado_cantidad;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

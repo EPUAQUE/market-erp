@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 3 del plan (PLAN_MEJORAS.md): defensa en profundidad para invariantes
+         que el dominio ya exige (CuentaPorPagar/Pago), ahora también en BD.
+         saldo_pendiente <= monto_original es una invariante adicional (nunca puede
+         quedar debiendo más de lo que se generó originalmente) que el dominio
+         mantiene por construcción pero que no tenía respaldo en BD. -->
+    <changeSet id="cuentasporpagar-002-check-montos" author="market-backend">
+        <sql>
+            ALTER TABLE cuenta_por_pagar ADD CONSTRAINT ck_cuenta_por_pagar_monto_original CHECK (monto_original > 0);
+            ALTER TABLE cuenta_por_pagar ADD CONSTRAINT ck_cuenta_por_pagar_saldo_pendiente CHECK (saldo_pendiente >= 0);
+            ALTER TABLE cuenta_por_pagar ADD CONSTRAINT ck_cuenta_por_pagar_saldo_le_original CHECK (saldo_pendiente &lt;= monto_original);
+            ALTER TABLE pago ADD CONSTRAINT ck_pago_monto CHECK (monto > 0);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE cuenta_por_pagar DROP CONSTRAINT ck_cuenta_por_pagar_monto_original;
+                ALTER TABLE cuenta_por_pagar DROP CONSTRAINT ck_cuenta_por_pagar_saldo_pendiente;
+                ALTER TABLE cuenta_por_pagar DROP CONSTRAINT ck_cuenta_por_pagar_saldo_le_original;
+                ALTER TABLE pago DROP CONSTRAINT ck_pago_monto;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

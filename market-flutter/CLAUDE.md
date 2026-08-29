@@ -833,6 +833,38 @@ Verified: `flutter analyze`/`flutter test` clean. **Not click-tested** —
 same reasoning as the rest of this phase (needs `LocalStore.disponible ==
 true`, a real device/emulator).
 
+### Bloqueo de logout con pendientes — built this phase (Fase 2 parte C, PLAN_MEJORAS.md)
+
+`cerrarSesionConConfirmacion` (`logout_confirm.dart`, the only path that
+ever calls `AuthNotifier.logout()` — nothing else in the app does) used to
+warn and offer a "Cerrar sesión de todos modos" bypass when
+`pendientesSincronizarProvider` was non-zero. **Decision (user, this
+phase): hard block, no bypass.** With anything pending, the dialog now only
+has "Ver pendientes" (jumps to `PendientesErrorScreen` via
+`context.push('/pendientes-error')`) and "Entendido" — neither one calls
+`logout()`. The only ways out are: reconnect and let the queue drain on its
+own, or explicitly discard a genuinely stuck item from
+`PendientesErrorScreen` (which already asks its own "no se puede deshacer"
+confirmation before deleting anything).
+
+Accepted tradeoff, made explicitly by the user rather than assumed: a
+vendedor who needs to hand off a shared tablet to someone else with no
+connectivity available is now stuck until they reconnect — chosen
+deliberately over the risk of an accidental/casual bypass silently losing
+real unsynced ventas.
+
+**Bloqueo de desinstalación — evaluated, marked not implementable via app
+code.** A normal Android/iOS app cannot intercept or prevent its own
+uninstallation — that requires Device Admin / Android Enterprise (MDM), a
+device-management deployment decision, not a code change in this repo.
+User decision this phase: document this limit and close the plan item as
+"no aplica vía app" rather than investigate MDM adoption (out of scope).
+
+Verified: `flutter analyze`/`flutter test` clean. Only two call sites for
+logout in the whole app (`PosScreen`, `TiendaPickerScreen`), both already
+routed through `cerrarSesionConConfirmacion` — confirmed via grep, no other
+path bypasses this dialog.
+
 ### Cobros sueltos (`cuentas_por_cobrar` feature) — built this phase
 
 New feature, `lib/features/cuentas_por_cobrar/`. Before this phase there was

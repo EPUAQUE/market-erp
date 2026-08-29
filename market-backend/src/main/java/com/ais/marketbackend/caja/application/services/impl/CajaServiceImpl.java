@@ -20,12 +20,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * {@code abrir}/{@code registrarMovimiento}/{@code cerrar} son deliberadamente SIN
- * {@code @Transactional} propio cuando reciben {@code correlationId} — mismo motivo
- * que {@code VentaServiceImpl.crear}: tras una colisión de restricción única, la
- * sesión de Hibernate que acaba de fallar el flush queda inutilizable para releer en
- * la misma transacción. Cada llamada al repositorio ya es transaccional por sí sola
- * vía Spring Data.
+ * {@code abrir} es deliberadamente SIN {@code @Transactional} propio cuando recibe
+ * {@code correlationId} — mismo motivo que {@code VentaServiceImpl.crear}: tras una
+ * colisión de restricción única (aquí, o bien el correlationId de apertura, o la
+ * nueva restricción parcial "una sola caja abierta por tienda"), la sesión de
+ * Hibernate que acaba de fallar el flush queda inutilizable para releer en la misma
+ * transacción — cada llamada al repositorio ya es transaccional por sí sola vía
+ * Spring Data, así que la relectura ocurre en una transacción nueva.
+ *
+ * <p>{@code registrarMovimiento}/{@code cerrar}/{@code registrarMovimientoSiHayAbierta}
+ * SÍ son {@code @Transactional}: leen la sesión abierta con
+ * {@code findAbiertaByTiendaIdConBloqueo} ({@code PESSIMISTIC_WRITE}) y mutan/guardan
+ * dentro de la misma transacción, manteniendo el lock hasta el commit. Sin esto, dos
+ * movimientos concurrentes sobre la misma sesión podían perderse entre sí (la
+ * colección JPA de movimientos usa {@code orphanRemoval}, que en un merge concurrente
+ * sin lock puede borrar como "huérfano" un movimiento insertado por la otra
+ * transacción), y dos cierres concurrentes podían pisarse el monto contado sin
+ * ningún error. Con el lock, la segunda solicitud espera a que la primera termine de
+ * commitear y entonces relee el estado ya actualizado — lo que además hace que una
+ * colisión de correlationId por concurrencia real ya no pueda ocurrir (la segunda
+ * solicitud ve el movimiento/cierre de la primera en su propia relectura antes de
+ * intentar guardar), así que estos métodos no necesitan el patrón de
+ * detectar-colisión-y-releer.
  */
 @Service
 public class CajaServiceImpl implements CajaService {
@@ -69,6 +85,14 @@ public class CajaServiceImpl implements CajaService {
                     return resolverAperturaIdempotente(existente.get(), montoInicial);
                 }
             }
+            // Dos aperturas concurrentes SIN correlationId compartido (o con
+            // correlationId distinto) para la misma tienda: el chequeo de arriba no
+            // alcanzó a verla, pero la restricción única parcial
+            // ux_caja_sesion_abierta_por_tienda sí — la que pierde la carrera choca
+            // ahí, no por una referencia inválida real.
+            if (cajaSesionRepository.findAbiertaByTiendaId(tiendaId).isPresent()) {
+                throw new CajaSesionAbiertaException(tiendaId);
+            }
             throw e;
         }
     }
@@ -81,16 +105,23 @@ public class CajaServiceImpl implements CajaService {
     }
 
     @Override
+    @Transactional
     public CajaSesionResumen registrarMovimiento(
             Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto) {
+        // @Transactional propio (no solo delegar): esta sobrecarga es una llamada
+        // externa a través del proxy de Spring — sin su propia anotación, la
+        // sobrecarga de 5 argumentos que invoca abajo es una auto-invocación que NO
+        // pasa por el proxy, así que su @Transactional no tendría efecto y
+        // findAbiertaByTiendaIdConBloqueo fallaría con "No active transaction".
         return registrarMovimiento(tiendaId, tipo, concepto, monto, null);
     }
 
     @Override
+    @Transactional
     public CajaSesionResumen registrarMovimiento(
             Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto, String correlationId) {
         String correlationIdNormalizado = normalizarCorrelationId(correlationId);
-        CajaSesion sesion = obtenerAbiertaORequerida(tiendaId);
+        CajaSesion sesion = obtenerAbiertaConBloqueoORequerida(tiendaId);
         if (correlationIdNormalizado != null) {
             Optional<MovimientoCaja> existente = sesion.movimientoPorCorrelationId(correlationIdNormalizado);
             if (existente.isPresent()) {
@@ -98,18 +129,7 @@ public class CajaServiceImpl implements CajaService {
             }
         }
         sesion.registrarMovimiento(tipo, concepto, monto, correlationIdNormalizado);
-        try {
-            return toResumen(cajaSesionRepository.save(sesion));
-        } catch (ReferenciaInvalidaException e) {
-            if (correlationIdNormalizado != null) {
-                CajaSesion recargada = obtenerAbiertaORequerida(tiendaId);
-                Optional<MovimientoCaja> existente = recargada.movimientoPorCorrelationId(correlationIdNormalizado);
-                if (existente.isPresent()) {
-                    return resolverMovimientoIdempotente(recargada, existente.get(), tipo, concepto, monto);
-                }
-            }
-            throw e;
-        }
+        return toResumen(cajaSesionRepository.save(sesion));
     }
 
     private CajaSesionResumen resolverMovimientoIdempotente(
@@ -123,14 +143,17 @@ public class CajaServiceImpl implements CajaService {
     }
 
     @Override
+    @Transactional
     public CajaSesionResumen cerrar(Long tiendaId, BigDecimal montoFinalContado) {
+        // Mismo motivo que la sobrecarga de 4 argumentos de registrarMovimiento.
         return cerrar(tiendaId, montoFinalContado, null);
     }
 
     @Override
+    @Transactional
     public CajaSesionResumen cerrar(Long tiendaId, BigDecimal montoFinalContado, String correlationId) {
         String correlationIdNormalizado = normalizarCorrelationId(correlationId);
-        Optional<CajaSesion> abierta = cajaSesionRepository.findAbiertaByTiendaId(tiendaId);
+        Optional<CajaSesion> abierta = cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(tiendaId);
         if (abierta.isEmpty() && correlationIdNormalizado != null) {
             Optional<CajaSesion> existente =
                     cajaSesionRepository.findByTiendaIdAndCorrelationIdCierre(tiendaId, correlationIdNormalizado);
@@ -141,18 +164,7 @@ public class CajaServiceImpl implements CajaService {
         CajaSesion sesion = abierta.orElseThrow(
                 () -> new ResourceNotFoundException("No hay una caja abierta para la tienda " + tiendaId + "."));
         sesion.cerrar(montoFinalContado, correlationIdNormalizado);
-        try {
-            return toResumen(cajaSesionRepository.save(sesion));
-        } catch (ReferenciaInvalidaException e) {
-            if (correlationIdNormalizado != null) {
-                Optional<CajaSesion> existente = cajaSesionRepository
-                        .findByTiendaIdAndCorrelationIdCierre(tiendaId, correlationIdNormalizado);
-                if (existente.isPresent()) {
-                    return resolverCierreIdempotente(existente.get(), montoFinalContado);
-                }
-            }
-            throw e;
-        }
+        return toResumen(cajaSesionRepository.save(sesion));
     }
 
     private CajaSesionResumen resolverCierreIdempotente(CajaSesion existente, BigDecimal montoFinalContado) {
@@ -200,7 +212,7 @@ public class CajaServiceImpl implements CajaService {
     @Transactional
     public Optional<CajaSesionResumen> registrarMovimientoSiHayAbierta(
             Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto) {
-        return cajaSesionRepository.findAbiertaByTiendaId(tiendaId).map(sesion -> {
+        return cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(tiendaId).map(sesion -> {
             sesion.registrarMovimiento(tipo, concepto, monto);
             return toResumen(cajaSesionRepository.save(sesion));
         });
@@ -213,6 +225,11 @@ public class CajaServiceImpl implements CajaService {
 
     private CajaSesion obtenerAbiertaORequerida(Long tiendaId) {
         return cajaSesionRepository.findAbiertaByTiendaId(tiendaId)
+                .orElseThrow(() -> new ResourceNotFoundException("No hay una caja abierta para la tienda " + tiendaId + "."));
+    }
+
+    private CajaSesion obtenerAbiertaConBloqueoORequerida(Long tiendaId) {
+        return cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(tiendaId)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay una caja abierta para la tienda " + tiendaId + "."));
     }
 

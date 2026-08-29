@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 3 del plan (PLAN_MEJORAS.md): antes, dos aperturas concurrentes para la
+         misma tienda sin correlationId compartido podían leer ambas "no hay caja
+         abierta" y terminar creando dos sesiones ABIERTA a la vez — nada en BD lo
+         impedía. Un índice único parcial (solo sobre filas con estado = ABIERTA) es
+         la única forma de expresar esta regla a nivel de base de datos sin bloquear
+         el historial de sesiones ya cerradas. CajaServiceImpl.abrir traduce la
+         violación de este índice a CajaSesionAbiertaException. -->
+    <changeSet id="caja-004-una-abierta-por-tienda" author="market-backend">
+        <sql>
+            CREATE UNIQUE INDEX ux_caja_sesion_abierta_por_tienda
+            ON caja_sesion (tienda_id)
+            WHERE estado = 'ABIERTA';
+        </sql>
+        <rollback>
+            <sql>DROP INDEX ux_caja_sesion_abierta_por_tienda;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

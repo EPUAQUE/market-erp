@@ -58,7 +58,7 @@ class CajaServiceImplTest {
 
     @Test
     void registrarMovimientoSinCajaAbiertaLanzaNoEncontrada() {
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cajaService.registrarMovimiento(1L, TipoMovimientoCaja.INGRESO, "x", BigDecimal.TEN))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -78,7 +78,7 @@ class CajaServiceImplTest {
     @Test
     void registrarMovimientoAcumulaEnLaSesionAbierta() {
         CajaSesion sesion = CajaSesion.nueva(1L, new BigDecimal("100.00"));
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.of(sesion));
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.of(sesion));
 
         CajaSesionResumen resumen =
                 cajaService.registrarMovimiento(1L, TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("25.00"));
@@ -88,7 +88,7 @@ class CajaServiceImplTest {
 
     @Test
     void cerrarSinCajaAbiertaLanzaNoEncontrada() {
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cajaService.cerrar(1L, BigDecimal.ZERO)).isInstanceOf(ResourceNotFoundException.class);
     }
@@ -96,7 +96,7 @@ class CajaServiceImplTest {
     @Test
     void cerrarDejaLaSesionCerrada() {
         CajaSesion sesion = CajaSesion.nueva(1L, new BigDecimal("100.00"));
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.of(sesion));
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.of(sesion));
 
         CajaSesionResumen resumen = cajaService.cerrar(1L, new BigDecimal("100.00"));
 
@@ -141,10 +141,24 @@ class CajaServiceImplTest {
     }
 
     @Test
+    void abrirConColisionDeAperturaConcurrenteSinCorrelationIdLanzaCajaSesionAbierta() {
+        // Simula perder la carrera contra otra apertura concurrente: el chequeo previo
+        // no la vio (findAbiertaByTiendaId devuelve vacío la primera vez), el insert
+        // choca contra ux_caja_sesion_abierta_por_tienda (ReferenciaInvalidaException),
+        // y al releer ya está la que ganó la carrera.
+        when(cajaSesionRepository.findAbiertaByTiendaId(1L))
+                .thenReturn(Optional.empty(), Optional.of(CajaSesion.nueva(1L, BigDecimal.ZERO)));
+        when(cajaSesionRepository.save(any())).thenThrow(new ReferenciaInvalidaException("colisión"));
+
+        assertThatThrownBy(() -> cajaService.abrir(1L, new BigDecimal("100.00")))
+                .isInstanceOf(CajaSesionAbiertaException.class);
+    }
+
+    @Test
     void registrarMovimientoConCorrelationIdYaExistenteYMismoContenidoNoDuplicaElMovimiento() {
         CajaSesion sesion = CajaSesion.nueva(1L, new BigDecimal("100.00"));
         sesion.registrarMovimiento(TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("25.00"), "corr-1");
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.of(sesion));
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.of(sesion));
 
         CajaSesionResumen resumen = cajaService.registrarMovimiento(
                 1L, TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("25.00"), "corr-1");
@@ -157,7 +171,7 @@ class CajaServiceImplTest {
     void registrarMovimientoConCorrelationIdReutilizadoConMontoDistintoLanzaConflicto() {
         CajaSesion sesion = CajaSesion.nueva(1L, new BigDecimal("100.00"));
         sesion.registrarMovimiento(TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("25.00"), "corr-1");
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.of(sesion));
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.of(sesion));
 
         assertThatThrownBy(() -> cajaService.registrarMovimiento(
                 1L, TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("999.00"), "corr-1"))
@@ -169,7 +183,7 @@ class CajaServiceImplTest {
     void cerrarConCorrelationIdYaExistenteEnCajaYaCerradaDevuelveLaSesionIdempotente() {
         CajaSesion cerrada = CajaSesion.nueva(1L, new BigDecimal("100.00"));
         cerrada.cerrar(new BigDecimal("95.00"), "corr-1");
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.empty());
         when(cajaSesionRepository.findByTiendaIdAndCorrelationIdCierre(1L, "corr-1"))
                 .thenReturn(Optional.of(cerrada));
 
@@ -183,7 +197,7 @@ class CajaServiceImplTest {
     void cerrarConCorrelationIdReutilizadoConMontoDistintoLanzaConflicto() {
         CajaSesion cerrada = CajaSesion.nueva(1L, new BigDecimal("100.00"));
         cerrada.cerrar(new BigDecimal("95.00"), "corr-1");
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.empty());
         when(cajaSesionRepository.findByTiendaIdAndCorrelationIdCierre(1L, "corr-1"))
                 .thenReturn(Optional.of(cerrada));
 
@@ -193,7 +207,7 @@ class CajaServiceImplTest {
 
     @Test
     void registrarMovimientoSiHayAbiertaDevuelveVacioSinCajaAbierta() {
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.empty());
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.empty());
 
         Optional<CajaSesionResumen> resultado =
                 cajaService.registrarMovimientoSiHayAbierta(1L, TipoMovimientoCaja.INGRESO, "Cobro", BigDecimal.TEN);
@@ -204,7 +218,7 @@ class CajaServiceImplTest {
     @Test
     void registrarMovimientoSiHayAbiertaRegistraCuandoHaySesion() {
         CajaSesion sesion = CajaSesion.nueva(1L, new BigDecimal("100.00"));
-        when(cajaSesionRepository.findAbiertaByTiendaId(1L)).thenReturn(Optional.of(sesion));
+        when(cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(1L)).thenReturn(Optional.of(sesion));
 
         Optional<CajaSesionResumen> resultado =
                 cajaService.registrarMovimientoSiHayAbierta(1L, TipoMovimientoCaja.INGRESO, "Cobro", new BigDecimal("10.00"));

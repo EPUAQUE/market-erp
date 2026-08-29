@@ -49,6 +49,7 @@
     <include file="db/changelog/modules/caja/001-caja.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/caja/002-indices.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/caja/003-idempotencia.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/caja/004-una-abierta-por-tienda.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/traslados/001-traslado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/traslados/002-indices.xml" relativeToChangelogFile="false"/>

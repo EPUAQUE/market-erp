@@ -45,6 +45,12 @@ public class CajaSesionRepositoryAdapter implements CajaSesionRepository {
     }
 
     @Override
+    public Optional<CajaSesion> findAbiertaByTiendaIdConBloqueo(Long tiendaId) {
+        return jpaRepository.findByTiendaIdAndEstadoConBloqueo(tiendaId, EstadoCajaSesion.ABIERTA)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<CajaSesion> findByTiendaIdAndCorrelationIdApertura(Long tiendaId, String correlationIdApertura) {
         return jpaRepository.findByTiendaIdAndCorrelationIdApertura(tiendaId, correlationIdApertura)
                 .map(mapper::toDomain);

@@ -480,6 +480,25 @@ concurrentes pueden violar la regla de negocio "no permitir asignación mixta"
 sin que ninguna falle. Requiere un mecanismo distinto (no un simple
 `findByIdConBloqueo`, porque son dos tablas) — pendiente para una pasada futura.
 
+**Resuelto (2026-08-29) — Traducir conflictos de concurrencia a HTTP consistente:**
+todas las excepciones de negocio lanzadas por los locks agregados en esta fase
+(`EstadoVentaInvalidoException`, `CajaSesionAbiertaException`,
+`CobroExcedeSaldoException`, etc.) ya extendían `BusinessException` y por lo tanto
+ya se traducían de forma consistente vía `GlobalExceptionHandler.handleBusiness` —
+nada que hacer ahí. El hueco real estaba un nivel más abajo: si Postgres mismo
+aborta una transacción por contención (deadlock detectado, SQLState `40P01`, o una
+espera de `PESSIMISTIC_WRITE` que agota el tiempo), Spring traduce eso a
+`ConcurrencyFailureException` (o una subclase: `CannotAcquireLockException`,
+`DeadlockLoserDataAccessException`) — una excepción de infraestructura, no de
+negocio, que antes caía en el `@ExceptionHandler(Exception.class)` genérico y
+respondía 500 "Ocurrió un error inesperado", indistinguible de un error real para
+el cliente (que en este caso solo necesita reintentar). Se agregó un handler para
+`ConcurrencyFailureException` en `GlobalExceptionHandler` que responde 409 con
+`errorCode: CONFLICTO_CONCURRENCIA` y un mensaje que invita a reintentar. Cubierto
+por `GlobalExceptionHandlerTest` (nuevo): un controlador mínimo de prueba que lanza
+`CannotAcquireLockException`/`DeadlockLoserDataAccessException` directamente,
+confirmando que ambas responden 409 con el código consistente.
+
 ### Tareas
 
 - [x] Crear una matriz de agregados y estrategia de concurrencia:
@@ -506,7 +525,8 @@ sin que ninguna falle. Requiere un mecanismo distinto (no un simple
 - [x] Revisar todos los flujos `find -> validar -> save` monetarios (2026-08-29 —
   ver detalle arriba; encontró y corrigió el mismo hueco en `Venta.completar`/
   `anular`; dejó documentado un hallazgo no monetario en `UsuarioServiceImpl`).
-- [ ] Traducir conflictos de concurrencia a códigos HTTP y mensajes consistentes.
+- [x] Traducir conflictos de concurrencia a códigos HTTP y mensajes consistentes
+  (2026-08-29 — ver detalle abajo).
 
 ### Pruebas requeridas
 
@@ -936,7 +956,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | Completa salvo traducción de conflictos a códigos HTTP consistentes | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 23 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular) y venta (completar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. Auditoría general de flujos `find -> validar -> save` encontró y corrigió el mismo hueco en Venta (más un bug de orden independiente: crédito se validaba antes que el estado). Queda: traducir conflictos de concurrencia a códigos HTTP/mensajes consistentes, y un hallazgo no monetario documentado en `UsuarioServiceImpl` (asignación mixta tienda/grupo) sin corregir. |
+| 3 — Concurrencia | **Completa** (salvo un hallazgo no monetario documentado, no corregido) | Sin commitear aún | `mvn verify` (con Docker): 538 unitarios + 23 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular) y venta (completar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. Auditoría general de flujos `find -> validar -> save` encontró y corrigió el mismo hueco en Venta (más un bug de orden independiente: crédito se validaba antes que el estado). `GlobalExceptionHandler` ahora traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. Queda pendiente (documentado, fuera de alcance monetario): asignación mixta tienda/grupo en `UsuarioServiceImpl` sin restricción cross-tabla. |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

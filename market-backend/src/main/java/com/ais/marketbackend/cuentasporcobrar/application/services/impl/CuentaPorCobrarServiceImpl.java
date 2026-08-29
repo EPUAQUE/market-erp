@@ -43,7 +43,7 @@ public class CuentaPorCobrarServiceImpl implements CuentaPorCobrarService {
     @Override
     @Transactional
     public CuentaPorCobrarResumen registrarCobro(Long tiendaId, Long id, BigDecimal monto, MetodoPago metodoPago) {
-        CuentaPorCobrar cuenta = obtenerORequerida(tiendaId, id);
+        CuentaPorCobrar cuenta = obtenerConBloqueoORequerida(tiendaId, id);
         cuenta.registrarCobro(monto, metodoPago);
         CuentaPorCobrarResumen resumen = toResumen(cuentaPorCobrarRepository.save(cuenta));
         cajaService.registrarMovimientoSiHayAbierta(
@@ -54,7 +54,7 @@ public class CuentaPorCobrarServiceImpl implements CuentaPorCobrarService {
     @Override
     @Transactional
     public CuentaPorCobrarResumen anular(Long tiendaId, Long id) {
-        CuentaPorCobrar cuenta = obtenerORequerida(tiendaId, id);
+        CuentaPorCobrar cuenta = obtenerConBloqueoORequerida(tiendaId, id);
         cuenta.anular();
         return toResumen(cuentaPorCobrarRepository.save(cuenta));
     }
@@ -76,6 +76,16 @@ public class CuentaPorCobrarServiceImpl implements CuentaPorCobrarService {
 
     private CuentaPorCobrar obtenerORequerida(Long tiendaId, Long id) {
         CuentaPorCobrar cuenta = cuentaPorCobrarRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cuenta por cobrar no encontrada: " + id));
+        if (!cuenta.getTiendaId().equals(tiendaId)) {
+            throw new ResourceNotFoundException("Cuenta por cobrar no encontrada: " + id);
+        }
+        return cuenta;
+    }
+
+    /** Igual que {@link #obtenerORequerida}, pero con {@code findByIdConBloqueo} — ver {@code CuentaPorCobrarRepository}. */
+    private CuentaPorCobrar obtenerConBloqueoORequerida(Long tiendaId, Long id) {
+        CuentaPorCobrar cuenta = cuentaPorCobrarRepository.findByIdConBloqueo(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cuenta por cobrar no encontrada: " + id));
         if (!cuenta.getTiendaId().equals(tiendaId)) {
             throw new ResourceNotFoundException("Cuenta por cobrar no encontrada: " + id);

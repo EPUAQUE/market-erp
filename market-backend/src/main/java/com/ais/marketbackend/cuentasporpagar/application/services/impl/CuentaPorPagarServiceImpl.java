@@ -41,7 +41,7 @@ public class CuentaPorPagarServiceImpl implements CuentaPorPagarService {
     @Override
     @Transactional
     public CuentaPorPagarResumen registrarPago(Long tiendaId, Long id, BigDecimal monto) {
-        CuentaPorPagar cuenta = obtenerORequerida(tiendaId, id);
+        CuentaPorPagar cuenta = obtenerConBloqueoORequerida(tiendaId, id);
         cuenta.registrarPago(monto);
         CuentaPorPagarResumen resumen = toResumen(cuentaPorPagarRepository.save(cuenta));
         cajaService.registrarMovimientoSiHayAbierta(
@@ -52,7 +52,7 @@ public class CuentaPorPagarServiceImpl implements CuentaPorPagarService {
     @Override
     @Transactional
     public CuentaPorPagarResumen anular(Long tiendaId, Long id) {
-        CuentaPorPagar cuenta = obtenerORequerida(tiendaId, id);
+        CuentaPorPagar cuenta = obtenerConBloqueoORequerida(tiendaId, id);
         cuenta.anular();
         return toResumen(cuentaPorPagarRepository.save(cuenta));
     }
@@ -69,6 +69,16 @@ public class CuentaPorPagarServiceImpl implements CuentaPorPagarService {
 
     private CuentaPorPagar obtenerORequerida(Long tiendaId, Long id) {
         CuentaPorPagar cuenta = cuentaPorPagarRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cuenta por pagar no encontrada: " + id));
+        if (!cuenta.getTiendaId().equals(tiendaId)) {
+            throw new ResourceNotFoundException("Cuenta por pagar no encontrada: " + id);
+        }
+        return cuenta;
+    }
+
+    /** Igual que {@link #obtenerORequerida}, pero con {@code findByIdConBloqueo} — ver {@code CuentaPorPagarRepository}. */
+    private CuentaPorPagar obtenerConBloqueoORequerida(Long tiendaId, Long id) {
+        CuentaPorPagar cuenta = cuentaPorPagarRepository.findByIdConBloqueo(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cuenta por pagar no encontrada: " + id));
         if (!cuenta.getTiendaId().equals(tiendaId)) {
             throw new ResourceNotFoundException("Cuenta por pagar no encontrada: " + id);

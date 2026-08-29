@@ -37,6 +37,11 @@ public class CuentaPorPagarRepositoryAdapter implements CuentaPorPagarRepository
     }
 
     @Override
+    public Optional<CuentaPorPagar> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public List<CuentaPorPagar> findByTiendaId(Long tiendaId) {
         return jpaRepository.findByTiendaId(tiendaId).stream().map(mapper::toDomain).toList();
     }

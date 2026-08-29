@@ -40,6 +40,11 @@ public class CuentaPorCobrarRepositoryAdapter implements CuentaPorCobrarReposito
     }
 
     @Override
+    public Optional<CuentaPorCobrar> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public List<CuentaPorCobrar> findByTiendaId(Long tiendaId) {
         return jpaRepository.findByTiendaId(tiendaId).stream().map(mapper::toDomain).toList();
     }

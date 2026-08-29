@@ -59,7 +59,7 @@ class CuentaPorCobrarServiceImplTest {
     @Test
     void registrarCobroDeOtraTiendaLanzaNoEncontrada() {
         CuentaPorCobrar cuenta = withId(CuentaPorCobrar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorCobrarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorCobrarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         assertThatThrownBy(() -> cuentaPorCobrarService.registrarCobro(99L, 9L, BigDecimal.TEN, MetodoPago.EFECTIVO))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -68,7 +68,7 @@ class CuentaPorCobrarServiceImplTest {
     @Test
     void registrarCobroReduceElSaldo() {
         CuentaPorCobrar cuenta = withId(CuentaPorCobrar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorCobrarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorCobrarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         CuentaPorCobrarResumen resumen =
                 cuentaPorCobrarService.registrarCobro(3L, 9L, new BigDecimal("30.00"), MetodoPago.EFECTIVO);
@@ -79,7 +79,7 @@ class CuentaPorCobrarServiceImplTest {
     @Test
     void registrarCobroReflejaUnIngresoEnCaja() {
         CuentaPorCobrar cuenta = withId(CuentaPorCobrar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorCobrarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorCobrarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         cuentaPorCobrarService.registrarCobro(3L, 9L, new BigDecimal("30.00"), MetodoPago.EFECTIVO);
 
@@ -91,7 +91,7 @@ class CuentaPorCobrarServiceImplTest {
     @Test
     void registrarCobroQueExcedeElSaldoLanzaExcepcion() {
         CuentaPorCobrar cuenta = withId(CuentaPorCobrar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorCobrarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorCobrarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         assertThatThrownBy(
                         () -> cuentaPorCobrarService.registrarCobro(3L, 9L, new BigDecimal("200.00"), MetodoPago.EFECTIVO))
@@ -102,14 +102,14 @@ class CuentaPorCobrarServiceImplTest {
     void anularConCobrosLanzaExcepcion() {
         CuentaPorCobrar cuenta = withId(CuentaPorCobrar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
         cuenta.registrarCobro(new BigDecimal("10.00"), MetodoPago.EFECTIVO);
-        when(cuentaPorCobrarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorCobrarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         assertThatThrownBy(() -> cuentaPorCobrarService.anular(3L, 9L)).isInstanceOf(CuentaConCobrosException.class);
     }
 
     @Test
     void anularConIdInexistenteLanzaNoEncontrado() {
-        when(cuentaPorCobrarRepository.findById(99L)).thenReturn(Optional.empty());
+        when(cuentaPorCobrarRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cuentaPorCobrarService.anular(3L, 99L)).isInstanceOf(ResourceNotFoundException.class);
     }

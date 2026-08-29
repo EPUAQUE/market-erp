@@ -45,7 +45,7 @@ class CuentaPorPagarServiceImplTest {
     @Test
     void registrarPagoDeOtraTiendaLanzaNoEncontrada() {
         CuentaPorPagar cuenta = withId(CuentaPorPagar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorPagarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorPagarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         assertThatThrownBy(() -> cuentaPorPagarService.registrarPago(99L, 9L, BigDecimal.TEN))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -54,7 +54,7 @@ class CuentaPorPagarServiceImplTest {
     @Test
     void registrarPagoReduceElSaldo() {
         CuentaPorPagar cuenta = withId(CuentaPorPagar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorPagarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorPagarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         CuentaPorPagarResumen resumen = cuentaPorPagarService.registrarPago(3L, 9L, new BigDecimal("30.00"));
 
@@ -64,7 +64,7 @@ class CuentaPorPagarServiceImplTest {
     @Test
     void registrarPagoReflejaUnEgresoEnCaja() {
         CuentaPorPagar cuenta = withId(CuentaPorPagar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorPagarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorPagarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         cuentaPorPagarService.registrarPago(3L, 9L, new BigDecimal("30.00"));
 
@@ -76,7 +76,7 @@ class CuentaPorPagarServiceImplTest {
     @Test
     void registrarPagoQueExcedeElSaldoLanzaExcepcion() {
         CuentaPorPagar cuenta = withId(CuentaPorPagar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
-        when(cuentaPorPagarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorPagarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         assertThatThrownBy(() -> cuentaPorPagarService.registrarPago(3L, 9L, new BigDecimal("200.00")))
                 .isInstanceOf(PagoExcedeSaldoException.class);
@@ -86,14 +86,14 @@ class CuentaPorPagarServiceImplTest {
     void anularConPagosLanzaExcepcion() {
         CuentaPorPagar cuenta = withId(CuentaPorPagar.nueva(1L, 2L, 3L, new BigDecimal("100.00")), 9L);
         cuenta.registrarPago(new BigDecimal("10.00"));
-        when(cuentaPorPagarRepository.findById(9L)).thenReturn(Optional.of(cuenta));
+        when(cuentaPorPagarRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(cuenta));
 
         assertThatThrownBy(() -> cuentaPorPagarService.anular(3L, 9L)).isInstanceOf(CuentaConPagosException.class);
     }
 
     @Test
     void anularConIdInexistenteLanzaNoEncontrado() {
-        when(cuentaPorPagarRepository.findById(99L)).thenReturn(Optional.empty());
+        when(cuentaPorPagarRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cuentaPorPagarService.anular(3L, 99L)).isInstanceOf(ResourceNotFoundException.class);
     }

@@ -470,15 +470,21 @@ del objeto de dominio) y por `VentaConcurrenciaIT` (Testcontainers/Postgres real
 dos `completar` concurrentes sobre la misma venta — exactamente uno tiene éxito,
 el inventario refleja la salida una sola vez.
 
-Hallazgo adicional, no corregido en esta pasada (fuera de alcance monetario, bajo
-tráfico — acción de administrador, no un flujo de venta):
-`UsuarioServiceImpl` permite una carrera entre asignar una tienda individual
-(`usuario_tienda`) y asignar el grupo de esa tienda (`usuario_grupo_tienda`) al
-mismo usuario — cada tabla tiene su propia restricción única, pero ninguna
-restricción en BD abarca ambas tablas a la vez, así que dos solicitudes
-concurrentes pueden violar la regla de negocio "no permitir asignación mixta"
-sin que ninguna falle. Requiere un mecanismo distinto (no un simple
-`findByIdConBloqueo`, porque son dos tablas) — pendiente para una pasada futura.
+**Resuelto (2026-08-29) — Asignación mixta tienda/grupo concurrente:**
+`UsuarioServiceImpl.asignarTienda`/`asignarGrupo` permitían una carrera entre asignar
+una tienda individual (`usuario_tienda`) y asignar el grupo de esa tienda
+(`usuario_grupo_tienda`) al mismo usuario — cada tabla tiene su propia restricción
+única, pero ninguna restricción en BD abarca ambas tablas a la vez, así que dos
+solicitudes concurrentes podían violar la regla de negocio "no permitir asignación
+mixta" sin que ninguna fallara. A diferencia del resto de esta fase, aquí no hay una
+sola fila que ambas operaciones toquen — se resolvió bloqueando la fila del propio
+`usuario` (`UsuarioRepository.findByIdConBloqueo`, `PESSIMISTIC_WRITE`) como punto de
+serialización compartido entre las dos tablas: cualquier `asignarTienda`/
+`asignarGrupo` concurrente para el mismo usuario se serializa sin importar en cuál de
+las dos tablas escriba cada uno. Cubierto por `UsuarioServiceImplTest` (mocks
+actualizados) y por `AsignacionMixtaConcurrenciaIT` (Testcontainers/Postgres real):
+un `asignarTienda` y un `asignarGrupo` concurrentes para el mismo usuario, con la
+tienda perteneciendo al grupo — exactamente uno tiene éxito.
 
 **Resuelto (2026-08-29) — Traducir conflictos de concurrencia a HTTP consistente:**
 todas las excepciones de negocio lanzadas por los locks agregados en esta fase
@@ -1000,7 +1006,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | **Completa** (salvo un hallazgo no monetario documentado, no corregido) | Sin commitear aún | `mvn verify` (con Docker): 538 unitarios + 23 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular) y venta (completar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. Auditoría general de flujos `find -> validar -> save` encontró y corrigió el mismo hueco en Venta (más un bug de orden independiente: crédito se validaba antes que el estado). `GlobalExceptionHandler` ahora traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. Queda pendiente (documentado, fuera de alcance monetario): asignación mixta tienda/grupo en `UsuarioServiceImpl` sin restricción cross-tabla. |
+| 3 — Concurrencia | **Completa** | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 24 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular), venta (completar/anular) y usuario (asignarTienda/asignarGrupo, serializando la regla "no asignación mixta" entre las dos tablas usuario_tienda/usuario_grupo_tienda). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. `GlobalExceptionHandler` traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. |
 | 4 — Sesiones/seguridad | Rate limiter y cambio/restablecimiento de contraseña resueltos, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 23 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`) — `debe_cambiar_password` nueva columna, señalizada en login pero sin bloqueo server-side (requiere la revalidación por petición que nunca se implementó, ver hallazgo). Resto (tienda activa tras restaurar, revocar sesiones + revalidación por petición, MFA, rate limiter distribuido, llaves JWT, cabeceras CSP, política de contraseña) sigue pendiente. |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

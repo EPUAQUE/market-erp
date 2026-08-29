@@ -287,7 +287,16 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
   `market-flutter/CLAUDE.md`, "Dependencias de cola offline").
 - [ ] Evitar el ID fijo `1` para “Consumidor Final”; resolverlo por código estable
   expuesto por la API o configuración de tienda.
-- [ ] Impedir o advertir logout/desinstalación cuando existan operaciones pendientes.
+- [x] Impedir o advertir logout/desinstalación cuando existan operaciones pendientes —
+  resuelto (2026-08-28, parte C) para logout: **decisión del usuario, bloqueo duro sin
+  bypass**. Antes advertía con opción de "cerrar sesión de todos modos"; ahora, con
+  algo pendiente, `logout()` simplemente no se llama — el único camino es sincronizar
+  (conectarse) o descartar explícitamente un ítem atascado desde
+  `PendientesErrorScreen` (que ya exige su propia confirmación de "no se puede
+  deshacer"). Desinstalación: **decisión del usuario, marcado como no implementable
+  vía código de la app** — un app normal en Android/iOS no puede interceptar ni
+  bloquear su propia desinstalación sin Device Admin/MDM (gestión de dispositivos),
+  fuera de alcance de un cambio de código; no se investigó más allá de confirmar esto.
 - [x] Definir migración y versión del esquema Isar — resuelto (2026-08-28, parte C):
   `esquemaLocalVersionActual` + colección `MetadatoLocalIsar` (una fila) registran con
   qué versión se escribió la base local. Un cambio de versión detectado sin nada
@@ -794,7 +803,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | Fase | Estado | PR/commit | Resultado de pruebas | Observaciones |
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
-| 2 — Idempotencia POS | Partes A y B resueltas; parte C: dependencias de cola, versión de esquema Isar y cifrado/minimización resueltas; solo falta bloqueo de logout/desinstalación (pendiente de decisión) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local) listos. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
+| 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | Pendiente | | | |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |

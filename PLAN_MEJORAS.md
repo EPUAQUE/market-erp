@@ -563,6 +563,21 @@ por código como por la base de datos.
 Flutter ya restaura sesión con cookie `Secure/HttpOnly` + `/auth/refresh`
 (`api_client.dart`, `secure_cookie_storage.dart`).
 
+**Resuelto (2026-08-29) — Expiración de buckets del rate limiter:**
+`InMemoryLoginRateLimiter` guardaba un `Bucket` por cada IP y por cada hash de
+username visto, sin eliminarlo nunca — el mapa crecía sin límite con el tráfico
+normal (o más rápido si alguien rota IPs/usuarios a propósito). Se agregó
+`limpiarBucketsLlenos()` (`@Scheduled`, cada 10 min por defecto —
+`app.security.rate-limit.login.cleanup-interval`) que recarga cada bucket contra el
+reloj actual y elimina los que ya volvieron a su capacidad completa — un bucket
+lleno es indistinguible de uno recién creado, así que borrarlo es seguro; la
+siguiente solicitud simplemente crea uno idéntico. La sustitución por un almacén
+compartido (Redis) sigue pendiente pero solo aplica si el backend llega a correr en
+múltiples instancias — no es el caso actual, se mantiene como tarea separada.
+Cubierto por `InMemoryLoginRateLimiterTest` (nuevo): un bucket que aún no se
+recargó no se elimina; uno que se recargó por completo sí, y una solicitud
+posterior ve capacidad nueva.
+
 ### Tareas
 
 - [ ] Conservar o volver a solicitar la tienda activa de forma segura tras restaurar
@@ -571,10 +586,9 @@ Flutter ya restaura sesión con cookie `Secure/HttpOnly` + `/auth/refresh`
 - [ ] Permitir revocar sesiones/dispositivos activos de un usuario.
 - [ ] Evaluar MFA para administradores y auditores.
 - [ ] Sustituir o complementar el rate limiter en memoria con un almacén compartido si
-  habrá múltiples instancias. Confirmado: `InMemoryLoginRateLimiter` usa
-  `ConcurrentHashMap` local sin expiración de buckets (crecimiento indefinido).
-- [ ] Agregar expiración/limpieza a los buckets del rate limiter para evitar crecimiento
-  indefinido.
+  habrá múltiples instancias (sigue pendiente; no aplica hoy — instancia única).
+- [x] Agregar expiración/limpieza a los buckets del rate limiter para evitar crecimiento
+  indefinido (2026-08-29 — ver detalle arriba).
 - [ ] Retirar la llave privada de desarrollo del control de versiones y generar llaves
   locales mediante script/documentación. Confirmado: `local-dev/certs/dev-private.pem`
   y `src/test/resources/certs/test-private.pem` siguen commiteadas (la de producción,
@@ -957,7 +971,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | **Completa** (salvo un hallazgo no monetario documentado, no corregido) | Sin commitear aún | `mvn verify` (con Docker): 538 unitarios + 23 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular) y venta (completar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. Auditoría general de flujos `find -> validar -> save` encontró y corrigió el mismo hueco en Venta (más un bug de orden independiente: crédito se validaba antes que el estado). `GlobalExceptionHandler` ahora traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. Queda pendiente (documentado, fuera de alcance monetario): asignación mixta tienda/grupo en `UsuarioServiceImpl` sin restricción cross-tabla. |
-| 4 — Sesiones/seguridad | Pendiente | | | |
+| 4 — Sesiones/seguridad | Expiración de buckets del rate limiter resuelta, resto pendiente | Sin commitear aún | `mvn -DskipITs test`: 540 unitarios; `ProfileStartupIT`: 5/5, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` (`@Scheduled`, cada 10 min) purga buckets ya recargados por completo — antes crecía sin límite. Resto de la fase (cambio de contraseña, revocar sesiones, MFA, rate limiter distribuido, llaves JWT, cabeceras CSP, política de contraseña) sigue pendiente. |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |
 | 7 — Auditoría/observabilidad | Pendiente | | | |

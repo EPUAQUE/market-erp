@@ -578,12 +578,42 @@ Cubierto por `InMemoryLoginRateLimiterTest` (nuevo): un bucket que aún no se
 recargó no se elimina; uno que se recargó por completo sí, y una solicitud
 posterior ve capacidad nueva.
 
+**Resuelto (2026-08-29) — Cambio de contraseña y restablecimiento administrativo:**
+`POST /api/v1/auth/password` (autoservicio, requiere la contraseña actual, valida la
+nueva contra `PasswordPolicy`) y `POST /api/v1/usuarios/{usuarioId}/password/restablecer`
+(admin, permiso nuevo `USUARIOS_RESTABLECER_PASSWORD`). El restablecimiento
+administrativo genera una contraseña temporal aleatoria (`TemporaryPasswordGenerator`,
+20 caracteres sin ambiguos) y la devuelve una sola vez en la respuesta — nunca se
+persiste en claro ni se audita. Ambos caminos revocan todas las sesiones (refresh
+tokens) del usuario. Se agregó `usuario.debe_cambiar_password` (columna nueva,
+`Usuario.restablecerConPasswordTemporal` la marca, `cambiarPassword` la limpia); el
+login (`/auth/login`, `/auth/refresh`) la incluye como `debeCambiarPassword` en la
+respuesta para que el frontend fuerce la pantalla de cambio.
+
+**Decisión de alcance tomada en esta pasada:** originalmente se buscaba que el backend
+bloqueara *todo* el resto de la API mientras `debe_cambiar_password` esté activo. Al
+investigar cómo hacerlo se encontró que el mecanismo del que dependía — revalidar por
+peteción contra la BD (versión de seguridad/`sver`, documentado en
+seguridad-desarrolladores.md §5 como si ya existiera) — **nunca se implementó**; un
+access token vigente sigue siendo válido hasta su `exp` sin importar qué le pase a
+la cuenta después. Construirlo desde cero excedía el alcance de esta tarea y se
+solapa con "permitir revocar sesiones activas" (tarea separada de esta misma fase),
+así que se bajó el alcance a solo la señal (`debeCambiarPassword` en la respuesta de
+login) — el bloqueo real queda pendiente, documentado en el hallazgo de abajo.
+Cubierto por `UsuarioTest`, `AuthServiceImplTest`, `UsuarioServiceImplTest`,
+`AuthControllerTest`, `UsuarioControllerTest` y `TemporaryPasswordGeneratorTest`.
+
 ### Tareas
 
 - [ ] Conservar o volver a solicitar la tienda activa de forma segura tras restaurar
   (no verificado en esta pasada).
-- [ ] Implementar cambio de contraseña y flujo administrativo de restablecimiento.
-- [ ] Permitir revocar sesiones/dispositivos activos de un usuario.
+- [x] Implementar cambio de contraseña y flujo administrativo de restablecimiento
+  (2026-08-29 — ver detalle arriba; el bloqueo server-side por `debe_cambiar_password`
+  queda pendiente, solapado con la tarea de abajo).
+- [ ] Permitir revocar sesiones/dispositivos activos de un usuario. Incluye construir
+  la revalidación por petición (versión de seguridad/`sver`) que
+  seguridad-desarrolladores.md §5 documentaba como ya implementada y no lo está — ver
+  hallazgo 2026-08-29.
 - [ ] Evaluar MFA para administradores y auditores.
 - [ ] Sustituir o complementar el rate limiter en memoria con un almacén compartido si
   habrá múltiples instancias (sigue pendiente; no aplica hoy — instancia única).
@@ -971,7 +1001,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | **Completa** (salvo un hallazgo no monetario documentado, no corregido) | Sin commitear aún | `mvn verify` (con Docker): 538 unitarios + 23 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular) y venta (completar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. Auditoría general de flujos `find -> validar -> save` encontró y corrigió el mismo hueco en Venta (más un bug de orden independiente: crédito se validaba antes que el estado). `GlobalExceptionHandler` ahora traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. Queda pendiente (documentado, fuera de alcance monetario): asignación mixta tienda/grupo en `UsuarioServiceImpl` sin restricción cross-tabla. |
-| 4 — Sesiones/seguridad | Expiración de buckets del rate limiter resuelta, resto pendiente | Sin commitear aún | `mvn -DskipITs test`: 540 unitarios; `ProfileStartupIT`: 5/5, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` (`@Scheduled`, cada 10 min) purga buckets ya recargados por completo — antes crecía sin límite. Resto de la fase (cambio de contraseña, revocar sesiones, MFA, rate limiter distribuido, llaves JWT, cabeceras CSP, política de contraseña) sigue pendiente. |
+| 4 — Sesiones/seguridad | Rate limiter y cambio/restablecimiento de contraseña resueltos, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 23 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`) — `debe_cambiar_password` nueva columna, señalizada en login pero sin bloqueo server-side (requiere la revalidación por petición que nunca se implementó, ver hallazgo). Resto (tienda activa tras restaurar, revocar sesiones + revalidación por petición, MFA, rate limiter distribuido, llaves JWT, cabeceras CSP, política de contraseña) sigue pendiente. |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |
 | 7 — Auditoría/observabilidad | Pendiente | | | |

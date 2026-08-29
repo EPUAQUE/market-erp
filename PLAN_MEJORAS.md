@@ -349,11 +349,11 @@ una operación de negocio y ninguna venta confirmada se pierde localmente.
 
 **Confirmado en código (2026-08-28):** Inventario ya tiene `PESSIMISTIC_WRITE`
 (`InventarioJpaRepository.java:23`, usado en `InventarioServiceImpl`) — esa parte de
-la fase ya está resuelta, mantenerla así. CxC, CxP y gasto programado NO tienen
-ninguna protección de concurrencia (solo `findById` + validación en memoria, sin
-`@Lock`, sin `@Version`, sin `CHECK` ni restricción única en BD). No existen tests
-de integración con Testcontainers para estos flujos, solo unitarios con mocks. El
-resto de la fase sigue pendiente.
+la fase ya está resuelta, mantenerla así. Gasto programado NO tiene ninguna
+protección de concurrencia (solo `findById` + validación en memoria, sin `@Lock`,
+sin `@Version`, sin `CHECK` ni restricción única en BD). El resto de la fase (gasto
+programado, compras/traslados/FEL en estado concurrente, `CHECK` de BD) sigue
+pendiente.
 
 **Resuelto (2026-08-28) — Crédito de cliente:** `VentaServiceImpl.validarLimiteCredito`
 leía el cliente con `ClienteService.obtener` (sin bloqueo) — dos ventas a crédito casi
@@ -388,11 +388,21 @@ ya actualizado antes de intentar guardar. Cubierto por `CajaServiceImplTest`
 exactamente una tiene éxito; diez movimientos concurrentes sobre la misma caja — saldo
 final exacto, sin movimientos perdidos.
 
+**Resuelto (2026-08-28) — Concurrencia de CxC/CxP:**
+`CuentaPorCobrarServiceImpl.registrarCobro`/`CuentaPorPagarServiceImpl.registrarPago`
+(y sus respectivos `anular`) leían la cuenta con `findById` (sin bloqueo) — dos
+cobros/pagos casi simultáneos sobre la misma cuenta podían leer el mismo saldo
+pendiente y juntos superarlo aunque cada uno, evaluado solo, no lo hiciera (mismo
+riesgo de colección JPA con `orphanRemoval` que en Caja). Se agregó
+`findByIdConBloqueo` (`@Lock(PESSIMISTIC_WRITE)`) en ambos repositorios, usado por
+las cuatro operaciones mutadoras. Cubierto por `CuentaPorCobrarServiceImplTest`/
+`CuentaPorPagarServiceImplTest` (unitarios) y por `CuentaPorCobrarConcurrenciaIT`/
+`CuentaPorPagarConcurrenciaIT` (Testcontainers/Postgres real): dos cobros/pagos
+concurrentes cercanos al saldo — exactamente uno tiene éxito, el saldo nunca se
+supera ni queda negativo.
+
 ### Problemas a cubrir
 
-- Cobros concurrentes que superen el saldo de una cuenta por cobrar.
-- Pagos concurrentes que superen el saldo de una cuenta por pagar.
-- Ventas concurrentes que excedan juntas el límite de crédito.
 - Ejecución duplicada de un gasto programado.
 - Cambios concurrentes en estados de compras, traslados y FEL.
 
@@ -404,7 +414,7 @@ final exacto, sin movimientos perdidos.
 | --- | --- |
 | Inventario | Mantener `PESSIMISTIC_WRITE` existente |
 | Caja | [x] Bloqueo de sesión abierta + restricción única parcial |
-| CxC/CxP | `PESSIMISTIC_WRITE` o actualización condicional por saldo/estado |
+| CxC/CxP | [x] `PESSIMISTIC_WRITE` (`findByIdConBloqueo`) |
 | Crédito cliente | [x] Serializar por cliente (`PESSIMISTIC_WRITE` vía `findByIdConBloqueo`) |
 | Gasto programado | Clave única por gasto y período generado |
 | FEL | Correlativo atómico + idempotencia externa |
@@ -413,7 +423,8 @@ final exacto, sin movimientos perdidos.
   (2026-08-28, índice único parcial `ux_caja_sesion_abierta_por_tienda`).
 - [x] Bloquear la caja durante registrar movimiento y cerrar (2026-08-28,
   `findAbiertaByTiendaIdConBloqueo` + `@Transactional`).
-- [ ] Hacer atómico “validar saldo + registrar cobro/pago + actualizar saldo”.
+- [x] Hacer atómico "validar saldo + registrar cobro/pago + actualizar saldo"
+  (2026-08-28, `findByIdConBloqueo` en CxC y CxP).
 - [x] Hacer atómico "validar límite + crear exposición crediticia" (2026-08-28,
   `ClienteService.obtenerParaActualizarCredito` + `VentaServiceImpl.completar`).
 - [ ] Añadir `CHECK` de base de datos para montos positivos, saldos no negativos y
@@ -429,7 +440,8 @@ final exacto, sin movimientos perdidos.
 - [ ] Cierre concurrente con venta: resultado serializable y auditable (el lock ya
   serializa `cerrar` contra `registrarMovimiento`/`registrarMovimientoSiHayAbierta`
   sobre la misma sesión; falta un test específico que ejercite esta combinación).
-- [ ] Dos cobros sobre el último saldo: nunca hay saldo negativo.
+- [x] Dos cobros/pagos sobre el último saldo: nunca hay saldo negativo
+  (`CuentaPorCobrarConcurrenciaIT`/`CuentaPorPagarConcurrenciaIT`, 2026-08-28).
 - [x] Dos ventas de crédito cercanas al límite: nunca se supera el límite
   (`VentaCreditoConcurrenciaIT`, 2026-08-28).
 - [ ] Dos ejecuciones del mismo gasto/período: un solo pago.
@@ -842,7 +854,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | Crédito de cliente y caja resueltos, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 535 unitarios + 11 IT, `BUILD SUCCESS` (incluye `VentaCreditoConcurrenciaIT` y `CajaConcurrenciaIT`) | Serialización por `PESSIMISTIC_WRITE` del cliente al validar límite de crédito en ventas CREDITO/MIXTO. Caja: índice único parcial para una sola sesión ABIERTA por tienda + lock de fila en registrar movimiento/cerrar. CxC/CxP y gasto programado siguen sin protección de concurrencia. |
+| 3 — Concurrencia | Crédito de cliente, caja y CxC/CxP resueltos, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 13 IT, `BUILD SUCCESS` | Serialización por `PESSIMISTIC_WRITE` del cliente al validar límite de crédito en ventas CREDITO/MIXTO. Caja: índice único parcial para una sola sesión ABIERTA por tienda + lock de fila en registrar movimiento/cerrar. CxC/CxP: lock de fila en registrar cobro/pago y anular. Gasto programado y estados concurrentes de compras/traslados/FEL siguen pendientes. |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

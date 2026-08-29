@@ -30,6 +30,11 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
     }
 
     @Override
+    public Optional<Usuario> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Usuario> findByUsername(String username) {
         return jpaRepository.findByUsername(username).map(mapper::toDomain);
     }

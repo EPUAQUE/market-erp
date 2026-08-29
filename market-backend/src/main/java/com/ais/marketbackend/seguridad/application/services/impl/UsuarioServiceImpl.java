@@ -123,7 +123,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     private Rol validarUsuarioYRolParaAsignacion(Long usuarioId, Long rolId) {
-        usuarioRepository.findById(usuarioId)
+        // findByIdConBloqueo (no findById): serializa esta asignación contra asignarGrupo
+        // para el mismo usuario — ver Javadoc de UsuarioRepository.findByIdConBloqueo.
+        usuarioRepository.findByIdConBloqueo(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
         return rolRepository.findById(rolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));
@@ -152,7 +154,10 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public void asignarGrupo(Long usuarioId, Long grupoTiendaId, Long rolId) {
-        usuarioRepository.findById(usuarioId)
+        // findByIdConBloqueo (no findById): serializa esta asignación contra
+        // asignarTienda/asignarTiendaSistema para el mismo usuario — ver Javadoc de
+        // UsuarioRepository.findByIdConBloqueo.
+        usuarioRepository.findByIdConBloqueo(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
         Rol rol = rolRepository.findById(rolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + rolId));

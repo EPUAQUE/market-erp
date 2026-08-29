@@ -117,7 +117,7 @@ class UsuarioServiceImplTest {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         Rol rol = new Rol(5L, "CAJERO", false, Set.of());
         Tienda tienda = Tienda.nueva("NORTE", "Tienda Norte", null, null, null, 1L);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(5L)).thenReturn(Optional.of(rol));
         when(tiendaRepository.findById(10L)).thenReturn(Optional.of(tienda));
 
@@ -134,7 +134,7 @@ class UsuarioServiceImplTest {
         Usuario usuario = Usuario.nuevo("admin", "hash");
         Rol rolAdmin = new Rol(1L, "ADMIN", true, Set.of());
         Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", null, null, null, 1L);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(1L)).thenReturn(Optional.of(rolAdmin));
         when(tiendaRepository.findById(1L)).thenReturn(Optional.of(tienda));
 
@@ -148,7 +148,7 @@ class UsuarioServiceImplTest {
     @Test
     void asignarTiendaConRolInexistenteLanzaNoEncontrado() {
         Usuario usuario = Usuario.nuevo("ana", "hash");
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> usuarioService.asignarTienda(1L, 10L, 99L))
@@ -157,7 +157,7 @@ class UsuarioServiceImplTest {
 
     @Test
     void asignarTiendaConUsuarioInexistenteLanzaNoEncontrado() {
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> usuarioService.asignarTienda(1L, 10L, 5L))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -167,7 +167,7 @@ class UsuarioServiceImplTest {
     void asignarTiendaConTiendaInexistenteLanzaNoEncontrado() {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         Rol rol = new Rol(5L, "CAJERO", false, Set.of());
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(5L)).thenReturn(Optional.of(rol));
         when(tiendaRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -181,7 +181,7 @@ class UsuarioServiceImplTest {
         Rol rol = new Rol(5L, "CAJERO", false, Set.of());
         Tienda tienda = Tienda.nueva("NORTE", "Tienda Norte", null, null, null, 1L);
         Rol rolGrupo = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(5L)).thenReturn(Optional.of(rol));
         when(tiendaRepository.findById(10L)).thenReturn(Optional.of(tienda));
         when(usuarioGrupoTiendaRepository.findByUsuarioId(1L)).thenReturn(
@@ -212,7 +212,7 @@ class UsuarioServiceImplTest {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         Rol rol = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
         GrupoTienda grupo = new GrupoTienda(1L, "PRINCIPAL", "Grupo Principal", EstadoGrupoTienda.ACTIVO);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(9L)).thenReturn(Optional.of(rol));
         when(grupoTiendaRepository.findById(1L)).thenReturn(Optional.of(grupo));
         when(tiendaRepository.listarIdsPorGrupo(1L)).thenReturn(List.of(10L, 11L));
@@ -226,7 +226,7 @@ class UsuarioServiceImplTest {
     void asignarGrupoConGrupoInexistenteLanzaNoEncontrado() {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         Rol rol = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(9L)).thenReturn(Optional.of(rol));
         when(grupoTiendaRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -240,7 +240,7 @@ class UsuarioServiceImplTest {
         Rol rol = new Rol(9L, "ADMIN_GRUPO", false, Set.of());
         Rol rolTienda = new Rol(5L, "CAJERO", false, Set.of());
         GrupoTienda grupo = new GrupoTienda(1L, "PRINCIPAL", "Grupo Principal", EstadoGrupoTienda.ACTIVO);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(9L)).thenReturn(Optional.of(rol));
         when(grupoTiendaRepository.findById(1L)).thenReturn(Optional.of(grupo));
         when(tiendaRepository.listarIdsPorGrupo(1L)).thenReturn(List.of(10L, 11L));
@@ -297,7 +297,7 @@ class UsuarioServiceImplTest {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         Rol rol = new Rol(5L, "CAJERO", false, Set.of());
         Tienda tienda = Tienda.nueva("NORTE", "Tienda Norte", null, null, null, 1L);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(5L)).thenReturn(Optional.of(rol));
         when(tiendaRepository.findById(10L)).thenReturn(Optional.of(tienda));
         org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("fuera de alcance"))
@@ -313,7 +313,7 @@ class UsuarioServiceImplTest {
         Usuario usuario = Usuario.nuevo("ana", "hash");
         Rol rolGlobal = new Rol(1L, "ADMIN", true, Set.of());
         Tienda tienda = Tienda.nueva("NORTE", "Tienda Norte", null, null, null, 1L);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(1L)).thenReturn(Optional.of(rolGlobal));
         when(tiendaRepository.findById(10L)).thenReturn(Optional.of(tienda));
         when(autorizacionTiendaService.tiendaIdsPermitidas()).thenReturn(Optional.of(Set.of(10L)));

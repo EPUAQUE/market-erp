@@ -176,6 +176,10 @@ revoca explícitamente en estos casos.
   `app.security.network.trusted-proxies`.
 - La implementación por defecto es **en memoria (una instancia)**. En multi-instancia
   debe registrarse otro bean `LoginRateLimiter` con almacén compartido (p. ej. Redis).
+- Los buckets en memoria (uno por IP y uno por hash de username) se purgan
+  periódicamente (`app.security.rate-limit.login.cleanup-interval`, por defecto 10
+  minutos) una vez que se recargan por completo — sin esto, el mapa crecía sin
+  límite con cada IP/usuario distinto visto.
 
 ---
 

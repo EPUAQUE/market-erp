@@ -60,7 +60,7 @@ class CompraServiceImplTest {
         Compra compra = Compra.nueva(2L, 1L, List.of(
                 LineaCompra.nueva(10L, new BigDecimal("10"), new BigDecimal("5.00")),
                 LineaCompra.nueva(20L, new BigDecimal("3"), new BigDecimal("2.00"))));
-        when(compraRepository.findById(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
+        when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
 
         compraService.recibir(1L, 5L);
 
@@ -72,7 +72,7 @@ class CompraServiceImplTest {
     @Test
     void recibirCreaLaCuentaPorPagarDelProveedorPorElTotal() {
         Compra compra = Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, new BigDecimal("10"), new BigDecimal("5.00"))));
-        when(compraRepository.findById(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
+        when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
 
         compraService.recibir(1L, 5L);
 
@@ -82,7 +82,7 @@ class CompraServiceImplTest {
     @Test
     void recibirCuandoInventarioRechazaUnaLineaNoCreaLaCuentaPorPagar() {
         Compra compra = Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)));
-        when(compraRepository.findById(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
+        when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
         org.mockito.Mockito.doThrow(new MovimientoNoPermitidoException("no permitido"))
                 .when(inventarioService).registrarMovimiento(any(), any(), any(), any(), any());
 
@@ -93,7 +93,7 @@ class CompraServiceImplTest {
     @Test
     void recibirUnaCompraDeOtraTiendaLanzaNoEncontrada() {
         Compra compra = Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)));
-        when(compraRepository.findById(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
+        when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
 
         assertThatThrownBy(() -> compraService.recibir(99L, 5L)).isInstanceOf(ResourceNotFoundException.class);
         verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
@@ -102,7 +102,7 @@ class CompraServiceImplTest {
     @Test
     void recibirCuandoInventarioRechazaUnaLineaPropagaLaExcepcion() {
         Compra compra = Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)));
-        when(compraRepository.findById(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
+        when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
         org.mockito.Mockito.doThrow(new MovimientoNoPermitidoException("no permitido"))
                 .when(inventarioService).registrarMovimiento(any(), any(), any(), any(), any());
 
@@ -111,7 +111,7 @@ class CompraServiceImplTest {
 
     @Test
     void anularConIdInexistenteLanzaNoEncontrado() {
-        when(compraRepository.findById(99L)).thenReturn(Optional.empty());
+        when(compraRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> compraService.anular(1L, 99L)).isInstanceOf(ResourceNotFoundException.class);
     }
@@ -120,7 +120,7 @@ class CompraServiceImplTest {
     void anularUnaCompraYaRecibidaLanzaEstadoInvalido() {
         Compra compra = Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)));
         compra.recibir();
-        when(compraRepository.findById(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
+        when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
 
         assertThatThrownBy(() -> compraService.anular(1L, 5L)).isInstanceOf(EstadoCompraInvalidoException.class);
     }

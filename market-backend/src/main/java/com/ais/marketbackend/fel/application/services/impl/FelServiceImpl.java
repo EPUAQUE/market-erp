@@ -61,7 +61,7 @@ public class FelServiceImpl implements FelService {
     @Override
     @Transactional
     public DocumentoFelResumen reintentar(Long tiendaId, Long id) {
-        DocumentoFel documento = obtenerORequerido(tiendaId, id);
+        DocumentoFel documento = obtenerConBloqueoORequerido(tiendaId, id);
         VentaResumen venta = ventaService.obtener(tiendaId, documento.getVentaId());
         return toResumen(certificar(documento, venta));
     }
@@ -69,7 +69,7 @@ public class FelServiceImpl implements FelService {
     @Override
     @Transactional
     public DocumentoFelResumen anular(Long tiendaId, Long id, String motivo) {
-        DocumentoFel documento = obtenerORequerido(tiendaId, id);
+        DocumentoFel documento = obtenerConBloqueoORequerido(tiendaId, id);
         documento.anular(motivo);
         return toResumen(documentoFelRepository.save(documento));
     }
@@ -98,6 +98,16 @@ public class FelServiceImpl implements FelService {
 
     private DocumentoFel obtenerORequerido(Long tiendaId, Long id) {
         DocumentoFel documento = documentoFelRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Documento FEL no encontrado: " + id));
+        if (!documento.getTiendaId().equals(tiendaId)) {
+            throw new ResourceNotFoundException("Documento FEL no encontrado: " + id);
+        }
+        return documento;
+    }
+
+    /** Igual que {@link #obtenerORequerido}, pero con {@code findByIdConBloqueo} — ver {@code DocumentoFelRepository}. */
+    private DocumentoFel obtenerConBloqueoORequerido(Long tiendaId, Long id) {
+        DocumentoFel documento = documentoFelRepository.findByIdConBloqueo(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Documento FEL no encontrado: " + id));
         if (!documento.getTiendaId().equals(tiendaId)) {
             throw new ResourceNotFoundException("Documento FEL no encontrado: " + id);

@@ -53,7 +53,7 @@ public class CompraServiceImpl implements CompraService {
     @Override
     @Transactional
     public CompraResumen recibir(Long tiendaId, Long id) {
-        Compra compra = obtenerORequerida(tiendaId, id);
+        Compra compra = obtenerConBloqueoORequerida(tiendaId, id);
         compra.recibir();
         for (LineaCompra linea : compra.getLineas()) {
             inventarioService.registrarMovimiento(
@@ -68,7 +68,7 @@ public class CompraServiceImpl implements CompraService {
     @Override
     @Transactional
     public CompraResumen anular(Long tiendaId, Long id) {
-        Compra compra = obtenerORequerida(tiendaId, id);
+        Compra compra = obtenerConBloqueoORequerida(tiendaId, id);
         compra.anular();
         return toResumen(compraRepository.save(compra));
     }
@@ -90,6 +90,16 @@ public class CompraServiceImpl implements CompraService {
 
     private Compra obtenerORequerida(Long tiendaId, Long id) {
         Compra compra = compraRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada: " + id));
+        if (!compra.getTiendaId().equals(tiendaId)) {
+            throw new ResourceNotFoundException("Compra no encontrada: " + id);
+        }
+        return compra;
+    }
+
+    /** Igual que {@link #obtenerORequerida}, pero con {@code findByIdConBloqueo} — ver {@code CompraRepository}. */
+    private Compra obtenerConBloqueoORequerida(Long tiendaId, Long id) {
+        Compra compra = compraRepository.findByIdConBloqueo(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada: " + id));
         if (!compra.getTiendaId().equals(tiendaId)) {
             throw new ResourceNotFoundException("Compra no encontrada: " + id);

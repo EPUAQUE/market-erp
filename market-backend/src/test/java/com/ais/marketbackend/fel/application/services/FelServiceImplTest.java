@@ -90,7 +90,7 @@ class FelServiceImplTest {
     void reintentarSobreUnDocumentoEnErrorLoCertifica() {
         DocumentoFel documento = withId(DocumentoFel.nuevo(9L, 1L, "A", 1L), 5L);
         documento.marcarError("Timeout");
-        when(documentoFelRepository.findById(5L)).thenReturn(Optional.of(documento));
+        when(documentoFelRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(documento));
         when(certificadorFelPort.certificar(any()))
                 .thenReturn(new ResultadoCertificacionFel("uuid-retry", Instant.now()));
 
@@ -104,7 +104,7 @@ class FelServiceImplTest {
     void reintentarDeOtraTiendaLanzaNoEncontrado() {
         DocumentoFel documento = withId(DocumentoFel.nuevo(9L, 1L, "A", 1L), 5L);
         documento.marcarError("Timeout");
-        when(documentoFelRepository.findById(5L)).thenReturn(Optional.of(documento));
+        when(documentoFelRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(documento));
 
         assertThatThrownBy(() -> felService.reintentar(99L, 5L)).isInstanceOf(ResourceNotFoundException.class);
     }
@@ -113,7 +113,7 @@ class FelServiceImplTest {
     void anularUnDocumentoCertificadoQuedaAnulado() {
         DocumentoFel documento = withId(DocumentoFel.nuevo(9L, 1L, "A", 1L), 5L);
         documento.certificar("uuid-abc", Instant.now());
-        when(documentoFelRepository.findById(5L)).thenReturn(Optional.of(documento));
+        when(documentoFelRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(documento));
 
         DocumentoFelResumen resumen = felService.anular(1L, 5L, "Cliente solicitó anulación");
 

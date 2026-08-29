@@ -48,6 +48,11 @@ public class DocumentoFelRepositoryAdapter implements DocumentoFelRepository {
     }
 
     @Override
+    public Optional<DocumentoFel> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<DocumentoFel> findByVentaId(Long ventaId) {
         return jpaRepository.findByVentaId(ventaId).map(mapper::toDomain);
     }

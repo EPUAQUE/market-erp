@@ -60,7 +60,7 @@ class TrasladoServiceImplTest {
     @Test
     void completarRegistraSalidaEnOrigenYEntradaEnDestinoConElCostoDeOrigen() {
         Traslado traslado = withId(Traslado.nuevo(1L, 2L, List.of(LineaTraslado.nueva(10L, new BigDecimal("5")))), 9L);
-        when(trasladoRepository.findById(9L)).thenReturn(Optional.of(traslado));
+        when(trasladoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(traslado));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("6.0000")));
 
@@ -74,7 +74,7 @@ class TrasladoServiceImplTest {
 
     @Test
     void completarConIdInexistenteLanzaNoEncontrado() {
-        when(trasladoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(trasladoRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trasladoService.completar(99L)).isInstanceOf(ResourceNotFoundException.class);
         verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
@@ -83,7 +83,7 @@ class TrasladoServiceImplTest {
     @Test
     void completarCuandoOrigenNoTieneStockPropagaLaExcepcion() {
         Traslado traslado = withId(Traslado.nuevo(1L, 2L, List.of(LineaTraslado.nueva(10L, BigDecimal.TEN))), 9L);
-        when(trasladoRepository.findById(9L)).thenReturn(Optional.of(traslado));
+        when(trasladoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(traslado));
         when(inventarioService.obtener(eq(1L), eq(10L))).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.ZERO, BigDecimal.ZERO));
         org.mockito.Mockito.doThrow(new StockInsuficienteException(10L, 1L))
@@ -96,7 +96,7 @@ class TrasladoServiceImplTest {
     @Test
     void completarCuandoDestinoNoPermiteIngresoPropagaLaExcepcion() {
         Traslado traslado = withId(Traslado.nuevo(1L, 2L, List.of(LineaTraslado.nueva(10L, BigDecimal.ONE))), 9L);
-        when(trasladoRepository.findById(9L)).thenReturn(Optional.of(traslado));
+        when(trasladoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(traslado));
         when(inventarioService.obtener(eq(1L), eq(10L))).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
         org.mockito.Mockito.doThrow(new MovimientoNoPermitidoException("no permitido"))
@@ -107,7 +107,7 @@ class TrasladoServiceImplTest {
 
     @Test
     void anularConIdInexistenteLanzaNoEncontrado() {
-        when(trasladoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(trasladoRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trasladoService.anular(99L)).isInstanceOf(ResourceNotFoundException.class);
     }
@@ -116,7 +116,7 @@ class TrasladoServiceImplTest {
     void anularUnTrasladoYaCompletadoLanzaEstadoInvalido() {
         Traslado traslado = withId(Traslado.nuevo(1L, 2L, List.of(LineaTraslado.nueva(10L, BigDecimal.ONE))), 9L);
         traslado.completar();
-        when(trasladoRepository.findById(9L)).thenReturn(Optional.of(traslado));
+        when(trasladoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(traslado));
 
         assertThatThrownBy(() -> trasladoService.anular(9L)).isInstanceOf(EstadoTrasladoInvalidoException.class);
     }
@@ -138,7 +138,7 @@ class TrasladoServiceImplTest {
         // distinguiría "no existe" de "existe pero no es mío" probando ids
         // (ver Javadoc de exigirAccesoOFingirNoEncontrado).
         Traslado traslado = withId(Traslado.nuevo(1L, 2L, List.of(LineaTraslado.nueva(10L, BigDecimal.ONE))), 9L);
-        when(trasladoRepository.findById(9L)).thenReturn(Optional.of(traslado));
+        when(trasladoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(traslado));
         org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("fuera de alcance"))
                 .when(autorizacionTiendaService).exigirAccesoATodas(any());
 
@@ -150,7 +150,7 @@ class TrasladoServiceImplTest {
     @Test
     void anularConTiendaFueraDeAlcanceLanzaNoEncontrado() {
         Traslado traslado = withId(Traslado.nuevo(1L, 2L, List.of(LineaTraslado.nueva(10L, BigDecimal.ONE))), 9L);
-        when(trasladoRepository.findById(9L)).thenReturn(Optional.of(traslado));
+        when(trasladoRepository.findByIdConBloqueo(9L)).thenReturn(Optional.of(traslado));
         org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("fuera de alcance"))
                 .when(autorizacionTiendaService).exigirAccesoATodas(any());
 

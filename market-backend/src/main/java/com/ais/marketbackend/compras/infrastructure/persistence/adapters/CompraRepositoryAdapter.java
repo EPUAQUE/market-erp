@@ -39,6 +39,11 @@ public class CompraRepositoryAdapter implements CompraRepository {
     }
 
     @Override
+    public Optional<Compra> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public List<Compra> findByTiendaId(Long tiendaId) {
         return jpaRepository.findByTiendaId(tiendaId).stream().map(mapper::toDomain).toList();
     }

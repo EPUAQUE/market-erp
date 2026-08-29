@@ -40,6 +40,11 @@ public class TrasladoRepositoryAdapter implements TrasladoRepository {
     }
 
     @Override
+    public Optional<Traslado> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public List<Traslado> findAll() {
         return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
     }

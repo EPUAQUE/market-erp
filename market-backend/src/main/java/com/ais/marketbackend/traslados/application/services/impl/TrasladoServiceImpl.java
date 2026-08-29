@@ -77,7 +77,7 @@ public class TrasladoServiceImpl implements TrasladoService {
     @Override
     @Transactional
     public TrasladoResumen completar(Long id) {
-        Traslado traslado = obtenerORequerido(id);
+        Traslado traslado = obtenerConBloqueoORequerido(id);
         exigirAccesoOFingirNoEncontrado(id, traslado);
         traslado.completar();
         for (LineaTraslado linea : traslado.getLineas()) {
@@ -95,7 +95,7 @@ public class TrasladoServiceImpl implements TrasladoService {
     @Override
     @Transactional
     public TrasladoResumen anular(Long id) {
-        Traslado traslado = obtenerORequerido(id);
+        Traslado traslado = obtenerConBloqueoORequerido(id);
         exigirAccesoOFingirNoEncontrado(id, traslado);
         traslado.anular();
         return toResumen(trasladoRepository.save(traslado));
@@ -128,6 +128,12 @@ public class TrasladoServiceImpl implements TrasladoService {
 
     private Traslado obtenerORequerido(Long id) {
         return trasladoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Traslado no encontrado: " + id));
+    }
+
+    /** Igual que {@link #obtenerORequerido}, pero con {@code findByIdConBloqueo} — ver {@code TrasladoRepository}. */
+    private Traslado obtenerConBloqueoORequerido(Long id) {
+        return trasladoRepository.findByIdConBloqueo(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Traslado no encontrado: " + id));
     }
 

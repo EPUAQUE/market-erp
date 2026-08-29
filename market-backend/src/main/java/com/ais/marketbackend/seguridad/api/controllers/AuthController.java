@@ -1,5 +1,6 @@
 package com.ais.marketbackend.seguridad.api.controllers;
 
+import com.ais.marketbackend.seguridad.api.dtos.requests.CambiarPasswordRequest;
 import com.ais.marketbackend.seguridad.api.dtos.requests.LoginRequest;
 import com.ais.marketbackend.seguridad.api.dtos.responses.LoginResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.MeResponse;
@@ -80,11 +81,26 @@ public class AuthController {
                 .build());
     }
 
+    /**
+     * Autoservicio: cualquier usuario autenticado cambia su propia contraseña, sin
+     * requerir un permiso adicional — a diferencia de
+     * {@code UsuarioController.restablecerPassword} (acción sobre OTRO usuario, sí
+     * requiere {@code USUARIOS_RESTABLECER_PASSWORD}).
+     */
+    @PostMapping("/password")
+    public ResponseEntity<Void> cambiarMiPassword(
+            @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody CambiarPasswordRequest request) {
+        Long usuarioId = usuarioService.obtenerPorUsername(jwt.getSubject()).id();
+        usuarioService.cambiarMiPassword(usuarioId, request.passwordActual(), request.passwordNueva());
+        return ResponseEntity.noContent().build();
+    }
+
     private ResponseEntity<LoginResponse> conCookieDeRefresh(LoginResult resultado) {
         LoginResponse body = LoginResponse.builder()
                 .accessToken(resultado.accessToken())
                 .tokenType("Bearer")
                 .expiresIn(resultado.expiresInSeconds())
+                .debeCambiarPassword(resultado.debeCambiarPassword())
                 .build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")

@@ -118,6 +118,30 @@ verificación tarde ~0.25–0.5 s sin causar DoS. Documentar los valores finales
 points**. Se permiten todos los caracteres Unicode y espacios; **sin** reglas de
 composición; **sin** truncado ni normalización.
 
+### Cambio de contraseña y restablecimiento administrativo
+
+- **Autoservicio**: `POST /api/v1/auth/password` (`{ "passwordActual", "passwordNueva" }`,
+  usuario autenticado, sin permiso adicional). Verifica la actual con `matches()`, valida
+  la nueva contra `PasswordPolicy`, y **revoca todos los refresh tokens del usuario**
+  (`RefreshTokenRepository.revocarTodosDeUsuario`) — cualquier otra sesión activa debe
+  volver a iniciar sesión. `Usuario.cambiarPassword` sube `version_seguridad`.
+- **Restablecimiento administrativo**: `POST /api/v1/usuarios/{usuarioId}/password/restablecer`
+  (requiere `USUARIOS_RESTABLECER_PASSWORD`, solo ADMIN). El backend genera una
+  contraseña temporal aleatoria (`TemporaryPasswordGenerator`, 20 caracteres, charset sin
+  ambiguos) y la devuelve **una sola vez** en la respuesta — nunca se persiste en claro ni
+  se registra en auditoría. Marca `usuario.debe_cambiar_password = true`
+  (`Usuario.restablecerConPasswordTemporal`) y también revoca todos sus refresh tokens.
+- **`debe_cambiar_password`**: el login (`/auth/login`, `/auth/refresh`) incluye
+  `debeCambiarPassword` en la respuesta cuando está marcado — el frontend debe forzar la
+  pantalla de cambio antes de permitir cualquier otra acción. Cambiar la contraseña (por
+  cualquiera de los dos caminos de arriba) limpia la marca.
+  **Brecha conocida (Fase 4, PLAN_MEJORAS.md)**: esto es solo una señal — el backend NO
+  bloquea el resto de la API mientras la marca esté activa. Hacerlo requeriría revalidar
+  contra la BD en cada petición autenticada (activo/`sver`/`debe_cambiar_password`), un
+  mecanismo que tampoco existe hoy para nada más (ver nota de "revalida en cada petición"
+  más abajo — es aspiracional, no implementada). Construirlo de una vez cubriría también
+  la brecha de revocar sesiones activas.
+
 ---
 
 ## 5. Access token y refresh token
@@ -154,14 +178,21 @@ composición; **sin** truncado ni normalización.
 3. Cambiar `app.security.jwt.active-kid` al nuevo `kid` y montar su llave privada.
 4. Tras `exp` del último token firmado con la llave anterior, retirar la vieja.
 
-### Invalidación temprana (antes de `exp`)
+### Invalidación temprana (antes de `exp`) — **aspiracional, no implementada**
 
-Se usa la **versión de seguridad** del usuario (`version_seg`, claim `sver`). Se
-revalida en cada petición contra la BD (con cache corta) que la cuenta siga activa y
-que `sver` coincida. Para forzar la invalidación de todos los access tokens de un
-usuario (cambio de contraseña, desactivación, cambio de rol/tienda): **incrementar
-`version_seg`**. El desfase máximo es el TTL de la cache. El refresh token, además, se
-revoca explícitamente en estos casos.
+El diseño original preveía una **versión de seguridad** del usuario
+(`version_seguridad`, incrementada por `Usuario.cambiarPassword`/`desactivar`/
+`bloquear`/`activar`) revalidada en cada petición contra la BD (con cache corta) para
+confirmar que la cuenta sigue activa y que la versión coincide con la del access token
+emitido. **Ese chequeo por petición nunca se implementó** — hoy `version_seguridad`
+solo se usa para invalidar el **refresh token** (revocado explícitamente en cambio de
+contraseña/desactivación) y no viaja como claim en el access token ni se revisa en
+`SecurityConfig`/`PermissionInterceptor`. Un access token ya emitido sigue siendo
+válido hasta su `exp` (TTL corto) sin importar qué le pase a la cuenta después —
+detectado al construir el restablecimiento administrativo de contraseña (Fase 4,
+PLAN_MEJORAS.md), que necesitaba justo este mecanismo para bloquear la API tras marcar
+`debe_cambiar_password`. Implementarlo (claim `sver` + revalidación por petición) es
+tarea pendiente separada, y resolvería de paso "revocar sesiones activas" del plan.
 
 ---
 

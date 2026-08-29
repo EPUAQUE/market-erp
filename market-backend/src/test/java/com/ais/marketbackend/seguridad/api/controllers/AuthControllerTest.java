@@ -10,11 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.ais.marketbackend.seguridad.api.dtos.requests.CambiarPasswordRequest;
 import com.ais.marketbackend.seguridad.api.dtos.responses.MeResponse;
 import com.ais.marketbackend.seguridad.application.dtos.LoginResult;
+import com.ais.marketbackend.seguridad.application.dtos.UsuarioResumen;
 import com.ais.marketbackend.seguridad.application.services.interfaces.AuthService;
 import com.ais.marketbackend.seguridad.application.services.interfaces.UsuarioService;
 import com.ais.marketbackend.seguridad.domain.exception.AutenticacionFallidaException;
+import com.ais.marketbackend.seguridad.domain.model.EstadoUsuario;
 import com.ais.marketbackend.seguridad.domain.model.PermisosEfectivos;
 import com.ais.marketbackend.seguridad.infrastructure.security.SeguridadProperties;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
@@ -55,7 +58,7 @@ class AuthControllerTest {
     @Test
     void loginExitosoDevuelveAccessTokenYCookieDeRefresh() throws Exception {
         when(authService.login(anyString(), anyString(), anyString()))
-                .thenReturn(new LoginResult("jwt-access", "refresh-plano", 600));
+                .thenReturn(new LoginResult("jwt-access", "refresh-plano", 600, false));
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,7 +100,7 @@ class AuthControllerTest {
     @Test
     void refreshConCookieValidaRotaElToken() throws Exception {
         when(authService.refresh(anyString()))
-                .thenReturn(new LoginResult("jwt-nuevo", "refresh-nuevo", 600));
+                .thenReturn(new LoginResult("jwt-nuevo", "refresh-nuevo", 600, false));
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .cookie(new jakarta.servlet.http.Cookie("refresh_token", "refresh-viejo")))
@@ -142,5 +145,19 @@ class AuthControllerTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getGrupoIds()).containsExactly(5L);
+    }
+
+    @Test
+    void cambiarMiPasswordResuelveElUsuarioIdDesdeElJwtYLlamaAlServicio() {
+        when(usuarioService.obtenerPorUsername("ana")).thenReturn(
+                new UsuarioResumen(1L, "ana", EstadoUsuario.ACTIVO, null, null, null));
+        Jwt jwt = new Jwt(
+                "jwt-value", Instant.now(), Instant.now().plusSeconds(600),
+                Map.of("alg", "RS256"), Map.of("sub", "ana"));
+
+        var respuesta = controller.cambiarMiPassword(jwt, new CambiarPasswordRequest("actual123456", "nueva1234567"));
+
+        assertThat(respuesta.getStatusCode().value()).isEqualTo(204);
+        org.mockito.Mockito.verify(usuarioService).cambiarMiPassword(1L, "actual123456", "nueva1234567");
     }
 }

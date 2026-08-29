@@ -189,6 +189,6 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(nuevoRefresh);
 
         long expiresInSeconds = Duration.between(ahora, accessToken.expiraEn()).toSeconds();
-        return new LoginResult(accessToken.token(), refreshPlano, expiresInSeconds);
+        return new LoginResult(accessToken.token(), refreshPlano, expiresInSeconds, usuario.isDebeCambiarPassword());
     }
 }

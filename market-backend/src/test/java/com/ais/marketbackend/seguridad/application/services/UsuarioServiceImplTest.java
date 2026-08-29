@@ -18,6 +18,7 @@ import com.ais.marketbackend.seguridad.domain.exception.UsuarioDuplicadoExceptio
 import com.ais.marketbackend.seguridad.domain.model.Rol;
 import com.ais.marketbackend.seguridad.domain.model.Usuario;
 import com.ais.marketbackend.seguridad.domain.model.UsuarioGrupoTienda;
+import com.ais.marketbackend.seguridad.domain.repository.RefreshTokenRepository;
 import com.ais.marketbackend.seguridad.domain.repository.RolRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioGrupoTiendaRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioRepository;
@@ -44,6 +45,7 @@ class UsuarioServiceImplTest {
     private RolRepository rolRepository;
     private TiendaRepository tiendaRepository;
     private GrupoTiendaRepository grupoTiendaRepository;
+    private RefreshTokenRepository refreshTokenRepository;
     private PasswordEncoder passwordEncoder;
     private AutorizacionTiendaService autorizacionTiendaService;
     private UsuarioServiceImpl usuarioService;
@@ -56,6 +58,7 @@ class UsuarioServiceImplTest {
         rolRepository = mock(RolRepository.class);
         tiendaRepository = mock(TiendaRepository.class);
         grupoTiendaRepository = mock(GrupoTiendaRepository.class);
+        refreshTokenRepository = mock(RefreshTokenRepository.class);
         passwordEncoder = mock(PasswordEncoder.class);
         PermisosEfectivosResolver resolver = mock(PermisosEfectivosResolver.class);
         SecurityAuditPublisher auditPublisher = mock(SecurityAuditPublisher.class);
@@ -68,8 +71,8 @@ class UsuarioServiceImplTest {
 
         usuarioService = new UsuarioServiceImpl(
                 usuarioRepository, usuarioTiendaRepository, usuarioGrupoTiendaRepository, rolRepository,
-                tiendaRepository, grupoTiendaRepository, passwordEncoder, resolver, auditPublisher, properties,
-                autorizacionTiendaService);
+                tiendaRepository, grupoTiendaRepository, refreshTokenRepository, passwordEncoder, resolver,
+                auditPublisher, properties, autorizacionTiendaService);
 
         when(usuarioGrupoTiendaRepository.findByUsuarioId(org.mockito.ArgumentMatchers.anyLong()))
                 .thenReturn(List.of());
@@ -275,10 +278,10 @@ class UsuarioServiceImplTest {
     void listarConAlcanceLimitadoFiltraPorTiendaOGrupoDelSolicitante() {
         Usuario dentroDeAlcance = new Usuario(
                 1L, "ana", "hash", com.ais.marketbackend.seguridad.domain.model.EstadoUsuario.ACTIVO, 0L,
-                null, null, null);
+                null, null, null, false);
         Usuario fueraDeAlcance = new Usuario(
                 2L, "beto", "hash", com.ais.marketbackend.seguridad.domain.model.EstadoUsuario.ACTIVO, 0L,
-                null, null, null);
+                null, null, null, false);
         when(usuarioRepository.findAll()).thenReturn(List.of(dentroDeAlcance, fueraDeAlcance));
         when(autorizacionTiendaService.tiendaIdsPermitidas()).thenReturn(Optional.of(Set.of(10L)));
         when(autorizacionTiendaService.grupoIdsPermitidas()).thenReturn(Optional.of(Set.of()));
@@ -318,5 +321,68 @@ class UsuarioServiceImplTest {
         assertThatThrownBy(() -> usuarioService.asignarTienda(1L, 10L, 1L))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         verify(usuarioTiendaRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void cambiarMiPasswordConLaActualCorrectaLaActualizaYRevocaSesiones() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-viejo");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("actual123456", "hash-viejo")).thenReturn(true);
+        when(passwordEncoder.encode("nueva1234567")).thenReturn("hash-nuevo");
+        when(usuarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        usuarioService.cambiarMiPassword(1L, "actual123456", "nueva1234567");
+
+        assertThat(usuario.getPasswordHash()).isEqualTo("hash-nuevo");
+        assertThat(usuario.isDebeCambiarPassword()).isFalse();
+        verify(usuarioRepository).save(usuario);
+        verify(refreshTokenRepository).revocarTodosDeUsuario(1L);
+    }
+
+    @Test
+    void cambiarMiPasswordConLaActualIncorrectaLanzaExcepcionYNoMutaNada() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-viejo");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("mala-actual", "hash-viejo")).thenReturn(false);
+
+        assertThatThrownBy(() -> usuarioService.cambiarMiPassword(1L, "mala-actual", "nueva1234567"))
+                .isInstanceOf(com.ais.marketbackend.seguridad.domain.exception.PasswordActualInvalidaException.class);
+        verify(usuarioRepository, org.mockito.Mockito.never()).save(any());
+        verify(refreshTokenRepository, org.mockito.Mockito.never()).revocarTodosDeUsuario(any());
+    }
+
+    @Test
+    void cambiarMiPasswordConNuevaQueViolaLaPoliticaLanzaExcepcion() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-viejo");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("actual123456", "hash-viejo")).thenReturn(true);
+
+        assertThatThrownBy(() -> usuarioService.cambiarMiPassword(1L, "actual123456", "corta"))
+                .isInstanceOf(com.ais.marketbackend.seguridad.domain.exception.PoliticaContrasenaException.class);
+        verify(usuarioRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void restablecerPasswordGeneraUnaTemporalYMarcaLaCuenta() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-viejo");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.encode(anyString())).thenReturn("hash-temporal");
+        when(usuarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String passwordTemporal = usuarioService.restablecerPassword(1L);
+
+        assertThat(passwordTemporal).hasSize(20);
+        assertThat(usuario.getPasswordHash()).isEqualTo("hash-temporal");
+        assertThat(usuario.isDebeCambiarPassword()).isTrue();
+        verify(usuarioRepository).save(usuario);
+        verify(refreshTokenRepository).revocarTodosDeUsuario(1L);
+    }
+
+    @Test
+    void restablecerPasswordConUsuarioInexistenteLanzaNoEncontrado() {
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.restablecerPassword(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

@@ -5,12 +5,14 @@ import com.ais.marketbackend.seguridad.application.dtos.UsuarioGrupoTiendaResume
 import com.ais.marketbackend.seguridad.application.dtos.UsuarioResumen;
 import com.ais.marketbackend.seguridad.application.dtos.UsuarioTiendaResumen;
 import com.ais.marketbackend.seguridad.domain.exception.AsignacionMixtaNoPermitidaException;
+import com.ais.marketbackend.seguridad.domain.exception.PasswordActualInvalidaException;
 import com.ais.marketbackend.seguridad.domain.exception.UsuarioDuplicadoException;
 import com.ais.marketbackend.seguridad.domain.model.PermisosEfectivos;
 import com.ais.marketbackend.seguridad.domain.model.Rol;
 import com.ais.marketbackend.seguridad.domain.model.Usuario;
 import com.ais.marketbackend.seguridad.domain.model.UsuarioGrupoTienda;
 import com.ais.marketbackend.seguridad.domain.model.UsuarioTienda;
+import com.ais.marketbackend.seguridad.domain.repository.RefreshTokenRepository;
 import com.ais.marketbackend.seguridad.domain.repository.RolRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioGrupoTiendaRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioRepository;
@@ -18,6 +20,7 @@ import com.ais.marketbackend.seguridad.domain.repository.UsuarioTiendaRepository
 import com.ais.marketbackend.seguridad.domain.service.PermisosEfectivosResolver;
 import com.ais.marketbackend.seguridad.domain.service.PoliticaContrasenaValidator;
 import com.ais.marketbackend.seguridad.domain.service.SecurityAuditPublisher;
+import com.ais.marketbackend.seguridad.domain.service.TemporaryPasswordGenerator;
 import com.ais.marketbackend.seguridad.domain.service.TipoEventoAuditoria;
 import com.ais.marketbackend.seguridad.domain.service.UsernameCanonicalizer;
 import com.ais.marketbackend.seguridad.application.services.interfaces.UsuarioService;
@@ -45,6 +48,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final RolRepository rolRepository;
     private final TiendaRepository tiendaRepository;
     private final GrupoTiendaRepository grupoTiendaRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final PermisosEfectivosResolver permisosEfectivosResolver;
     private final SecurityAuditPublisher auditPublisher;
@@ -58,6 +62,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             RolRepository rolRepository,
             TiendaRepository tiendaRepository,
             GrupoTiendaRepository grupoTiendaRepository,
+            RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
             PermisosEfectivosResolver permisosEfectivosResolver,
             SecurityAuditPublisher auditPublisher,
@@ -69,6 +74,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         this.rolRepository = rolRepository;
         this.tiendaRepository = tiendaRepository;
         this.grupoTiendaRepository = grupoTiendaRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.permisosEfectivosResolver = permisosEfectivosResolver;
         this.auditPublisher = auditPublisher;
@@ -210,6 +216,39 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .filter(usuario -> usuarioIdsEnAlcance.contains(usuario.getId()))
                 .map(this::toResumen)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void cambiarMiPassword(Long usuarioId, String passwordActual, String passwordNueva) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+        if (!passwordEncoder.matches(passwordActual, usuario.getPasswordHash())) {
+            throw new PasswordActualInvalidaException();
+        }
+        PoliticaContrasenaValidator.validar(
+                passwordNueva, properties.passwordPolicy().minLength(), properties.passwordPolicy().maxLength());
+
+        usuario.cambiarPassword(passwordEncoder.encode(passwordNueva));
+        usuarioRepository.save(usuario);
+        refreshTokenRepository.revocarTodosDeUsuario(usuarioId);
+        auditPublisher.publicar(
+                TipoEventoAuditoria.PASSWORD_CAMBIADA, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
+    }
+
+    @Override
+    @Transactional
+    public String restablecerPassword(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+
+        String passwordTemporal = TemporaryPasswordGenerator.generar();
+        usuario.restablecerConPasswordTemporal(passwordEncoder.encode(passwordTemporal));
+        usuarioRepository.save(usuario);
+        refreshTokenRepository.revocarTodosDeUsuario(usuarioId);
+        auditPublisher.publicar(
+                TipoEventoAuditoria.PASSWORD_RESTABLECIDA, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
+        return passwordTemporal;
     }
 
     private void exigirNoEscalaAlcanceGlobal(Rol rol) {

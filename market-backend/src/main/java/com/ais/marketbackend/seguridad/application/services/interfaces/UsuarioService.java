@@ -48,4 +48,21 @@ public interface UsuarioService {
     PermisosEfectivos obtenerPermisosEfectivosPorUsername(String username);
 
     List<UsuarioResumen> listar();
+
+    /**
+     * Autoservicio: el usuario autenticado cambia su propia contraseña, verificando
+     * la actual. Revoca todas sus sesiones activas (refresh tokens) — debe volver a
+     * iniciar sesión en cualquier otro dispositivo.
+     */
+    void cambiarMiPassword(Long usuarioId, String passwordActual, String passwordNueva);
+
+    /**
+     * Restablecimiento administrativo: genera una contraseña temporal aleatoria, la
+     * aplica y marca la cuenta para forzar el cambio en el próximo login (ver
+     * {@code Usuario.restablecerConPasswordTemporal}). Revoca todas las sesiones
+     * activas del usuario. Devuelve la contraseña en texto plano — la única vez que
+     * existe fuera del hash — para que quien llama se la entregue al usuario por un
+     * canal separado; nunca se persiste ni se registra en auditoría.
+     */
+    String restablecerPassword(Long usuarioId);
 }

@@ -48,4 +48,7 @@ public class UsuarioEntity {
 
     @Column(name = "correo", length = 150)
     private String correo;
+
+    @Column(name = "debe_cambiar_password", nullable = false)
+    private boolean debeCambiarPassword;
 }

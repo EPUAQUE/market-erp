@@ -23,6 +23,29 @@ class UsuarioTest {
 
         assertThat(usuario.getPasswordHash()).isEqualTo("hash-nuevo");
         assertThat(usuario.getVersionSeguridad()).isEqualTo(1L);
+        assertThat(usuario.isDebeCambiarPassword()).isFalse();
+    }
+
+    @Test
+    void restablecerConPasswordTemporalMarcaLaCuentaYSubeVersion() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-viejo");
+
+        usuario.restablecerConPasswordTemporal("hash-temporal");
+
+        assertThat(usuario.getPasswordHash()).isEqualTo("hash-temporal");
+        assertThat(usuario.isDebeCambiarPassword()).isTrue();
+        assertThat(usuario.getVersionSeguridad()).isEqualTo(1L);
+    }
+
+    @Test
+    void cambiarPasswordLimpiaLaMarcaDeDebeCambiar() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-viejo");
+        usuario.restablecerConPasswordTemporal("hash-temporal");
+
+        usuario.cambiarPassword("hash-definitivo");
+
+        assertThat(usuario.isDebeCambiarPassword()).isFalse();
+        assertThat(usuario.getPasswordHash()).isEqualTo("hash-definitivo");
     }
 
     @Test

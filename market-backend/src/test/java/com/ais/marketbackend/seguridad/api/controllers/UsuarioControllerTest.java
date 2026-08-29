@@ -103,6 +103,15 @@ class UsuarioControllerTest {
         verify(usuarioService).asignarGrupo(1L, 5L, 9L);
     }
 
+    @Test
+    void restablecerPasswordDevuelveLaTemporalGeneradaPorElServicio() throws Exception {
+        when(usuarioService.restablecerPassword(1L)).thenReturn("Ab3dEfGhJk4mNpQrSt5u");
+
+        mockMvc.perform(post("/api/v1/usuarios/1/password/restablecer"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.passwordTemporal").value("Ab3dEfGhJk4mNpQrSt5u"));
+    }
+
     /** Mapper manual mínimo para el test — evita depender del bean generado por MapStruct en este módulo aislado. */
     private static class UsuarioApiMapperImplForTest implements UsuarioApiMapper {
         @Override

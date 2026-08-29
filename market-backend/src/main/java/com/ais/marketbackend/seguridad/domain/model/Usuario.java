@@ -16,10 +16,11 @@ public class Usuario {
     private String nombre;
     private String telefono;
     private String correo;
+    private boolean debeCambiarPassword;
 
     public Usuario(
             Long id, String username, String passwordHash, EstadoUsuario estado, long versionSeguridad,
-            String nombre, String telefono, String correo) {
+            String nombre, String telefono, String correo, boolean debeCambiarPassword) {
         this.id = id;
         this.username = Objects.requireNonNull(username, "username");
         this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
@@ -32,6 +33,7 @@ public class Usuario {
         this.nombre = nombre;
         this.telefono = telefono;
         this.correo = correo;
+        this.debeCambiarPassword = debeCambiarPassword;
     }
 
     /** Conveniencia para pruebas que no necesitan los datos de perfil (login/password). */
@@ -40,15 +42,33 @@ public class Usuario {
     }
 
     public static Usuario nuevo(String username, String passwordHash, String nombre, String telefono, String correo) {
-        return new Usuario(null, username, passwordHash, EstadoUsuario.ACTIVO, 0L, nombre, telefono, correo);
+        return new Usuario(null, username, passwordHash, EstadoUsuario.ACTIVO, 0L, nombre, telefono, correo, false);
     }
 
     public boolean estaActivo() {
         return estado == EstadoUsuario.ACTIVO;
     }
 
+    public boolean isDebeCambiarPassword() {
+        return debeCambiarPassword;
+    }
+
+    /** Cambio normal (autoservicio o restablecimiento administrativo): siempre limpia la marca de "debe cambiar". */
     public void cambiarPassword(String nuevoHash) {
         this.passwordHash = Objects.requireNonNull(nuevoHash, "nuevoHash");
+        this.debeCambiarPassword = false;
+        incrementarVersionSeguridad();
+    }
+
+    /**
+     * Usado por el restablecimiento administrativo con contraseña temporal: aplica el
+     * nuevo hash generado por el sistema y marca la cuenta para forzar el cambio en el
+     * próximo login — a diferencia de {@link #cambiarPassword}, que se usa cuando el
+     * cambio ya es definitivo (autoservicio, o un admin fijando la contraseña final).
+     */
+    public void restablecerConPasswordTemporal(String nuevoHash) {
+        this.passwordHash = Objects.requireNonNull(nuevoHash, "nuevoHash");
+        this.debeCambiarPassword = true;
         incrementarVersionSeguridad();
     }
 

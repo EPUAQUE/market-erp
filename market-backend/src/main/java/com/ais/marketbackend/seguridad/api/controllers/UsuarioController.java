@@ -3,6 +3,7 @@ package com.ais.marketbackend.seguridad.api.controllers;
 import com.ais.marketbackend.seguridad.api.dtos.requests.AsignarGrupoRolRequest;
 import com.ais.marketbackend.seguridad.api.dtos.requests.AsignarTiendaRolRequest;
 import com.ais.marketbackend.seguridad.api.dtos.requests.CrearUsuarioRequest;
+import com.ais.marketbackend.seguridad.api.dtos.responses.RestablecerPasswordResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioGrupoTiendaResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.UsuarioTiendaResponse;
@@ -76,5 +77,16 @@ public class UsuarioController {
                 .map(ug -> new UsuarioGrupoTiendaResponse(ug.id(), ug.grupoTiendaId(), ug.rolId(), ug.rolNombre()))
                 .toList();
         return ResponseEntity.ok(asignaciones);
+    }
+
+    /**
+     * Acción sobre OTRO usuario — a diferencia de {@code AuthController.cambiarMiPassword}
+     * (autoservicio), esta exige un permiso administrativo dedicado.
+     */
+    @PostMapping("/{usuarioId}/password/restablecer")
+    @RequiresPermission("USUARIOS_RESTABLECER_PASSWORD")
+    public ResponseEntity<RestablecerPasswordResponse> restablecerPassword(@PathVariable Long usuarioId) {
+        String passwordTemporal = usuarioService.restablecerPassword(usuarioId);
+        return ResponseEntity.ok(RestablecerPasswordResponse.builder().passwordTemporal(passwordTemporal).build());
     }
 }

@@ -83,7 +83,22 @@ class AuthServiceImplTest {
 
         assertThat(resultado.accessToken()).isEqualTo("jwt-token");
         assertThat(resultado.refreshToken()).isNotBlank();
+        assertThat(resultado.debeCambiarPassword()).isFalse();
         verify(refreshTokenRepository).save(any());
+    }
+
+    @Test
+    void loginConUsuarioQueDebeCambiarPasswordLoIndicaEnElResultado() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-real");
+        usuario.restablecerConPasswordTemporal("hash-temporal");
+        when(usuarioRepository.findByUsername("ana")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("temporal123", "hash-temporal")).thenReturn(true);
+        when(permisosEfectivosResolver.resolver(any()))
+                .thenReturn(new PermisosEfectivos(1L, "ana", Set.of("VENTAS_VER"), Set.of(1L), false));
+
+        LoginResult resultado = authService.login("ana", "temporal123", "127.0.0.1");
+
+        assertThat(resultado.debeCambiarPassword()).isTrue();
     }
 
     @Test

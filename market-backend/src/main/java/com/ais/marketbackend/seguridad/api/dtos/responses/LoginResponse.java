@@ -10,4 +10,5 @@ public class LoginResponse {
     String accessToken;
     String tokenType;
     long expiresIn;
+    boolean debeCambiarPassword;
 }

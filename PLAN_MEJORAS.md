@@ -449,6 +449,37 @@ escapar rompió el parseo XML de Liquibase (`&lt;=` es obligatorio dentro de
 rechaza — y que una fila válida sí se acepta — para una muestra representativa de
 las restricciones agregadas.
 
+**Resuelto (2026-08-29) — Revisión general de flujos `find -> validar -> save`:**
+auditoría de todos los `*ServiceImpl` del backend en busca de este mismo patrón en
+módulos aún no tocados por la fase. Encontrado y corregido:
+`VentaServiceImpl.completar`/`anular` leían la venta con `findById` (sin bloqueo)
+— dos `completar` casi simultáneos sobre la misma venta en BORRADOR (doble clic, o
+un reintento de red solapado) podían ambos pasar la validación y duplicar el
+movimiento de Inventario/CxC/Caja antes de que cualquiera commiteara; mismo patrón
+ya corregido en Compra/Traslado/FEL, aquí en la propia Venta. Se agregó
+`findByIdConBloqueo` (`@Lock(PESSIMISTIC_WRITE)`), usado por `completar`/`anular`.
+De paso se encontró y corrigió un bug de orden independiente de la concurrencia:
+`completar` validaba el límite de crédito *antes* de comprobar que la venta seguía
+en BORRADOR — un segundo intento sobre una venta ya completada (con o sin carrera)
+podía fallar con `LimiteCreditoExcedidoException` en vez del `EstadoVentaInvalidoException`
+correcto, porque la CxC ya creada por el primer intento inflaba el saldo proyectado
+del segundo. Se movió `venta.completar()` (la comprobación de estado) al inicio del
+método. Cubierto por `VentaServiceImplTest` (unitario, mocks actualizados, 4
+aserciones ajustadas para verificar "nunca se guardó" en vez de mutación en memoria
+del objeto de dominio) y por `VentaConcurrenciaIT` (Testcontainers/Postgres real):
+dos `completar` concurrentes sobre la misma venta — exactamente uno tiene éxito,
+el inventario refleja la salida una sola vez.
+
+Hallazgo adicional, no corregido en esta pasada (fuera de alcance monetario, bajo
+tráfico — acción de administrador, no un flujo de venta):
+`UsuarioServiceImpl` permite una carrera entre asignar una tienda individual
+(`usuario_tienda`) y asignar el grupo de esa tienda (`usuario_grupo_tienda`) al
+mismo usuario — cada tabla tiene su propia restricción única, pero ninguna
+restricción en BD abarca ambas tablas a la vez, así que dos solicitudes
+concurrentes pueden violar la regla de negocio "no permitir asignación mixta"
+sin que ninguna falle. Requiere un mecanismo distinto (no un simple
+`findByIdConBloqueo`, porque son dos tablas) — pendiente para una pasada futura.
+
 ### Tareas
 
 - [x] Crear una matriz de agregados y estrategia de concurrencia:
@@ -472,7 +503,9 @@ las restricciones agregadas.
   `ClienteService.obtenerParaActualizarCredito` + `VentaServiceImpl.completar`).
 - [x] Añadir `CHECK` de base de datos para montos positivos, saldos no negativos y
   combinaciones de estado críticas (2026-08-29 — ver detalle abajo).
-- [ ] Revisar todos los flujos `find -> validar -> save` monetarios.
+- [x] Revisar todos los flujos `find -> validar -> save` monetarios (2026-08-29 —
+  ver detalle arriba; encontró y corrigió el mismo hueco en `Venta.completar`/
+  `anular`; dejó documentado un hallazgo no monetario en `UsuarioServiceImpl`).
 - [ ] Traducir conflictos de concurrencia a códigos HTTP y mensajes consistentes.
 
 ### Pruebas requeridas
@@ -489,9 +522,10 @@ las restricciones agregadas.
   (`VentaCreditoConcurrenciaIT`, 2026-08-28).
 - [x] Dos ejecuciones del mismo gasto/período: un solo pago
   (`GastoProgramadoConcurrenciaIT`, 2026-08-28).
-- [x] Transiciones de estado concurrentes en compra/traslado/FEL: exactamente una
-  tiene éxito, sin duplicar movimientos de inventario
-  (`CompraConcurrenciaIT`/`TrasladoConcurrenciaIT`/`FelConcurrenciaIT`, 2026-08-28).
+- [x] Transiciones de estado concurrentes en compra/traslado/FEL/venta: exactamente
+  una tiene éxito, sin duplicar movimientos de inventario
+  (`CompraConcurrenciaIT`/`TrasladoConcurrenciaIT`/`FelConcurrenciaIT`, 2026-08-28;
+  `VentaConcurrenciaIT`, 2026-08-29).
 - [x] Ejecutar contra PostgreSQL real, no H2 ni únicamente mocks (todos los IT de
   esta fase usan Testcontainers con Postgres real).
 
@@ -902,7 +936,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | Completa salvo revisión general de flujos monetarios y traducción de conflictos a códigos HTTP consistentes | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 22 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular) y FEL (reintentar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD agregados en los 10 módulos monetarios/de cantidad tocados en la fase, verificados con `CheckConstraintsIT`. Queda: revisión sistemática de flujos `find -> validar -> save` fuera de los ya cubiertos, y traducir conflictos de concurrencia a códigos HTTP/mensajes consistentes. |
+| 3 — Concurrencia | Completa salvo traducción de conflictos a códigos HTTP consistentes | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 23 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular) y venta (completar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. Auditoría general de flujos `find -> validar -> save` encontró y corrigió el mismo hueco en Venta (más un bug de orden independiente: crédito se validaba antes que el estado). Queda: traducir conflictos de concurrencia a códigos HTTP/mensajes consistentes, y un hallazgo no monetario documentado en `UsuarioServiceImpl` (asignación mixta tienda/grupo) sin corregir. |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

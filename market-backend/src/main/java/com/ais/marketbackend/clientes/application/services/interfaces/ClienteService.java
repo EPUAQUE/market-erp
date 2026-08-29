@@ -29,6 +29,18 @@ public interface ClienteService {
     /** Usado por otros módulos (Ventas, para validar límite de crédito) — no reemplaza {@link #listar}. */
     ClienteResumen obtener(Long id);
 
+    /**
+     * Igual que {@link #obtener}, pero bloquea la fila del cliente con
+     * {@code PESSIMISTIC_WRITE} dentro de la transacción del llamador — usado
+     * exclusivamente por {@code VentaServiceImpl.completar()} al validar el
+     * límite de crédito de una venta CREDITO/MIXTO, para serializar esa
+     * validación entre ventas concurrentes del mismo cliente (ver
+     * {@code ClienteRepository.findByIdConBloqueo}). Nunca usar para una
+     * simple lectura — el lock se mantiene hasta que termine la transacción
+     * del llamador.
+     */
+    ClienteResumen obtenerParaActualizarCredito(Long id);
+
     void activar(Long id);
 
     void desactivar(Long id);

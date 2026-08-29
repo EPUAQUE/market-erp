@@ -148,6 +148,25 @@ class ClienteServiceImplTest {
     }
 
     @Test
+    void obtenerParaActualizarCreditoUsaLaLecturaConBloqueoNoLaSimple() {
+        Cliente cliente = Cliente.nuevo("12345678-9", "Juan Pérez", null, null, null, new BigDecimal("500.00"));
+        when(clienteRepository.findByIdConBloqueo(1L)).thenReturn(Optional.of(cliente));
+
+        ClienteResumen resumen = clienteService.obtenerParaActualizarCredito(1L);
+
+        assertThat(resumen.limiteCredito()).isEqualByComparingTo("500.00");
+        verify(clienteRepository, never()).findById(any());
+    }
+
+    @Test
+    void obtenerParaActualizarCreditoConIdInexistenteLanzaNoEncontrado() {
+        when(clienteRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clienteService.obtenerParaActualizarCredito(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void listarMapeaLaPaginaDeClientes() {
         when(clienteRepository.findAll(0, 20)).thenReturn(new Pagina<>(
                 List.of(Cliente.nuevo("12345678-9", "Juan Pérez", null, null, null, null)), 0, 20, 1, 1));

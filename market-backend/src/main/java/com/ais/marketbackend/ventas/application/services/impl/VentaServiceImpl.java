@@ -300,9 +300,18 @@ public class VentaServiceImpl implements VentaService {
      * exposición del cliente en otras tiendas requeriría una consulta
      * cross-tienda que no existe hoy. {@code limiteCredito == null} significa
      * sin restricción definida, no Q0.
+     *
+     * <p>{@code obtenerParaActualizarCredito} (no {@code obtener}) a propósito:
+     * bloquea la fila del cliente con {@code PESSIMISTIC_WRITE} hasta que esta
+     * transacción termine — sin esto, dos ventas a crédito casi simultáneas del
+     * mismo cliente pueden leer el mismo saldo pendiente (ninguna ve la cuenta
+     * por cobrar que la otra está a punto de crear) y juntas exceder el límite
+     * aunque cada una, evaluada sola, no lo haga. Con el lock, la segunda
+     * espera a que la primera termine de commitear y entonces sí ve el saldo
+     * ya actualizado.
      */
     private void validarLimiteCredito(Long tiendaId, Venta venta, BigDecimal saldoFinanciado) {
-        ClienteResumen cliente = clienteService.obtener(venta.getClienteId());
+        ClienteResumen cliente = clienteService.obtenerParaActualizarCredito(venta.getClienteId());
         BigDecimal limite = cliente.limiteCredito();
         if (limite == null) {
             return;

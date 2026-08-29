@@ -270,7 +270,7 @@ class VentaServiceImplTest {
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
-        when(clienteService.obtener(2L)).thenReturn(cliente(null));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(null));
 
         ventaService.completar(1L, 5L);
 
@@ -285,7 +285,7 @@ class VentaServiceImplTest {
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
-        when(clienteService.obtener(2L)).thenReturn(cliente(new BigDecimal("100")));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
 
         ventaService.completar(1L, 5L, List.of(
                 new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("5.00")),
@@ -305,7 +305,7 @@ class VentaServiceImplTest {
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, new BigDecimal("50.000"), new BigDecimal("5.0000")));
-        when(clienteService.obtener(2L)).thenReturn(cliente(new BigDecimal("100")));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
 
         ventaService.completar(1L, 5L, List.of(
                 new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("5.00")),
@@ -436,7 +436,7 @@ class VentaServiceImplTest {
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
-        when(clienteService.obtener(2L)).thenReturn(cliente(new BigDecimal("100")));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
 
         VentaResumen resumen = ventaService.completar(1L, 5L);
 
@@ -449,7 +449,7 @@ class VentaServiceImplTest {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.CREDITO), 5L, 1L);
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
-        when(clienteService.obtener(2L)).thenReturn(cliente(new BigDecimal("5")));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("5")));
 
         assertThatThrownBy(() -> ventaService.completar(1L, 5L))
                 .isInstanceOf(LimiteCreditoExcedidoException.class);
@@ -466,7 +466,7 @@ class VentaServiceImplTest {
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
-        when(clienteService.obtener(2L)).thenReturn(cliente(null));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(null));
 
         VentaResumen resumen = ventaService.completar(1L, 5L);
 
@@ -478,7 +478,7 @@ class VentaServiceImplTest {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.CREDITO), 5L, 1L);
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
-        when(clienteService.obtener(2L)).thenReturn(cliente(new BigDecimal("15")));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("15")));
         when(cuentaPorCobrarService.listarPorTienda(1L)).thenReturn(
                 List.of(cuentaPendiente(2L, new BigDecimal("10"))));
 
@@ -493,7 +493,7 @@ class VentaServiceImplTest {
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
-        when(clienteService.obtener(2L)).thenReturn(cliente(new BigDecimal("100")));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("100")));
 
         VentaResumen resumen = ventaService.completar(
                 1L, 5L, List.of(new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("4"))));
@@ -507,7 +507,7 @@ class VentaServiceImplTest {
         Venta venta = withId(Venta.nueva(2L, 1L, 3L, List.of(LineaVenta.nueva(10L, BigDecimal.TEN, BigDecimal.ONE)),
                 MetodoPago.MIXTO), 5L, 1L);
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
-        when(clienteService.obtener(2L)).thenReturn(cliente(new BigDecimal("5")));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(new BigDecimal("5")));
 
         assertThatThrownBy(() -> ventaService.completar(
                 1L, 5L, List.of(new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("3")))))
@@ -528,7 +528,7 @@ class VentaServiceImplTest {
 
         ventaService.completar(1L, 5L);
 
-        verify(clienteService, never()).obtener(any());
+        verify(clienteService, never()).obtenerParaActualizarCredito(any());
     }
 
     @Test
@@ -555,7 +555,7 @@ class VentaServiceImplTest {
         assertThatThrownBy(() -> ventaService.completar(
                 1L, 5L, List.of(new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("4")))))
                 .isInstanceOf(CajaNoAbiertaException.class);
-        verify(clienteService, never()).obtener(any());
+        verify(clienteService, never()).obtenerParaActualizarCredito(any());
     }
 
     @Test
@@ -565,7 +565,7 @@ class VentaServiceImplTest {
         when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
         when(inventarioService.obtener(1L, 10L)).thenReturn(
                 new InventarioResumen(1L, 1L, 10L, BigDecimal.TEN, BigDecimal.ONE));
-        when(clienteService.obtener(2L)).thenReturn(cliente(null));
+        when(clienteService.obtenerParaActualizarCredito(2L)).thenReturn(cliente(null));
         when(cajaService.hayAbiertaPorTienda(1L)).thenReturn(false);
 
         VentaResumen resumen = ventaService.completar(1L, 5L);

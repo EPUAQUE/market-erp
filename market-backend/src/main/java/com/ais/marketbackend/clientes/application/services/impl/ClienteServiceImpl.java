@@ -141,6 +141,14 @@ public class ClienteServiceImpl implements ClienteService {
         return toResumen(obtenerORequerido(id));
     }
 
+    @Override
+    @Transactional
+    public ClienteResumen obtenerParaActualizarCredito(Long id) {
+        Cliente cliente = clienteRepository.findByIdConBloqueo(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado: " + id));
+        return toResumen(cliente);
+    }
+
     private Cliente obtenerORequerido(Long id) {
         return clienteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado: " + id));

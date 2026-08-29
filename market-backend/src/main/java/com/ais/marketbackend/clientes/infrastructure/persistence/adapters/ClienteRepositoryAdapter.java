@@ -38,6 +38,11 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
     }
 
     @Override
+    public Optional<Cliente> findByIdConBloqueo(Long id) {
+        return jpaRepository.findByIdConBloqueo(id).map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsByNit(String nit) {
         return jpaRepository.existsByNit(nit);
     }

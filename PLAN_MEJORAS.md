@@ -430,13 +430,32 @@ actualizados) y por `CompraConcurrenciaIT`/`TrasladoConcurrenciaIT`/
 concurrentes sobre el mismo agregado — exactamente una tiene éxito, sin
 duplicar movimientos de inventario.
 
+**Resuelto (2026-08-29) — `CHECK` de base de datos:** el dominio ya exigía montos
+positivos, saldos no negativos y algunas combinaciones de estado, pero nada lo
+respaldaba en BD — un `INSERT`/`UPDATE` directo (script, migración de datos, bug
+futuro que use SQL crudo) podía violar esas invariantes sin que Postgres protestara.
+Se agregaron `CHECK` en los agregados monetarios/de cantidad tocados en esta fase:
+`caja_sesion`/`movimiento_caja`, `cuenta_por_cobrar`/`cobro`, `cuenta_por_pagar`/
+`pago`, `gasto_programado`/`pago_gasto_programado`, `linea_compra`, `linea_traslado`,
+`linea_venta`, `inventario`/`movimiento_inventario`, `producto_tienda` y
+`documento_fel`/`fel_correlativo` — montos/cantidades positivos o no negativos según
+el caso, y dos invariantes de estado adicionales antes solo garantizadas por
+construcción en el dominio: `saldo_pendiente <= monto_original` en CxC y CxP, y
+`stock_minimo <= stock_maximo` en `producto_tienda`. Un primer intento con `<=` sin
+escapar rompió el parseo XML de Liquibase (`&lt;=` es obligatorio dentro de
+`<sql>`), detectado por `LiquibaseMigrationIT`. Cubierto por `CheckConstraintsIT`
+(Testcontainers/Postgres real): inserta/actualiza filas inválidas por SQL directo
+(sin pasar por el dominio, que las rechazaría antes) y confirma que Postgres las
+rechaza — y que una fila válida sí se acepta — para una muestra representativa de
+las restricciones agregadas.
+
 ### Tareas
 
-- [ ] Crear una matriz de agregados y estrategia de concurrencia:
+- [x] Crear una matriz de agregados y estrategia de concurrencia:
 
 | Agregado | Estrategia inicial recomendada |
 | --- | --- |
-| Inventario | Mantener `PESSIMISTIC_WRITE` existente |
+| Inventario | [x] Mantener `PESSIMISTIC_WRITE` existente |
 | Caja | [x] Bloqueo de sesión abierta + restricción única parcial |
 | CxC/CxP | [x] `PESSIMISTIC_WRITE` (`findByIdConBloqueo`) |
 | Crédito cliente | [x] Serializar por cliente (`PESSIMISTIC_WRITE` vía `findByIdConBloqueo`) |
@@ -451,8 +470,8 @@ duplicar movimientos de inventario.
   (2026-08-28, `findByIdConBloqueo` en CxC y CxP).
 - [x] Hacer atómico "validar límite + crear exposición crediticia" (2026-08-28,
   `ClienteService.obtenerParaActualizarCredito` + `VentaServiceImpl.completar`).
-- [ ] Añadir `CHECK` de base de datos para montos positivos, saldos no negativos y
-  combinaciones de estado críticas.
+- [x] Añadir `CHECK` de base de datos para montos positivos, saldos no negativos y
+  combinaciones de estado críticas (2026-08-29 — ver detalle abajo).
 - [ ] Revisar todos los flujos `find -> validar -> save` monetarios.
 - [ ] Traducir conflictos de concurrencia a códigos HTTP y mensajes consistentes.
 
@@ -883,7 +902,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | Completa salvo matriz de agregados formal, `CHECK` de BD y revisión general de flujos monetarios | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 17 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular) y FEL (reintentar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. Queda: `CHECK` de BD para montos/saldos/estados y una revisión sistemática de flujos `find -> validar -> save` monetarios fuera de los ya cubiertos. |
+| 3 — Concurrencia | Completa salvo revisión general de flujos monetarios y traducción de conflictos a códigos HTTP consistentes | Sin commitear aún | `mvn verify` (con Docker): 536 unitarios + 22 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular) y FEL (reintentar/anular). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD agregados en los 10 módulos monetarios/de cantidad tocados en la fase, verificados con `CheckConstraintsIT`. Queda: revisión sistemática de flujos `find -> validar -> save` fuera de los ya cubiertos, y traducir conflictos de concurrencia a códigos HTTP/mensajes consistentes. |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

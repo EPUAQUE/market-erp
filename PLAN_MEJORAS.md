@@ -349,11 +349,23 @@ una operación de negocio y ninguna venta confirmada se pierde localmente.
 
 **Confirmado en código (2026-08-28):** Inventario ya tiene `PESSIMISTIC_WRITE`
 (`InventarioJpaRepository.java:23`, usado en `InventarioServiceImpl`) — esa parte de
-la fase ya está resuelta, mantenerla así. Caja, CxC, CxP, crédito de cliente y gasto
-programado NO tienen ninguna protección de concurrencia (solo `findById` + validación
-en memoria, sin `@Lock`, sin `@Version`, sin `CHECK` ni restricción única en BD). No
-existen tests de integración con Testcontainers para estos flujos, solo unitarios con
-mocks. Toda la fase sigue pendiente salvo el punto de inventario.
+la fase ya está resuelta, mantenerla así. Caja, CxC, CxP y gasto programado NO tienen
+ninguna protección de concurrencia (solo `findById` + validación en memoria, sin
+`@Lock`, sin `@Version`, sin `CHECK` ni restricción única en BD). No existen tests
+de integración con Testcontainers para estos flujos, solo unitarios con mocks. El
+resto de la fase sigue pendiente.
+
+**Resuelto (2026-08-28) — Crédito de cliente:** `VentaServiceImpl.validarLimiteCredito`
+leía el cliente con `ClienteService.obtener` (sin bloqueo) — dos ventas a crédito casi
+simultáneas del mismo cliente podían leer el mismo saldo pendiente y juntas exceder el
+límite aunque cada una, evaluada sola, no lo hiciera. Se agregó
+`ClienteRepository.findByIdConBloqueo` (`@Lock(PESSIMISTIC_WRITE)`) y
+`ClienteService.obtenerParaActualizarCredito`, usado exclusivamente por
+`VentaServiceImpl.completar()` para serializar la validación entre ventas concurrentes
+del mismo cliente — la segunda venta espera a que la primera termine de commitear y ve
+el saldo ya actualizado. Cubierto por `ClienteServiceImplTest` (unitario) y por
+`VentaCreditoConcurrenciaIT` (Testcontainers/Postgres real): dos ventas a crédito
+concurrentes cercanas al límite — exactamente una tiene éxito, el saldo nunca lo supera.
 
 ### Problemas a cubrir
 
@@ -374,14 +386,15 @@ mocks. Toda la fase sigue pendiente salvo el punto de inventario.
 | Inventario | Mantener `PESSIMISTIC_WRITE` existente |
 | Caja | Bloqueo de sesión abierta + restricción única parcial |
 | CxC/CxP | `PESSIMISTIC_WRITE` o actualización condicional por saldo/estado |
-| Crédito cliente | Serializar por cliente o mantener saldo agregado bloqueable |
+| Crédito cliente | [x] Serializar por cliente (`PESSIMISTIC_WRITE` vía `findByIdConBloqueo`) |
 | Gasto programado | Clave única por gasto y período generado |
 | FEL | Correlativo atómico + idempotencia externa |
 
 - [ ] Agregar una restricción PostgreSQL que permita una sola caja abierta por tienda.
 - [ ] Bloquear la caja durante registrar movimiento y cerrar.
 - [ ] Hacer atómico “validar saldo + registrar cobro/pago + actualizar saldo”.
-- [ ] Hacer atómico “validar límite + crear exposición crediticia”.
+- [x] Hacer atómico "validar límite + crear exposición crediticia" (2026-08-28,
+  `ClienteService.obtenerParaActualizarCredito` + `VentaServiceImpl.completar`).
 - [ ] Añadir `CHECK` de base de datos para montos positivos, saldos no negativos y
   combinaciones de estado críticas.
 - [ ] Revisar todos los flujos `find -> validar -> save` monetarios.
@@ -393,7 +406,8 @@ mocks. Toda la fase sigue pendiente salvo el punto de inventario.
 - [ ] Diez movimientos paralelos: saldo final exacto.
 - [ ] Cierre concurrente con venta: resultado serializable y auditable.
 - [ ] Dos cobros sobre el último saldo: nunca hay saldo negativo.
-- [ ] Dos ventas de crédito cercanas al límite: nunca se supera el límite.
+- [x] Dos ventas de crédito cercanas al límite: nunca se supera el límite
+  (`VentaCreditoConcurrenciaIT`, 2026-08-28).
 - [ ] Dos ejecuciones del mismo gasto/período: un solo pago.
 - [ ] Ejecutar contra PostgreSQL real, no H2 ni únicamente mocks.
 
@@ -804,7 +818,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
-| 3 — Concurrencia | Pendiente | | | |
+| 3 — Concurrencia | Crédito de cliente resuelto, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 535 unitarios + 9 IT, `BUILD SUCCESS` (incluye `VentaCreditoConcurrenciaIT`) | Serialización por `PESSIMISTIC_WRITE` del cliente al validar límite de crédito en ventas CREDITO/MIXTO. Caja, CxC/CxP y gasto programado siguen sin protección de concurrencia. |
 | 4 — Sesiones/seguridad | Pendiente | | | |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |

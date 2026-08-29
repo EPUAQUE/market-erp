@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -51,6 +52,33 @@ public class GlobalExceptionHandler {
         meterRegistry.counter(METRICA_CONFLICTO, "codigo", ex.errorCode()).increment();
         ApiErrorResponse body = errorBody(ex.httpStatus(), ex.errorCode(), ex.getMessage(), request);
         return ResponseEntity.status(ex.httpStatus()).body(body);
+    }
+
+    /**
+     * Fase 3 (PLAN_MEJORAS.md): el punto de traducción para conflictos de
+     * concurrencia a nivel de infraestructura, no de negocio — a diferencia de
+     * {@code BusinessException} (p. ej. {@code EstadoVentaInvalidoException},
+     * lanzada cuando la relectura tras un {@code PESSIMISTIC_WRITE} confirma que
+     * otra transacción ya cambió el estado), esto cubre el caso en que Postgres
+     * mismo aborta la transacción por contención — un deadlock detectado
+     * (SQLState 40P01) o una espera de lock que agota el tiempo, ambos
+     * traducidos por Spring a subclases de {@code ConcurrencyFailureException}.
+     * Sin este handler, cualquiera de esos casos caía en el
+     * {@code @ExceptionHandler(Exception.class)} genérico y respondía 500 —
+     * indistinguible de un error real para el cliente, que en este caso solo
+     * necesita reintentar la misma operación.
+     */
+    @ExceptionHandler(ConcurrencyFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handleConcurrencyConflict(
+            ConcurrencyFailureException ex, HttpServletRequest request) {
+        meterRegistry.counter(METRICA_CONFLICTO, "codigo", "CONFLICTO_CONCURRENCIA").increment();
+        ApiErrorResponse body = errorBody(
+                HttpStatus.CONFLICT, "CONFLICTO_CONCURRENCIA",
+                "Otra operación está modificando el mismo recurso en este momento. Intente de nuevo.", request);
+        log.warn(
+                "Conflicto de concurrencia en {} [correlationId={}]", request.getRequestURI(), body.correlationId(),
+                ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     /** Cubre las denegaciones multi-tienda de {@code AutorizacionTiendaServiceImpl} (Fase 2). */

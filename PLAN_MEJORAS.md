@@ -609,17 +609,57 @@ login) — el bloqueo real queda pendiente, documentado en el hallazgo de abajo.
 Cubierto por `UsuarioTest`, `AuthServiceImplTest`, `UsuarioServiceImplTest`,
 `AuthControllerTest`, `UsuarioControllerTest` y `TemporaryPasswordGeneratorTest`.
 
+**Resuelto (2026-08-29) — Revalidación por petición (`sver`) y revocar sesiones:**
+implementado el mecanismo que la decisión de alcance de arriba había dejado
+pendiente. El access token ahora lleva dos claims nuevos, `sver`
+(`Usuario.versionSeguridad` al emitir) y `debeCambiarPassword`
+(`AccessTokenIssuerImpl`). `SecurityVersionValidator` (nuevo
+`OAuth2TokenValidator<Jwt>`, registrado en `JwtConfig.defaultValidators`) revalida
+`sver` contra la BD en **toda petición autenticada** — a diferencia de
+`PermissionInterceptor`, que solo corre en endpoints anotados
+`@RequiresPermission` — y rechaza el token con `401` si la versión no coincide, el
+usuario no existe o no está activo; cualquier cambio de contraseña,
+bloqueo/desactivación o revocación de sesiones invalida así de inmediato los access
+tokens ya emitidos, sin esperar su `exp`. `DebeCambiarPasswordFilter` (nuevo,
+registrado tras `BearerTokenAuthenticationFilter` en `SecurityConfig`) lee el claim
+`debeCambiarPassword` y bloquea con `403 DEBE_CAMBIAR_PASSWORD` cualquier ruta que no
+sea `/api/v1/auth/password`, `/logout` o `/me` — cierra el bloqueo real que había
+quedado pendiente arriba. Nuevo endpoint
+`POST /api/v1/usuarios/{usuarioId}/sesiones/revocar` (permiso
+`USUARIOS_REVOCAR_SESIONES`, solo ADMIN, migración `013-seed-permiso-revocar-sesiones.xml`)
+expone "revocar sesiones activas de otro usuario" sin tocar su contraseña ni su
+estado — nuevo método de dominio `Usuario.revocarSesiones()` (solo sube
+`versionSeguridad`) + `UsuarioServiceImpl.revocarSesiones` (revoca también todos sus
+refresh tokens, mismo patrón que `cambiarMiPassword`/`restablecerPassword`). Cubierto
+por `UsuarioTest`, `UsuarioServiceImplTest`, `UsuarioControllerTest` (nuevos casos) y
+`SecurityVersionValidatorTest`/`DebeCambiarPasswordFilterTest` (nuevos, unitarios).
+Documentado en `seguridad-desarrolladores.md` §5. Verificado con `mvn verify` contra
+Postgres real (Testcontainers): 564 unitarios + 24 IT, `BUILD SUCCESS` — el contexto
+Spring arranca correctamente con `SecurityVersionValidator` inyectado en `JwtConfig`.
+
+**Resuelto (2026-08-29) — Cabeceras de seguridad:** `deploy/Caddyfile` (borde público)
+y `market-backoffice/nginx.conf` (defensa en profundidad si se accede al contenedor
+sin pasar por Caddy) ahora agregan `Strict-Transport-Security`,
+`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (geolocation/
+cámara/micrófono/pagos deshabilitados) y `Content-Security-Policy` (`default-src
+'self'`, permitiendo `fonts.googleapis.com`/`fonts.gstatic.com` para Plus Jakarta
+Sans, que el backoffice carga vía `@import` en `main.css`). Sin probar en un
+despliegue real (solo revisado por configuración) — verificar que Google Fonts siga
+cargando y que ninguna feature del backoffice dependa de un origen no listado en el
+CSP antes de producción.
+
 ### Tareas
 
 - [ ] Conservar o volver a solicitar la tienda activa de forma segura tras restaurar
   (no verificado en esta pasada).
 - [x] Implementar cambio de contraseña y flujo administrativo de restablecimiento
   (2026-08-29 — ver detalle arriba; el bloqueo server-side por `debe_cambiar_password`
-  queda pendiente, solapado con la tarea de abajo).
-- [ ] Permitir revocar sesiones/dispositivos activos de un usuario. Incluye construir
-  la revalidación por petición (versión de seguridad/`sver`) que
-  seguridad-desarrolladores.md §5 documentaba como ya implementada y no lo está — ver
-  hallazgo 2026-08-29.
+  ya no está pendiente, ver el hallazgo de `sver` justo arriba).
+- [x] Permitir revocar sesiones/dispositivos activos de un usuario. Incluye la
+  revalidación por petición (versión de seguridad/`sver`) que
+  seguridad-desarrolladores.md §5 documentaba como ya implementada y no lo estaba —
+  resuelto 2026-08-29, ver detalle arriba.
 - [ ] Evaluar MFA para administradores y auditores.
 - [ ] Sustituir o complementar el rate limiter en memoria con un almacén compartido si
   habrá múltiples instancias (sigue pendiente; no aplica hoy — instancia única).
@@ -630,8 +670,8 @@ Cubierto por `UsuarioTest`, `AuthServiceImplTest`, `UsuarioServiceImplTest`,
   y `src/test/resources/certs/test-private.pem` siguen commiteadas (la de producción,
   `deploy/certs/prod-private.pem`, no está trackeada).
 - [ ] Probar rotación de llaves JWT manteniendo temporalmente validación de la anterior.
-- [ ] Revisar cabeceras CSP, `X-Content-Type-Options`, `Referrer-Policy` y permisos del
-  navegador en Caddy/Nginx.
+- [x] Revisar cabeceras CSP, `X-Content-Type-Options`, `Referrer-Policy` y permisos del
+  navegador en Caddy/Nginx (2026-08-29 — ver detalle arriba).
 - [ ] Definir política de contraseña, bloqueo, recuperación y baja de empleados.
 
 ### Criterio de aceptación
@@ -1007,7 +1047,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | **Completa** | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 24 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular), venta (completar/anular) y usuario (asignarTienda/asignarGrupo, serializando la regla "no asignación mixta" entre las dos tablas usuario_tienda/usuario_grupo_tienda). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. `GlobalExceptionHandler` traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. |
-| 4 — Sesiones/seguridad | Rate limiter y cambio/restablecimiento de contraseña resueltos, resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 23 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`) — `debe_cambiar_password` nueva columna, señalizada en login pero sin bloqueo server-side (requiere la revalidación por petición que nunca se implementó, ver hallazgo). Resto (tienda activa tras restaurar, revocar sesiones + revalidación por petición, MFA, rate limiter distribuido, llaves JWT, cabeceras CSP, política de contraseña) sigue pendiente. |
+| 4 — Sesiones/seguridad | Rate limiter, cambio/restablecimiento de contraseña, `sver`/revocar sesiones y cabeceras de seguridad resueltos; resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 564 unitarios + 24 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`). `debe_cambiar_password` ahora sí bloquea el resto de la API vía claim + `DebeCambiarPasswordFilter`. `SecurityVersionValidator` revalida `sver` en toda petición autenticada; `POST /usuarios/{id}/sesiones/revocar` (`USUARIOS_REVOCAR_SESIONES`) revoca sesiones sin tocar contraseña/estado. Caddy + Nginx agregan CSP/HSTS/X-Content-Type-Options/Referrer-Policy/Permissions-Policy. Resto (tienda activa tras restaurar, MFA, rate limiter distribuido, retirar llave dev/test del repo, probar rotación de llaves JWT, política de contraseña/bloqueo/baja) sigue pendiente. |
 | 5 — CI/pruebas | Pendiente | | | |
 | 6 — Backups | Pendiente | | | |
 | 7 — Auditoría/observabilidad | Pendiente | | | |

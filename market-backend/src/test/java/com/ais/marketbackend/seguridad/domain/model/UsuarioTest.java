@@ -79,4 +79,15 @@ class UsuarioTest {
         assertThat(usuario.estaActivo()).isTrue();
         assertThat(usuario.getVersionSeguridad()).isEqualTo(2L);
     }
+
+    @Test
+    void revocarSesionesSubeVersionSinTocarPasswordNiEstado() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+
+        usuario.revocarSesiones();
+
+        assertThat(usuario.getVersionSeguridad()).isEqualTo(1L);
+        assertThat(usuario.getPasswordHash()).isEqualTo("hash");
+        assertThat(usuario.estaActivo()).isTrue();
+    }
 }

@@ -112,6 +112,14 @@ class UsuarioControllerTest {
                 .andExpect(jsonPath("$.passwordTemporal").value("Ab3dEfGhJk4mNpQrSt5u"));
     }
 
+    @Test
+    void revocarSesionesDelegaAlServicioYDevuelve204() throws Exception {
+        mockMvc.perform(post("/api/v1/usuarios/1/sesiones/revocar"))
+                .andExpect(status().isNoContent());
+
+        verify(usuarioService).revocarSesiones(1L);
+    }
+
     /** Mapper manual mínimo para el test — evita depender del bean generado por MapStruct en este módulo aislado. */
     private static class UsuarioApiMapperImplForTest implements UsuarioApiMapper {
         @Override

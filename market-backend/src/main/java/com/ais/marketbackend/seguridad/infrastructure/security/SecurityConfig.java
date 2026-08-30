@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -49,7 +50,8 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler()))
                 .headers(headers -> headers
                         .cacheControl(cache -> {})
-                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true)));
+                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true)))
+                .addFilterAfter(new DebeCambiarPasswordFilter(objectMapper), BearerTokenAuthenticationFilter.class);
 
         return http.build();
     }

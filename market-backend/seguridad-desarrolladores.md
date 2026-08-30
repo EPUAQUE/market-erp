@@ -134,13 +134,10 @@ composición; **sin** truncado ni normalización.
 - **`debe_cambiar_password`**: el login (`/auth/login`, `/auth/refresh`) incluye
   `debeCambiarPassword` en la respuesta cuando está marcado — el frontend debe forzar la
   pantalla de cambio antes de permitir cualquier otra acción. Cambiar la contraseña (por
-  cualquiera de los dos caminos de arriba) limpia la marca.
-  **Brecha conocida (Fase 4, PLAN_MEJORAS.md)**: esto es solo una señal — el backend NO
-  bloquea el resto de la API mientras la marca esté activa. Hacerlo requeriría revalidar
-  contra la BD en cada petición autenticada (activo/`sver`/`debe_cambiar_password`), un
-  mecanismo que tampoco existe hoy para nada más (ver nota de "revalida en cada petición"
-  más abajo — es aspiracional, no implementada). Construirlo de una vez cubriría también
-  la brecha de revocar sesiones activas.
+  cualquiera de los dos caminos de arriba) limpia la marca. El propio access token lleva
+  el claim `debeCambiarPassword`, y `DebeCambiarPasswordFilter` (ver §5) bloquea con `403
+  DEBE_CAMBIAR_PASSWORD` cualquier ruta que no sea `/api/v1/auth/password`, `/logout` o
+  `/me` mientras esté activo — ya no es solo una señal para el frontend.
 
 ---
 
@@ -152,9 +149,10 @@ composición; **sin** truncado ni normalización.
   `alg`. Se rechaza `alg=none`, algoritmos inesperados, `kid` desconocido y tokens
   malformados.
 - Claims del access token: `sub` (código público del usuario), `iss`, `aud`, `iat`,
-  `nbf`, `exp`, `jti`, y `tiendas` (tiendas activas del usuario, cuando aplique).
-  Tolerancia de reloj configurable (`clock-skew`, por defecto 30s). TTL corto (por
-  defecto 10 min).
+  `nbf`, `exp`, `jti`, `tiendas` (tiendas activas del usuario, cuando aplique), `sver`
+  (versión de seguridad del usuario al momento de emitir el token) y
+  `debeCambiarPassword`. Tolerancia de reloj configurable (`clock-skew`, por defecto
+  30s). TTL corto (por defecto 10 min).
 - El JWT **no cifra** su payload: **nunca** incluir contraseñas, hashes, sales, correos,
   nombres ni IP.
 
@@ -178,21 +176,22 @@ composición; **sin** truncado ni normalización.
 3. Cambiar `app.security.jwt.active-kid` al nuevo `kid` y montar su llave privada.
 4. Tras `exp` del último token firmado con la llave anterior, retirar la vieja.
 
-### Invalidación temprana (antes de `exp`) — **aspiracional, no implementada**
+### Invalidación temprana (antes de `exp`) y revocar sesiones
 
-El diseño original preveía una **versión de seguridad** del usuario
-(`version_seguridad`, incrementada por `Usuario.cambiarPassword`/`desactivar`/
-`bloquear`/`activar`) revalidada en cada petición contra la BD (con cache corta) para
-confirmar que la cuenta sigue activa y que la versión coincide con la del access token
-emitido. **Ese chequeo por petición nunca se implementó** — hoy `version_seguridad`
-solo se usa para invalidar el **refresh token** (revocado explícitamente en cambio de
-contraseña/desactivación) y no viaja como claim en el access token ni se revisa en
-`SecurityConfig`/`PermissionInterceptor`. Un access token ya emitido sigue siendo
-válido hasta su `exp` (TTL corto) sin importar qué le pase a la cuenta después —
-detectado al construir el restablecimiento administrativo de contraseña (Fase 4,
-PLAN_MEJORAS.md), que necesitaba justo este mecanismo para bloquear la API tras marcar
-`debe_cambiar_password`. Implementarlo (claim `sver` + revalidación por petición) es
-tarea pendiente separada, y resolvería de paso "revocar sesiones activas" del plan.
+`Usuario.versionSeguridad` (incrementada por `cambiarPassword`/
+`restablecerConPasswordTemporal`/`desactivar`/`bloquear`/`activar`/`revocarSesiones`)
+viaja en el access token como claim `sver` y se revalida en **cada petición
+autenticada** vía `SecurityVersionValidator` (`OAuth2TokenValidator<Jwt>`, registrado
+en `JwtConfig.defaultValidators`) — no solo en los endpoints anotados con
+`@RequiresPermission` (a diferencia de `PermissionInterceptor`), así que cierra el
+hueco para cualquier ruta autenticada. Si la versión no coincide, el usuario no existe
+o no está activo, el token se rechaza con `401 AUTHENTICATION_FAILED` aunque siga
+vigente su `exp` — cambiar contraseña, bloquear/desactivar la cuenta o revocar
+sesiones invalida de inmediato cualquier access token ya emitido, sin esperar el TTL.
+`POST /api/v1/usuarios/{usuarioId}/sesiones/revocar` (`USUARIOS_REVOCAR_SESIONES`,
+solo ADMIN) expone esto para revocar la sesión de otro usuario sin tocar su
+contraseña ni su estado — sube `versionSeguridad` y revoca todos sus refresh tokens
+(`UsuarioServiceImpl.revocarSesiones`).
 
 ---
 

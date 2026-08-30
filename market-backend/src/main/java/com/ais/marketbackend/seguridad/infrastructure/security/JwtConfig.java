@@ -62,22 +62,25 @@ public class JwtConfig {
     }
 
     @Bean
-    public NimbusJwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource, SeguridadProperties properties) {
+    public NimbusJwtDecoder jwtDecoder(
+            JWKSource<SecurityContext> jwkSource, SeguridadProperties properties,
+            SecurityVersionValidator securityVersionValidator) {
         JWSVerificationKeySelector<SecurityContext> keySelector =
                 new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, jwkSource);
         ConfigurableJWTProcessor<SecurityContext> jwtProcessor = new DefaultJWTProcessor<>();
         jwtProcessor.setJWSKeySelector(keySelector);
 
         NimbusJwtDecoder decoder = new NimbusJwtDecoder(jwtProcessor);
-        decoder.setJwtValidator(defaultValidators(properties));
+        decoder.setJwtValidator(defaultValidators(properties, securityVersionValidator));
         return decoder;
     }
 
-    private OAuth2TokenValidator<Jwt> defaultValidators(SeguridadProperties properties) {
+    private OAuth2TokenValidator<Jwt> defaultValidators(
+            SeguridadProperties properties, SecurityVersionValidator securityVersionValidator) {
         OAuth2TokenValidator<Jwt> timestamp = new JwtTimestampValidator(properties.jwt().clockSkew());
         OAuth2TokenValidator<Jwt> issuer = new JwtIssuerValidator(properties.jwt().issuer());
         OAuth2TokenValidator<Jwt> audience = new JwtClaimValidator<List<String>>(
                 "aud", audiences -> audiences != null && audiences.contains(properties.jwt().audience()));
-        return new DelegatingOAuth2TokenValidator<>(timestamp, issuer, audience);
+        return new DelegatingOAuth2TokenValidator<>(timestamp, issuer, audience, securityVersionValidator);
     }
 }

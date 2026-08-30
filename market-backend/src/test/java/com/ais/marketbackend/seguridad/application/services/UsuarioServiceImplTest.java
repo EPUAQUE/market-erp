@@ -385,4 +385,26 @@ class UsuarioServiceImplTest {
         assertThatThrownBy(() -> usuarioService.restablecerPassword(99L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    @Test
+    void revocarSesionesSubeVersionYRevocaRefreshTokensSinTocarPassword() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-viejo");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        usuarioService.revocarSesiones(1L);
+
+        assertThat(usuario.getVersionSeguridad()).isEqualTo(1L);
+        assertThat(usuario.getPasswordHash()).isEqualTo("hash-viejo");
+        verify(usuarioRepository).save(usuario);
+        verify(refreshTokenRepository).revocarTodosDeUsuario(1L);
+    }
+
+    @Test
+    void revocarSesionesConUsuarioInexistenteLanzaNoEncontrado() {
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.revocarSesiones(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

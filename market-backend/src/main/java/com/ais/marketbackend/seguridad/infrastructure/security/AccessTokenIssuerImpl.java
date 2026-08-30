@@ -45,6 +45,8 @@ public class AccessTokenIssuerImpl implements AccessTokenIssuer {
                 .id(UUID.randomUUID().toString())
                 .claim("alcanceGlobal", permisos.alcanceGlobal())
                 .claim("tiendas", permisos.tiendaIds())
+                .claim("sver", usuario.getVersionSeguridad())
+                .claim("debeCambiarPassword", usuario.isDebeCambiarPassword())
                 .build();
 
         String token = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

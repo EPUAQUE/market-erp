@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 4 del plan (PLAN_MEJORAS.md): permiso administrativo para revocar las
+         sesiones activas de otro usuario (refresh tokens + access tokens ya
+         emitidos, vía versión de seguridad) sin cambiar su contraseña ni estado
+         (UsuarioServiceImpl.revocarSesiones). -->
+    <changeSet id="seguridad-013-seed-permiso-revocar-sesiones" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="USUARIOS_REVOCAR_SESIONES"/>
+            <column name="descripcion" value="Revocar las sesiones activas de otro usuario"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'USUARIOS_REVOCAR_SESIONES')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

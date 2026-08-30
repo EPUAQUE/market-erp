@@ -256,6 +256,18 @@ public class UsuarioServiceImpl implements UsuarioService {
         return passwordTemporal;
     }
 
+    @Override
+    @Transactional
+    public void revocarSesiones(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+        usuario.revocarSesiones();
+        usuarioRepository.save(usuario);
+        refreshTokenRepository.revocarTodosDeUsuario(usuarioId);
+        auditPublisher.publicar(
+                TipoEventoAuditoria.SESIONES_REVOCADAS, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
+    }
+
     private void exigirNoEscalaAlcanceGlobal(Rol rol) {
         if (rol.isAlcanceGlobal() && autorizacionTiendaService.tiendaIdsPermitidas().isPresent()) {
             throw new AccessDeniedException("No autorizado a asignar un rol de alcance global: " + rol.getNombre());

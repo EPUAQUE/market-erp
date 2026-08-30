@@ -65,4 +65,13 @@ public interface UsuarioService {
      * canal separado; nunca se persiste ni se registra en auditoría.
      */
     String restablecerPassword(Long usuarioId);
+
+    /**
+     * Revoca todas las sesiones activas de otro usuario: invalida de inmediato
+     * todos sus access tokens ya emitidos (versión de seguridad) y revoca todos
+     * sus refresh tokens — sin cambiar su contraseña ni su estado. Pensado para
+     * sospecha de sesión comprometida sin necesidad de forzar un cambio de
+     * contraseña.
+     */
+    void revocarSesiones(Long usuarioId);
 }

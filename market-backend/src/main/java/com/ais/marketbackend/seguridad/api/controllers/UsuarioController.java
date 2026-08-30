@@ -89,4 +89,16 @@ public class UsuarioController {
         String passwordTemporal = usuarioService.restablecerPassword(usuarioId);
         return ResponseEntity.ok(RestablecerPasswordResponse.builder().passwordTemporal(passwordTemporal).build());
     }
+
+    /**
+     * Revoca todas las sesiones activas de OTRO usuario (refresh tokens + access
+     * tokens ya emitidos, vía versión de seguridad) sin cambiar su contraseña ni
+     * su estado — p. ej. ante sospecha de sesión comprometida.
+     */
+    @PostMapping("/{usuarioId}/sesiones/revocar")
+    @RequiresPermission("USUARIOS_REVOCAR_SESIONES")
+    public ResponseEntity<Void> revocarSesiones(@PathVariable Long usuarioId) {
+        usuarioService.revocarSesiones(usuarioId);
+        return ResponseEntity.noContent().build();
+    }
 }

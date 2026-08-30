@@ -87,6 +87,17 @@ public class Usuario {
         incrementarVersionSeguridad();
     }
 
+    /**
+     * Invalida de inmediato todos los access tokens ya emitidos (ver
+     * {@code SecurityVersionValidator}) y deja sin efecto todos los refresh
+     * tokens vigentes, sin tocar contraseña ni estado — para cuando se sospecha
+     * de una sesión comprometida pero la cuenta y su contraseña siguen siendo
+     * válidas.
+     */
+    public void revocarSesiones() {
+        incrementarVersionSeguridad();
+    }
+
     private void incrementarVersionSeguridad() {
         this.versionSeguridad++;
     }

@@ -32,6 +32,12 @@ jobs:
         working-directory: market-backend/src/test/resources/certs
         run: ./generar-llaves.sh
 
+      # Llaves JWT de dev (mismo motivo): ProfileStartupIT arranca el
+      # perfil "local" real, que lee ./local-dev/certs/dev-public.pem.
+      - name: Generar llaves JWT de dev (perfil local)
+        working-directory: market-backend/local-dev/certs
+        run: ./generar-llaves.sh
+
       # `verify` encadena test (unitarios) -> *IT (Testcontainers/Postgres,
       # Docker ya viene en el runner) -> package (jar) en un solo comando.
       - name: mvn verify (unitarios + integración + jar)

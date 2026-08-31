@@ -8,7 +8,13 @@ class UsuariosService {
   }
 
   crear(username: string, password: string, nombre: string, telefono: string, correo: string) {
-    return apiClient.post<Usuario>(API_ENDPOINTS.usuarios.base, { username, password, nombre, telefono, correo })
+    return apiClient.post<Usuario>(API_ENDPOINTS.usuarios.base, {
+      username,
+      password,
+      nombre,
+      telefono,
+      correo,
+    })
   }
 
   listarTiendas(usuarioId: number) {

@@ -34,7 +34,12 @@ const permissions = usePermissionsStore()
 const tiendaId = ref<number | null>(null)
 const kardexProductoId = ref<number | null>(null)
 const showForm = ref(false)
-const form = ref({ productoId: '', cantidad: '', costoUnitario: '', tipoMovimiento: 'COMPRA' as TipoMovimiento })
+const form = ref({
+  productoId: '',
+  cantidad: '',
+  costoUnitario: '',
+  tipoMovimiento: 'COMPRA' as TipoMovimiento,
+})
 
 const TIPOS_MOVIMIENTO: TipoMovimiento[] = [
   'COMPRA',
@@ -51,7 +56,9 @@ function nombreProducto(productoId: number): string {
   return productos.value.find((p) => p.id === productoId)?.nombre ?? `#${productoId}`
 }
 
-const filaKardex = computed(() => (kardexProductoId.value !== null ? nombreProducto(kardexProductoId.value) : ''))
+const filaKardex = computed(() =>
+  kardexProductoId.value !== null ? nombreProducto(kardexProductoId.value) : '',
+)
 
 watch(tiendaId, (id) => {
   kardexProductoId.value = null
@@ -115,7 +122,9 @@ onMounted(async () => {
   <div class="mx-auto max-w-4xl space-y-6 p-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Inventario</h1>
-      <p class="text-sm text-mk-text/70">Existencia y costo promedio por tienda; kardex append-only por producto.</p>
+      <p class="text-sm text-mk-text/70">
+        Existencia y costo promedio por tienda; kardex append-only por producto.
+      </p>
     </header>
 
     <div class="flex items-center justify-between gap-3">
@@ -217,7 +226,11 @@ onMounted(async () => {
             <td class="mk-num px-4 py-2">{{ inv.existenciaActual }}</td>
             <td class="mk-num px-4 py-2">{{ inv.costoPromedioActual }}</td>
             <td class="px-4 py-2">
-              <button type="button" class="text-mk-primary hover:underline" @click="verKardex(inv.productoId)">
+              <button
+                type="button"
+                class="text-mk-primary hover:underline"
+                @click="verKardex(inv.productoId)"
+              >
                 Ver kardex
               </button>
             </td>
@@ -234,9 +247,16 @@ onMounted(async () => {
         <option :value="100">100 / página</option>
       </select>
       <div class="flex items-center gap-2">
-        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">Anterior</button>
+        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">
+          Anterior
+        </button>
         <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
-        <button type="button" :disabled="pagina >= totalPaginas" class="disabled:opacity-40" @click="pagina++">
+        <button
+          type="button"
+          :disabled="pagina >= totalPaginas"
+          class="disabled:opacity-40"
+          @click="pagina++"
+        >
           Siguiente
         </button>
       </div>
@@ -275,7 +295,10 @@ onMounted(async () => {
       </div>
 
       <div class="flex items-center justify-between text-sm text-mk-text/70">
-        <select v-model.number="movimientosTamano" class="rounded border border-mk-border bg-transparent px-2 py-1">
+        <select
+          v-model.number="movimientosTamano"
+          class="rounded border border-mk-border bg-transparent px-2 py-1"
+        >
           <option :value="10">10 / página</option>
           <option :value="25">25 / página</option>
           <option :value="50">50 / página</option>
@@ -291,7 +314,10 @@ onMounted(async () => {
             Anterior
           </button>
           <span>
-            Página {{ movimientosPagina }} de {{ movimientosTotalPaginas }} ({{ movimientosTotalElementos }} en total)
+            Página {{ movimientosPagina }} de {{ movimientosTotalPaginas }} ({{
+              movimientosTotalElementos
+            }}
+            en total)
           </span>
           <button
             type="button"

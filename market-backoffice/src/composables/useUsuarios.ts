@@ -60,9 +60,13 @@ export function useUsuarios() {
     tiendasLoading.value = true
     tiendasError.value = null
     try {
-      tiendasPorUsuario.value = { ...tiendasPorUsuario.value, [usuarioId]: await usuariosService.listarTiendas(usuarioId) }
+      tiendasPorUsuario.value = {
+        ...tiendasPorUsuario.value,
+        [usuarioId]: await usuariosService.listarTiendas(usuarioId),
+      }
     } catch (error) {
-      tiendasError.value = error instanceof ApiClientError ? error.message : 'No se pudieron cargar las tiendas asignadas.'
+      tiendasError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudieron cargar las tiendas asignadas.'
     } finally {
       tiendasLoading.value = false
     }
@@ -87,9 +91,13 @@ export function useUsuarios() {
     gruposLoading.value = true
     gruposError.value = null
     try {
-      gruposPorUsuario.value = { ...gruposPorUsuario.value, [usuarioId]: await usuariosService.listarGrupos(usuarioId) }
+      gruposPorUsuario.value = {
+        ...gruposPorUsuario.value,
+        [usuarioId]: await usuariosService.listarGrupos(usuarioId),
+      }
     } catch (error) {
-      gruposError.value = error instanceof ApiClientError ? error.message : 'No se pudieron cargar los grupos asignados.'
+      gruposError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudieron cargar los grupos asignados.'
     } finally {
       gruposLoading.value = false
     }
@@ -103,7 +111,8 @@ export function useUsuarios() {
       await cargarGrupos(usuarioId)
       return true
     } catch (error) {
-      asignarGrupoError.value = error instanceof ApiClientError ? error.message : 'No se pudo asignar el grupo.'
+      asignarGrupoError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo asignar el grupo.'
       return false
     } finally {
       asignarGrupoLoading.value = false

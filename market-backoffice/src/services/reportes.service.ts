@@ -8,7 +8,9 @@ class ReportesService {
   }
 
   reporteCompras(tiendaId: number, desde: string, hasta: string) {
-    return apiClient.get<ReporteCompras>(API_ENDPOINTS.reportes.compras(tiendaId), { params: { desde, hasta } })
+    return apiClient.get<ReporteCompras>(API_ENDPOINTS.reportes.compras(tiendaId), {
+      params: { desde, hasta },
+    })
   }
 }
 

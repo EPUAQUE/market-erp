@@ -18,6 +18,8 @@ export function useCaja() {
   const actionLoading = ref(false)
   const actionError = ref<string | null>(null)
 
+  let historialController: AbortController | null = null
+
   async function cargarAbierta(tiendaId: number) {
     sesionLoading.value = true
     sesionError.value = null
@@ -35,18 +37,26 @@ export function useCaja() {
   }
 
   async function cargarHistorial(tiendaId: number) {
+    historialController?.abort()
+    const controller = new AbortController()
+    historialController = controller
     historialLoading.value = true
     try {
       const resultado = await cajaService.listarPorTienda(
         tiendaId,
         historialPagina.value - 1,
         historialTamano.value,
+        controller.signal,
       )
+      if (controller.signal.aborted) return
       historial.value = resultado.contenido
       historialTotalElementos.value = resultado.totalElementos
       historialTotalPaginas.value = resultado.totalPaginas
+    } catch (error) {
+      if (error instanceof ApiClientError && error.isCanceled) return
+      throw error
     } finally {
-      historialLoading.value = false
+      if (historialController === controller) historialLoading.value = false
     }
   }
 
@@ -71,7 +81,8 @@ export function useCaja() {
       sesionAbierta.value = await cajaService.registrarMovimiento(tiendaId, datos)
       return true
     } catch (error) {
-      actionError.value = error instanceof ApiClientError ? error.message : 'No se pudo registrar el movimiento.'
+      actionError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo registrar el movimiento.'
       return false
     } finally {
       actionLoading.value = false

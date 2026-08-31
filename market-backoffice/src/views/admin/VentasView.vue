@@ -174,7 +174,10 @@ onMounted(async () => {
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <select v-model="tiendaId" class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm">
+      <select
+        v-model="tiendaId"
+        class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+      >
         <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
       </select>
       <button
@@ -313,7 +316,11 @@ onMounted(async () => {
             </td>
             <td class="mk-num px-4 py-2">{{ venta.total }}</td>
             <td class="px-4 py-2">
-              <button type="button" class="mr-3 text-mk-primary hover:underline" @click="toggleDetalle(venta)">
+              <button
+                type="button"
+                class="mr-3 text-mk-primary hover:underline"
+                @click="toggleDetalle(venta)"
+              >
                 {{ detalleAbiertoId === venta.id ? 'Ocultar' : 'Ver líneas' }}
               </button>
               <button
@@ -346,9 +353,16 @@ onMounted(async () => {
         <option :value="100">100 / página</option>
       </select>
       <div class="flex items-center gap-2">
-        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">Anterior</button>
+        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">
+          Anterior
+        </button>
         <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
-        <button type="button" :disabled="pagina >= totalPaginas" class="disabled:opacity-40" @click="pagina++">
+        <button
+          type="button"
+          :disabled="pagina >= totalPaginas"
+          class="disabled:opacity-40"
+          @click="pagina++"
+        >
           Siguiente
         </button>
       </div>
@@ -367,7 +381,11 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="linea in ventaEnDetalle.lineas" :key="linea.id" class="border-b border-mk-border last:border-0">
+            <tr
+              v-for="linea in ventaEnDetalle.lineas"
+              :key="linea.id"
+              class="border-b border-mk-border last:border-0"
+            >
               <td class="px-4 py-2">
                 <img
                   v-if="imagenProducto(linea.productoId)"

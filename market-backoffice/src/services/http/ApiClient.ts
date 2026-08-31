@@ -6,6 +6,7 @@ import { ApiClientError, mapAxiosError } from './error.mapper'
 
 export interface ApiRequestOptions {
   requiresAuth?: boolean
+  signal?: AbortSignal
 }
 
 declare module 'axios' {
@@ -83,20 +84,33 @@ axiosInstance.interceptors.response.use(
   },
 )
 
+/** Exportado para el intento de refresh silencioso al montar la app (ver auth.store.ts) — reusa el mismo dedupe de refresh-en-vuelo que el interceptor de 401. */
+export { refreshAccessToken }
+
 export const apiClient = {
   get<T>(url: string, options?: ApiRequestOptions & { params?: Record<string, unknown> }) {
     return axiosInstance
-      .get<T>(url, { requiresAuth: options?.requiresAuth, params: options?.params })
+      .get<T>(url, {
+        requiresAuth: options?.requiresAuth,
+        params: options?.params,
+        signal: options?.signal,
+      })
       .then((r) => r.data)
   },
   post<T>(url: string, body?: unknown, options?: ApiRequestOptions) {
-    return axiosInstance.post<T>(url, body, { requiresAuth: options?.requiresAuth }).then((r) => r.data)
+    return axiosInstance
+      .post<T>(url, body, { requiresAuth: options?.requiresAuth, signal: options?.signal })
+      .then((r) => r.data)
   },
   put<T>(url: string, body?: unknown, options?: ApiRequestOptions) {
-    return axiosInstance.put<T>(url, body, { requiresAuth: options?.requiresAuth }).then((r) => r.data)
+    return axiosInstance
+      .put<T>(url, body, { requiresAuth: options?.requiresAuth, signal: options?.signal })
+      .then((r) => r.data)
   },
   delete<T>(url: string, options?: ApiRequestOptions) {
-    return axiosInstance.delete<T>(url, { requiresAuth: options?.requiresAuth }).then((r) => r.data)
+    return axiosInstance
+      .delete<T>(url, { requiresAuth: options?.requiresAuth, signal: options?.signal })
+      .then((r) => r.data)
   },
 }
 

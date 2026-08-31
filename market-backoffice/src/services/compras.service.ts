@@ -10,9 +10,10 @@ export interface DatosLineaCompra {
 }
 
 class ComprasService {
-  listarPorTienda(tiendaId: number, pagina: number, tamano: number) {
+  listarPorTienda(tiendaId: number, pagina: number, tamano: number, signal?: AbortSignal) {
     return apiClient.get<Pagina<Compra>>(API_ENDPOINTS.compras.porTienda(tiendaId), {
       params: { page: pagina, size: tamano },
+      signal,
     })
   }
 

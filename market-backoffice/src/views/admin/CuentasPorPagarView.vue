@@ -62,12 +62,13 @@ onMounted(async () => {
   <div class="mx-auto max-w-5xl space-y-6 p-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Cuentas por pagar</h1>
-      <p class="text-sm text-mk-text/70">
-        Deudas con proveedores generadas al recibir una compra.
-      </p>
+      <p class="text-sm text-mk-text/70">Deudas con proveedores generadas al recibir una compra.</p>
     </header>
 
-    <select v-model="tiendaId" class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm">
+    <select
+      v-model="tiendaId"
+      class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+    >
       <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
     </select>
 
@@ -104,11 +105,19 @@ onMounted(async () => {
               <EstadoBadge :variant="estadoVisual(cuenta).variant" :label="estadoVisual(cuenta).label" />
             </td>
             <td class="px-4 py-2">
-              <button type="button" class="mr-3 text-mk-primary hover:underline" @click="toggleDetalle(cuenta)">
+              <button
+                type="button"
+                class="mr-3 text-mk-primary hover:underline"
+                @click="toggleDetalle(cuenta)"
+              >
                 {{ detalleAbiertoId === cuenta.id ? 'Ocultar' : 'Ver pagos' }}
               </button>
               <button
-                v-if="cuenta.estado === 'PENDIENTE' && cuenta.pagos.length === 0 && permissions.can('CUENTAS_POR_PAGAR_ANULAR')"
+                v-if="
+                  cuenta.estado === 'PENDIENTE' &&
+                  cuenta.pagos.length === 0 &&
+                  permissions.can('CUENTAS_POR_PAGAR_ANULAR')
+                "
                 type="button"
                 class="text-mk-danger hover:underline"
                 @click="onAnular(cuenta)"
@@ -160,7 +169,11 @@ onMounted(async () => {
             <tr v-if="cuentaEnDetalle.pagos.length === 0">
               <td colspan="2" class="px-4 py-6 text-center text-mk-text/60">Sin pagos registrados.</td>
             </tr>
-            <tr v-for="pago in cuentaEnDetalle.pagos" :key="pago.id" class="border-b border-mk-border last:border-0">
+            <tr
+              v-for="pago in cuentaEnDetalle.pagos"
+              :key="pago.id"
+              class="border-b border-mk-border last:border-0"
+            >
               <td class="px-4 py-2">{{ new Date(pago.fecha).toLocaleString() }}</td>
               <td class="mk-num px-4 py-2">{{ pago.monto }}</td>
             </tr>

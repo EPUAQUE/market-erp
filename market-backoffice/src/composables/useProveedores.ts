@@ -45,7 +45,8 @@ export function useProveedores() {
       items.value = items.value.map((p) => (p.id === id ? actualizado : p))
       return true
     } catch (error) {
-      saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo actualizar el proveedor.'
+      saveError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo actualizar el proveedor.'
       return false
     } finally {
       saveLoading.value = false

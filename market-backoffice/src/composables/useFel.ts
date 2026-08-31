@@ -30,7 +30,8 @@ export function useFel() {
       items.value = [...items.value, creado]
       return true
     } catch (error) {
-      emitirError.value = error instanceof ApiClientError ? error.message : 'No se pudo emitir el documento FEL.'
+      emitirError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo emitir el documento FEL.'
       return false
     } finally {
       emitirLoading.value = false
@@ -43,7 +44,8 @@ export function useFel() {
       const actualizado = await felService.reintentar(tiendaId, documento.id)
       items.value = items.value.map((d) => (d.id === documento.id ? actualizado : d))
     } catch (error) {
-      listError.value = error instanceof ApiClientError ? error.message : 'No se pudo reintentar la certificación.'
+      listError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo reintentar la certificación.'
     }
   }
 

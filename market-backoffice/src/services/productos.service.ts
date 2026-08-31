@@ -22,8 +22,11 @@ export interface DatosProductoTienda {
 }
 
 class ProductosService {
-  listar(pagina: number, tamano: number) {
-    return apiClient.get<Pagina<Producto>>(API_ENDPOINTS.productos.base, { params: { page: pagina, size: tamano } })
+  listar(pagina: number, tamano: number, signal?: AbortSignal) {
+    return apiClient.get<Pagina<Producto>>(API_ENDPOINTS.productos.base, {
+      params: { page: pagina, size: tamano },
+      signal,
+    })
   }
 
   crear(codigoInterno: string, datos: DatosProducto) {

@@ -48,7 +48,8 @@ export const API_ENDPOINTS = {
     imagen: (id: number) => `/api/v1/productos/${id}/imagen`,
     tiendas: (productoId: number) => `/api/v1/productos/${productoId}/tiendas`,
     tiendaPorId: (productoId: number, id: number) => `/api/v1/productos/${productoId}/tiendas/${id}`,
-    tiendaActivar: (productoId: number, id: number) => `/api/v1/productos/${productoId}/tiendas/${id}/activar`,
+    tiendaActivar: (productoId: number, id: number) =>
+      `/api/v1/productos/${productoId}/tiendas/${id}/activar`,
     tiendaDesactivar: (productoId: number, id: number) =>
       `/api/v1/productos/${productoId}/tiendas/${id}/desactivar`,
     porTienda: (tiendaId: number) => `/api/v1/productos/tiendas/${tiendaId}`,
@@ -107,7 +108,8 @@ export const API_ENDPOINTS = {
     porTienda: (tiendaId: number) => `/api/v1/gastos-programados/tiendas/${tiendaId}`,
     porId: (tiendaId: number, id: number) => `/api/v1/gastos-programados/tiendas/${tiendaId}/${id}`,
     activar: (tiendaId: number, id: number) => `/api/v1/gastos-programados/tiendas/${tiendaId}/${id}/activar`,
-    desactivar: (tiendaId: number, id: number) => `/api/v1/gastos-programados/tiendas/${tiendaId}/${id}/desactivar`,
+    desactivar: (tiendaId: number, id: number) =>
+      `/api/v1/gastos-programados/tiendas/${tiendaId}/${id}/desactivar`,
     generarPago: (tiendaId: number, id: number) =>
       `/api/v1/gastos-programados/tiendas/${tiendaId}/${id}/generar-pago`,
   },

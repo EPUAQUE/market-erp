@@ -48,7 +48,7 @@ describe('useCompras', () => {
 
     await cargar(1)
 
-    expect(comprasService.listarPorTienda).toHaveBeenCalledWith(1, 1, 10)
+    expect(comprasService.listarPorTienda).toHaveBeenCalledWith(1, 1, 10, expect.any(AbortSignal))
     expect(items.value).toHaveLength(1)
     expect(totalElementos.value).toBe(15)
     expect(totalPaginas.value).toBe(2)
@@ -79,7 +79,7 @@ describe('useCompras', () => {
     const ok = await crear(1, 2, [{ productoId: 10, cantidad: '10', costoUnitario: '5.00' }])
 
     expect(ok).toBe(true)
-    expect(comprasService.listarPorTienda).toHaveBeenCalledWith(1, 0, 10)
+    expect(comprasService.listarPorTienda).toHaveBeenCalledWith(1, 0, 10, expect.any(AbortSignal))
     expect(items.value).toHaveLength(1)
   })
 
@@ -118,7 +118,11 @@ describe('useCompras', () => {
   it('anular con error de negocio guarda el mensaje sin tocar la lista', async () => {
     const original = compra({ estado: 'RECIBIDA' })
     vi.mocked(comprasService.anular).mockRejectedValue(
-      new ApiClientError({ message: 'Estado inválido para anular', status: 400, code: 'ESTADO_COMPRA_INVALIDO' }),
+      new ApiClientError({
+        message: 'Estado inválido para anular',
+        status: 400,
+        code: 'ESTADO_COMPRA_INVALIDO',
+      }),
     )
     const { items, listError, anular, cargar } = useCompras()
     vi.mocked(comprasService.listarPorTienda).mockResolvedValue({

@@ -6,8 +6,19 @@ import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { FrecuenciaGasto, GastoProgramado } from '@/types/gastoProgramado'
 
-const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, activar, desactivar, generarPago } =
-  useGastosProgramados()
+const {
+  items,
+  listLoading,
+  listError,
+  saveLoading,
+  saveError,
+  cargar,
+  crear,
+  actualizar,
+  activar,
+  desactivar,
+  generarPago,
+} = useGastosProgramados()
 const { items: tiendas, cargar: cargarTiendas } = useTiendas()
 const permissions = usePermissionsStore()
 
@@ -86,13 +97,16 @@ onMounted(async () => {
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Gastos programados</h1>
       <p class="text-sm text-mk-text/70">
-        Gastos recurrentes de la tienda (renta, servicios, planilla). Generar pago registra el ciclo vencido y, si
-        hay una caja abierta, lo refleja como egreso.
+        Gastos recurrentes de la tienda (renta, servicios, planilla). Generar pago registra el ciclo vencido
+        y, si hay una caja abierta, lo refleja como egreso.
       </p>
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <select v-model="tiendaId" class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm">
+      <select
+        v-model="tiendaId"
+        class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+      >
         <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
       </select>
       <button
@@ -185,10 +199,17 @@ onMounted(async () => {
             <td class="px-4 py-2">{{ gasto.frecuencia }}</td>
             <td class="px-4 py-2">{{ new Date(gasto.proximaFecha).toLocaleDateString() }}</td>
             <td class="px-4 py-2">
-              <EstadoBadge :variant="gasto.activo ? 'success' : 'neutral'" :label="gasto.activo ? 'Activo' : 'Inactivo'" />
+              <EstadoBadge
+                :variant="gasto.activo ? 'success' : 'neutral'"
+                :label="gasto.activo ? 'Activo' : 'Inactivo'"
+              />
             </td>
             <td class="px-4 py-2">
-              <button type="button" class="mr-3 text-mk-primary hover:underline" @click="toggleDetalle(gasto)">
+              <button
+                type="button"
+                class="mr-3 text-mk-primary hover:underline"
+                @click="toggleDetalle(gasto)"
+              >
                 {{ detalleAbiertoId === gasto.id ? 'Ocultar' : 'Ver pagos' }}
               </button>
               <button

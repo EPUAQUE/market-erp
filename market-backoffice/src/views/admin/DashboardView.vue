@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import {
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LinearScale,
-  Tooltip,
-} from 'chart.js'
+import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Tooltip } from 'chart.js'
 import { Bar } from 'vue-chartjs'
 import { useDashboard } from '@/composables/useDashboard'
 import { useDashboardGrupo } from '@/composables/useDashboardGrupo'
@@ -147,11 +140,18 @@ function tipoVencimientoLabel(tipo: string): string {
       <div class="space-y-1">
         <h1 class="text-xl font-semibold text-mk-text">Dashboard</h1>
         <p class="text-sm text-mk-text-muted">
-          {{ modo === 'tienda' ? 'Resumen ejecutivo de indicadores de la tienda.' : 'Resumen agregado del grupo de tiendas.' }}
+          {{
+            modo === 'tienda'
+              ? 'Resumen ejecutivo de indicadores de la tienda.'
+              : 'Resumen agregado del grupo de tiendas.'
+          }}
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
-        <div v-if="gruposVisibles.length > 0" class="mk-btn-group flex overflow-hidden rounded border border-mk-border text-sm">
+        <div
+          v-if="gruposVisibles.length > 0"
+          class="mk-btn-group flex overflow-hidden rounded border border-mk-border text-sm"
+        >
           <button
             type="button"
             class="px-3 py-1.5"
@@ -172,7 +172,9 @@ function tipoVencimientoLabel(tipo: string): string {
 
         <template v-if="modo === 'tienda'">
           <select v-if="tiendasVisibles.length > 1" v-model="tiendaId" class="mk-input w-56">
-            <option v-for="tienda in tiendasVisibles" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
+            <option v-for="tienda in tiendasVisibles" :key="tienda.id" :value="tienda.id">
+              {{ tienda.nombre }}
+            </option>
           </select>
           <p v-else-if="tiendasVisibles.length === 1" class="text-sm font-medium text-mk-text">
             {{ tiendasVisibles[0].nombre }}
@@ -180,7 +182,9 @@ function tipoVencimientoLabel(tipo: string): string {
         </template>
         <template v-else>
           <select v-if="gruposVisibles.length > 1" v-model="grupoId" class="mk-input w-56">
-            <option v-for="grupo in gruposVisibles" :key="grupo.id" :value="grupo.id">{{ grupo.nombre }}</option>
+            <option v-for="grupo in gruposVisibles" :key="grupo.id" :value="grupo.id">
+              {{ grupo.nombre }}
+            </option>
           </select>
           <p v-else-if="gruposVisibles.length === 1" class="text-sm font-medium text-mk-text">
             {{ gruposVisibles[0].nombre }}
@@ -194,9 +198,7 @@ function tipoVencimientoLabel(tipo: string): string {
       <p v-else-if="errorGrupo" class="text-sm text-mk-danger" role="alert">{{ errorGrupo }}</p>
 
       <div v-else-if="resumenGrupo" class="space-y-6">
-        <p class="text-sm text-mk-text-muted">
-          {{ resumenGrupo.tiendaIds.length }} tienda(s) en el grupo.
-        </p>
+        <p class="text-sm text-mk-text-muted">{{ resumenGrupo.tiendaIds.length }} tienda(s) en el grupo.</p>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div class="mk-card space-y-1 p-4">
@@ -213,14 +215,16 @@ function tipoVencimientoLabel(tipo: string): string {
             <p class="text-sm text-mk-text-muted">Ticket promedio</p>
             <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.ticketPromedioMes }}</p>
             <p class="text-sm text-mk-text-muted">
-              {{ resumenGrupo.facturasEmitidasMes }} factura(s), {{ resumenGrupo.facturasFelCertificadasMes }} certificada(s) FEL
+              {{ resumenGrupo.facturasEmitidasMes }} factura(s),
+              {{ resumenGrupo.facturasFelCertificadasMes }} certificada(s) FEL
             </p>
           </div>
           <div v-if="resumenGrupo.utilidadMesTotal !== null" class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Utilidad del mes</p>
             <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.utilidadMesTotal }}</p>
             <p class="text-sm text-mk-text-muted">
-              Margen: {{ resumenGrupo.margenPromedioMes ?? '—' }}<span v-if="resumenGrupo.margenPromedioMes">%</span>
+              Margen: {{ resumenGrupo.margenPromedioMes ?? '—'
+              }}<span v-if="resumenGrupo.margenPromedioMes">%</span>
             </p>
           </div>
         </div>
@@ -228,23 +232,33 @@ function tipoVencimientoLabel(tipo: string): string {
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Inventario valorizado</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.inventarioValorizadoTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ resumenGrupo.inventarioValorizadoTotal }}
+            </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Productos agotados</p>
-            <p class="mk-num text-2xl font-semibold" :class="resumenGrupo.productosAgotados > 0 ? 'text-mk-danger' : 'text-mk-text'">
+            <p
+              class="mk-num text-2xl font-semibold"
+              :class="resumenGrupo.productosAgotados > 0 ? 'text-mk-danger' : 'text-mk-text'"
+            >
               {{ resumenGrupo.productosAgotados }}
             </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Bajo stock mínimo</p>
-            <p class="mk-num text-2xl font-semibold" :class="resumenGrupo.productosBajoMinimo > 0 ? 'text-mk-pending' : 'text-mk-text'">
+            <p
+              class="mk-num text-2xl font-semibold"
+              :class="resumenGrupo.productosBajoMinimo > 0 ? 'text-mk-pending' : 'text-mk-text'"
+            >
               {{ resumenGrupo.productosBajoMinimo }}
             </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Sin movimiento (60+ días)</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.productosSinMovimiento }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ resumenGrupo.productosSinMovimiento }}
+            </p>
           </div>
         </div>
 
@@ -254,7 +268,9 @@ function tipoVencimientoLabel(tipo: string): string {
             <p class="text-2xl font-semibold text-mk-text">
               {{ resumenGrupo.tiendasConCajaAbierta }} / {{ resumenGrupo.totalTiendas }} abierta(s)
             </p>
-            <p class="mk-num text-sm text-mk-text-muted">Saldo esperado: {{ resumenGrupo.cajaSaldoEsperadoTotal }}</p>
+            <p class="mk-num text-sm text-mk-text-muted">
+              Saldo esperado: {{ resumenGrupo.cajaSaldoEsperadoTotal }}
+            </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ingresos de hoy</p>
@@ -276,15 +292,25 @@ function tipoVencimientoLabel(tipo: string): string {
         <div class="grid gap-4 lg:grid-cols-2">
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Saldo pendiente por cobrar</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.saldoPendienteCuentasPorCobrar }}</p>
-            <p class="text-sm" :class="resumenGrupo.cuentasPorCobrarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'">
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ resumenGrupo.saldoPendienteCuentasPorCobrar }}
+            </p>
+            <p
+              class="text-sm"
+              :class="resumenGrupo.cuentasPorCobrarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'"
+            >
               {{ resumenGrupo.cuentasPorCobrarVencidas }} vencida(s)
             </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Saldo pendiente por pagar</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.saldoPendienteCuentasPorPagar }}</p>
-            <p class="text-sm" :class="resumenGrupo.cuentasPorPagarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'">
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ resumenGrupo.saldoPendienteCuentasPorPagar }}
+            </p>
+            <p
+              class="text-sm"
+              :class="resumenGrupo.cuentasPorPagarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'"
+            >
               {{ resumenGrupo.cuentasPorPagarVencidas }} vencida(s)
             </p>
           </div>
@@ -293,229 +319,276 @@ function tipoVencimientoLabel(tipo: string): string {
     </template>
 
     <template v-else>
-    <p v-if="loading" class="text-sm text-mk-text-muted">Cargando…</p>
-    <p v-else-if="error" class="text-sm text-mk-danger" role="alert">{{ error }}</p>
+      <p v-if="loading" class="text-sm text-mk-text-muted">Cargando…</p>
+      <p v-else-if="error" class="text-sm text-mk-danger" role="alert">{{ error }}</p>
 
-    <div v-else-if="resumen" class="space-y-6">
-      <!-- KPIs de ventas -->
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Ventas de hoy</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ventasHoyTotal }}</p>
-          <p class="text-sm text-mk-text-muted">{{ resumen.ventasHoyCantidad }} venta(s)</p>
+      <div v-else-if="resumen" class="space-y-6">
+        <!-- KPIs de ventas -->
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Ventas de hoy</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ventasHoyTotal }}</p>
+            <p class="text-sm text-mk-text-muted">{{ resumen.ventasHoyCantidad }} venta(s)</p>
+          </div>
+
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Ventas del mes</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ventasMesTotal }}</p>
+            <p
+              v-if="comparativoVentasPct !== null"
+              class="text-sm"
+              :class="comparativoVentasPct >= 0 ? 'text-mk-success' : 'text-mk-danger'"
+            >
+              {{ comparativoVentasPct >= 0 ? '+' : '' }}{{ comparativoVentasPct.toFixed(1) }}% vs mes anterior
+            </p>
+            <p v-else class="text-sm text-mk-text-muted">Sin datos del mes anterior</p>
+          </div>
+
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Ticket promedio</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ticketPromedioMes }}</p>
+            <p class="text-sm text-mk-text-muted">
+              {{ resumen.facturasEmitidasMes }} factura(s),
+              {{ resumen.facturasFelCertificadasMes }} certificada(s) FEL
+            </p>
+          </div>
+
+          <div v-if="resumen.utilidadMesTotal !== null" class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Utilidad del mes</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.utilidadMesTotal }}</p>
+            <p class="text-sm text-mk-text-muted">
+              Margen: {{ resumen.margenPromedioMes ?? '—' }}<span v-if="resumen.margenPromedioMes">%</span>
+            </p>
+          </div>
         </div>
 
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Ventas del mes</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ventasMesTotal }}</p>
-          <p
-            v-if="comparativoVentasPct !== null"
-            class="text-sm"
-            :class="comparativoVentasPct >= 0 ? 'text-mk-success' : 'text-mk-danger'"
-          >
-            {{ comparativoVentasPct >= 0 ? '+' : '' }}{{ comparativoVentasPct.toFixed(1) }}% vs mes anterior
-          </p>
-          <p v-else class="text-sm text-mk-text-muted">Sin datos del mes anterior</p>
+        <!-- KPIs de inventario -->
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Inventario valorizado</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.inventarioValorizadoTotal }}</p>
+          </div>
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Productos agotados</p>
+            <p
+              class="mk-num text-2xl font-semibold"
+              :class="resumen.productosAgotados > 0 ? 'text-mk-danger' : 'text-mk-text'"
+            >
+              {{ resumen.productosAgotados }}
+            </p>
+          </div>
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Bajo stock mínimo</p>
+            <p
+              class="mk-num text-2xl font-semibold"
+              :class="resumen.productosBajoMinimo > 0 ? 'text-mk-pending' : 'text-mk-text'"
+            >
+              {{ resumen.productosBajoMinimo }}
+            </p>
+          </div>
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Sin movimiento (60+ días)</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.productosSinMovimiento }}</p>
+          </div>
         </div>
 
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Ticket promedio</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ticketPromedioMes }}</p>
-          <p class="text-sm text-mk-text-muted">
-            {{ resumen.facturasEmitidasMes }} factura(s), {{ resumen.facturasFelCertificadasMes }} certificada(s) FEL
-          </p>
+        <!-- Caja y alertas -->
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Caja</p>
+            <p class="text-2xl font-semibold text-mk-text">
+              {{ resumen.cajaAbierta ? 'Abierta' : 'Cerrada' }}
+            </p>
+            <p v-if="resumen.cajaAbierta" class="mk-num text-sm text-mk-text-muted">
+              Saldo esperado: {{ resumen.cajaSaldoEsperado }}
+            </p>
+          </div>
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Ingresos de hoy</p>
+            <p class="mk-num text-2xl font-semibold text-mk-success">{{ resumen.ingresosHoy }}</p>
+          </div>
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Egresos de hoy</p>
+            <p class="mk-num text-2xl font-semibold text-mk-danger">{{ resumen.egresosHoy }}</p>
+          </div>
+          <div class="mk-card space-y-2 p-4">
+            <p class="text-sm text-mk-text-muted">Alertas activas</p>
+            <div class="flex items-center gap-2">
+              <EstadoBadge variant="danger" :label="`${resumen.alertasCriticas} crítica(s)`" />
+              <EstadoBadge variant="pending" :label="`${resumen.alertasPreventivas} preventiva(s)`" />
+            </div>
+          </div>
         </div>
 
-        <div v-if="resumen.utilidadMesTotal !== null" class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Utilidad del mes</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.utilidadMesTotal }}</p>
-          <p class="text-sm text-mk-text-muted">
-            Margen: {{ resumen.margenPromedioMes ?? '—' }}<span v-if="resumen.margenPromedioMes">%</span>
-          </p>
+        <!-- Gráficas -->
+        <div class="grid gap-4 lg:grid-cols-2">
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Ventas: mes actual vs. mes anterior</p>
+            <div class="h-64"><Bar :data="ventasChartData" :options="chartOptions" /></div>
+          </div>
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Antigüedad de saldos (aging)</p>
+            <div class="h-64"><Bar :data="agingChartData" :options="chartOptionsConLeyenda" /></div>
+          </div>
         </div>
-      </div>
 
-      <!-- KPIs de inventario -->
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Inventario valorizado</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.inventarioValorizadoTotal }}</p>
+        <!-- Cuentas por cobrar / pagar -->
+        <div class="grid gap-4 lg:grid-cols-2">
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Saldo pendiente por cobrar</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ resumen.saldoPendienteCuentasPorCobrar }}
+            </p>
+            <p
+              class="text-sm"
+              :class="resumen.cuentasPorCobrarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'"
+            >
+              {{ resumen.cuentasPorCobrarVencidas }} vencida(s)
+            </p>
+          </div>
+          <div class="mk-card space-y-1 p-4">
+            <p class="text-sm text-mk-text-muted">Saldo pendiente por pagar</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ resumen.saldoPendienteCuentasPorPagar }}
+            </p>
+            <p
+              class="text-sm"
+              :class="resumen.cuentasPorPagarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'"
+            >
+              {{ resumen.cuentasPorPagarVencidas }} vencida(s)
+            </p>
+          </div>
         </div>
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Productos agotados</p>
-          <p class="mk-num text-2xl font-semibold" :class="resumen.productosAgotados > 0 ? 'text-mk-danger' : 'text-mk-text'">
-            {{ resumen.productosAgotados }}
-          </p>
-        </div>
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Bajo stock mínimo</p>
-          <p class="mk-num text-2xl font-semibold" :class="resumen.productosBajoMinimo > 0 ? 'text-mk-pending' : 'text-mk-text'">
-            {{ resumen.productosBajoMinimo }}
-          </p>
-        </div>
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Sin movimiento (60+ días)</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.productosSinMovimiento }}</p>
-        </div>
-      </div>
 
-      <!-- Caja y alertas -->
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Caja</p>
-          <p class="text-2xl font-semibold text-mk-text">{{ resumen.cajaAbierta ? 'Abierta' : 'Cerrada' }}</p>
-          <p v-if="resumen.cajaAbierta" class="mk-num text-sm text-mk-text-muted">
-            Saldo esperado: {{ resumen.cajaSaldoEsperado }}
-          </p>
-        </div>
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Ingresos de hoy</p>
-          <p class="mk-num text-2xl font-semibold text-mk-success">{{ resumen.ingresosHoy }}</p>
-        </div>
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Egresos de hoy</p>
-          <p class="mk-num text-2xl font-semibold text-mk-danger">{{ resumen.egresosHoy }}</p>
-        </div>
-        <div class="mk-card space-y-2 p-4">
-          <p class="text-sm text-mk-text-muted">Alertas activas</p>
-          <div class="flex items-center gap-2">
-            <EstadoBadge variant="danger" :label="`${resumen.alertasCriticas} crítica(s)`" />
-            <EstadoBadge variant="pending" :label="`${resumen.alertasPreventivas} preventiva(s)`" />
+        <!-- Listas de acción -->
+        <div class="grid gap-4 lg:grid-cols-2">
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Próximos vencimientos</p>
+            <p v-if="resumen.proximosVencimientos.length === 0" class="text-sm text-mk-text-muted">
+              Sin vencimientos próximos.
+            </p>
+            <table v-else class="mk-scroll-x w-full text-sm">
+              <tbody>
+                <tr
+                  v-for="v in resumen.proximosVencimientos"
+                  :key="`${v.tipo}-${v.referenciaId}`"
+                  class="border-t border-mk-border"
+                >
+                  <td class="py-2 pr-2">{{ tipoVencimientoLabel(v.tipo) }} #{{ v.referenciaId }}</td>
+                  <td class="mk-num py-2 pr-2">{{ v.monto }}</td>
+                  <td class="py-2 text-mk-text-muted">{{ formatFecha(v.fechaVencimiento) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Recordatorios de gastos programados</p>
+            <p v-if="resumen.recordatorios.length === 0" class="text-sm text-mk-text-muted">
+              Sin recordatorios próximos.
+            </p>
+            <table v-else class="mk-scroll-x w-full text-sm">
+              <tbody>
+                <tr
+                  v-for="r in resumen.recordatorios"
+                  :key="r.gastoProgramadoId"
+                  class="border-t border-mk-border"
+                >
+                  <td class="py-2 pr-2">{{ r.concepto }}</td>
+                  <td class="mk-num py-2 pr-2">{{ r.monto }}</td>
+                  <td class="py-2 text-mk-text-muted">{{ formatFecha(r.proximaFecha) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Top cobros pendientes</p>
+            <p v-if="resumen.topCobrosPendientes.length === 0" class="text-sm text-mk-text-muted">
+              Sin cuentas pendientes.
+            </p>
+            <table v-else class="mk-scroll-x w-full text-sm">
+              <tbody>
+                <tr v-for="c in resumen.topCobrosPendientes" :key="c.id" class="border-t border-mk-border">
+                  <td class="py-2 pr-2">Cliente #{{ c.contraparteId }}</td>
+                  <td class="mk-num py-2 pr-2">{{ c.monto }}</td>
+                  <td class="py-2 text-mk-text-muted">{{ formatFecha(c.fechaVencimiento) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Top pagos pendientes</p>
+            <p v-if="resumen.topPagosPendientes.length === 0" class="text-sm text-mk-text-muted">
+              Sin cuentas pendientes.
+            </p>
+            <table v-else class="mk-scroll-x w-full text-sm">
+              <tbody>
+                <tr v-for="c in resumen.topPagosPendientes" :key="c.id" class="border-t border-mk-border">
+                  <td class="py-2 pr-2">Proveedor #{{ c.contraparteId }}</td>
+                  <td class="mk-num py-2 pr-2">{{ c.monto }}</td>
+                  <td class="py-2 text-mk-text-muted">{{ formatFecha(c.fechaVencimiento) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Sugerencias de compra</p>
+            <p v-if="resumen.sugerenciasCompra.length === 0" class="text-sm text-mk-text-muted">
+              Sin sugerencias por ahora.
+            </p>
+            <table v-else class="mk-scroll-x w-full text-sm">
+              <thead>
+                <tr class="text-left text-mk-text-muted">
+                  <th class="pb-2 font-normal">Producto</th>
+                  <th class="pb-2 font-normal">Existencia</th>
+                  <th class="pb-2 font-normal">Sugerido</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="s in resumen.sugerenciasCompra"
+                  :key="s.productoId"
+                  class="border-t border-mk-border"
+                >
+                  <td class="py-2 pr-2">Producto #{{ s.productoId }}</td>
+                  <td class="mk-num py-2 pr-2">{{ s.existenciaActual }}</td>
+                  <td class="mk-num py-2 text-mk-success">{{ s.cantidadSugerida }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mk-card space-y-3 p-4">
+            <p class="text-sm font-medium text-mk-text">Sugerencias de traslado</p>
+            <p v-if="resumen.sugerenciasTraslado.length === 0" class="text-sm text-mk-text-muted">
+              Sin sugerencias por ahora.
+            </p>
+            <table v-else class="mk-scroll-x w-full text-sm">
+              <thead>
+                <tr class="text-left text-mk-text-muted">
+                  <th class="pb-2 font-normal">Producto</th>
+                  <th class="pb-2 font-normal">Desde tienda</th>
+                  <th class="pb-2 font-normal">Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="s in resumen.sugerenciasTraslado"
+                  :key="s.productoId"
+                  class="border-t border-mk-border"
+                >
+                  <td class="py-2 pr-2">Producto #{{ s.productoId }}</td>
+                  <td class="py-2 pr-2">Tienda #{{ s.tiendaOrigenId }}</td>
+                  <td class="mk-num py-2 text-mk-success">{{ s.cantidadSugerida }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-
-      <!-- Gráficas -->
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Ventas: mes actual vs. mes anterior</p>
-          <div class="h-64"><Bar :data="ventasChartData" :options="chartOptions" /></div>
-        </div>
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Antigüedad de saldos (aging)</p>
-          <div class="h-64"><Bar :data="agingChartData" :options="chartOptionsConLeyenda" /></div>
-        </div>
-      </div>
-
-      <!-- Cuentas por cobrar / pagar -->
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Saldo pendiente por cobrar</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.saldoPendienteCuentasPorCobrar }}</p>
-          <p class="text-sm" :class="resumen.cuentasPorCobrarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'">
-            {{ resumen.cuentasPorCobrarVencidas }} vencida(s)
-          </p>
-        </div>
-        <div class="mk-card space-y-1 p-4">
-          <p class="text-sm text-mk-text-muted">Saldo pendiente por pagar</p>
-          <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.saldoPendienteCuentasPorPagar }}</p>
-          <p class="text-sm" :class="resumen.cuentasPorPagarVencidas > 0 ? 'text-mk-danger' : 'text-mk-text-muted'">
-            {{ resumen.cuentasPorPagarVencidas }} vencida(s)
-          </p>
-        </div>
-      </div>
-
-      <!-- Listas de acción -->
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Próximos vencimientos</p>
-          <p v-if="resumen.proximosVencimientos.length === 0" class="text-sm text-mk-text-muted">Sin vencimientos próximos.</p>
-          <table v-else class="mk-scroll-x w-full text-sm">
-            <tbody>
-              <tr v-for="v in resumen.proximosVencimientos" :key="`${v.tipo}-${v.referenciaId}`" class="border-t border-mk-border">
-                <td class="py-2 pr-2">{{ tipoVencimientoLabel(v.tipo) }} #{{ v.referenciaId }}</td>
-                <td class="mk-num py-2 pr-2">{{ v.monto }}</td>
-                <td class="py-2 text-mk-text-muted">{{ formatFecha(v.fechaVencimiento) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Recordatorios de gastos programados</p>
-          <p v-if="resumen.recordatorios.length === 0" class="text-sm text-mk-text-muted">Sin recordatorios próximos.</p>
-          <table v-else class="mk-scroll-x w-full text-sm">
-            <tbody>
-              <tr v-for="r in resumen.recordatorios" :key="r.gastoProgramadoId" class="border-t border-mk-border">
-                <td class="py-2 pr-2">{{ r.concepto }}</td>
-                <td class="mk-num py-2 pr-2">{{ r.monto }}</td>
-                <td class="py-2 text-mk-text-muted">{{ formatFecha(r.proximaFecha) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Top cobros pendientes</p>
-          <p v-if="resumen.topCobrosPendientes.length === 0" class="text-sm text-mk-text-muted">Sin cuentas pendientes.</p>
-          <table v-else class="mk-scroll-x w-full text-sm">
-            <tbody>
-              <tr v-for="c in resumen.topCobrosPendientes" :key="c.id" class="border-t border-mk-border">
-                <td class="py-2 pr-2">Cliente #{{ c.contraparteId }}</td>
-                <td class="mk-num py-2 pr-2">{{ c.monto }}</td>
-                <td class="py-2 text-mk-text-muted">{{ formatFecha(c.fechaVencimiento) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Top pagos pendientes</p>
-          <p v-if="resumen.topPagosPendientes.length === 0" class="text-sm text-mk-text-muted">Sin cuentas pendientes.</p>
-          <table v-else class="mk-scroll-x w-full text-sm">
-            <tbody>
-              <tr v-for="c in resumen.topPagosPendientes" :key="c.id" class="border-t border-mk-border">
-                <td class="py-2 pr-2">Proveedor #{{ c.contraparteId }}</td>
-                <td class="mk-num py-2 pr-2">{{ c.monto }}</td>
-                <td class="py-2 text-mk-text-muted">{{ formatFecha(c.fechaVencimiento) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Sugerencias de compra</p>
-          <p v-if="resumen.sugerenciasCompra.length === 0" class="text-sm text-mk-text-muted">Sin sugerencias por ahora.</p>
-          <table v-else class="mk-scroll-x w-full text-sm">
-            <thead>
-              <tr class="text-left text-mk-text-muted">
-                <th class="pb-2 font-normal">Producto</th>
-                <th class="pb-2 font-normal">Existencia</th>
-                <th class="pb-2 font-normal">Sugerido</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="s in resumen.sugerenciasCompra" :key="s.productoId" class="border-t border-mk-border">
-                <td class="py-2 pr-2">Producto #{{ s.productoId }}</td>
-                <td class="mk-num py-2 pr-2">{{ s.existenciaActual }}</td>
-                <td class="mk-num py-2 text-mk-success">{{ s.cantidadSugerida }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mk-card space-y-3 p-4">
-          <p class="text-sm font-medium text-mk-text">Sugerencias de traslado</p>
-          <p v-if="resumen.sugerenciasTraslado.length === 0" class="text-sm text-mk-text-muted">Sin sugerencias por ahora.</p>
-          <table v-else class="mk-scroll-x w-full text-sm">
-            <thead>
-              <tr class="text-left text-mk-text-muted">
-                <th class="pb-2 font-normal">Producto</th>
-                <th class="pb-2 font-normal">Desde tienda</th>
-                <th class="pb-2 font-normal">Cantidad</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="s in resumen.sugerenciasTraslado" :key="s.productoId" class="border-t border-mk-border">
-                <td class="py-2 pr-2">Producto #{{ s.productoId }}</td>
-                <td class="py-2 pr-2">Tienda #{{ s.tiendaOrigenId }}</td>
-                <td class="mk-num py-2 text-mk-success">{{ s.cantidadSugerida }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
     </template>
   </div>
 </template>

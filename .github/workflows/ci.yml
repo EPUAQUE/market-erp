@@ -64,6 +64,14 @@ jobs:
         working-directory: market-backoffice
         run: pnpm install --frozen-lockfile
 
+      - name: Lint (ESLint)
+        working-directory: market-backoffice
+        run: pnpm lint
+
+      - name: Formato (Prettier)
+        working-directory: market-backoffice
+        run: pnpm format:check
+
       - name: Typecheck
         working-directory: market-backoffice
         run: pnpm typecheck

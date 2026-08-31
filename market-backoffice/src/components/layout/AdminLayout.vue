@@ -92,7 +92,9 @@ const moduleTitle = computed(() => (route.meta.title as string | undefined) ?? '
 const searchOpen = ref(false)
 const searchQuery = ref('')
 
-const allNavItems = computed(() => navGroups.flatMap((g) => g.items).filter((item) => permissions.can(item.permission)))
+const allNavItems = computed(() =>
+  navGroups.flatMap((g) => g.items).filter((item) => permissions.can(item.permission)),
+)
 
 const searchResults = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -156,7 +158,9 @@ async function onLogout() {
     </aside>
 
     <div class="flex min-h-screen flex-1 flex-col">
-      <header class="flex items-center justify-between gap-4 border-b border-mk-border bg-mk-surface px-6 py-3">
+      <header
+        class="flex items-center justify-between gap-4 border-b border-mk-border bg-mk-surface px-6 py-3"
+      >
         <div class="min-w-0">
           <h1 class="truncate text-base font-bold text-mk-text">{{ moduleTitle }}</h1>
           <p class="truncate text-xs text-mk-text-muted">Market / {{ moduleTitle }}</p>
@@ -228,7 +232,9 @@ async function onLogout() {
           <div class="mx-1 h-6 w-px bg-mk-border" />
 
           <span class="hidden text-sm text-mk-text-muted sm:inline">{{ userStore.username }}</span>
-          <button type="button" class="mk-btn mk-btn-ghost px-3 py-1.5 text-sm" @click="onLogout">Salir</button>
+          <button type="button" class="mk-btn mk-btn-ghost px-3 py-1.5 text-sm" @click="onLogout">
+            Salir
+          </button>
         </div>
       </header>
 

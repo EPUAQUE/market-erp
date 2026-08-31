@@ -89,10 +89,12 @@ pnpm vitest run src/services/clientes.service.spec.ts
 pnpm vitest run -t "cargar convierte pagina"
 ```
 
-No ESLint/Prettier/Playwright configured in this repo — don't assume `lint`/`format`/
-`test:e2e` scripts exist. Vitest itself was only wired up when tests were first written
-for the Clientes/Compras pagination work — most of the app still has zero test coverage,
-this is not yet a general convention followed project-wide.
+**ESLint 9 (flat config, `eslint.config.js`) + Prettier (`.prettierrc.json`) added
+2026-08-31** (Fase 8, PLAN_MEJORAS.md) — `pnpm lint` / `pnpm format` / `pnpm format:check`
+exist and both run in CI (`pnpm lint` and `pnpm format:check`, before typecheck). No
+Playwright yet — don't assume `test:e2e` exists. Vitest itself was only wired up when
+tests were first written for the Clientes/Compras pagination work — most of the app
+still has zero test coverage, this is not yet a general convention followed project-wide.
 
 Copy `.env.example` to `.env` (or use a committed `.env.development`) and set
 `VITE_API_BASE_URL` (real backend, e.g. `http://localhost:8080`) and `VITE_API_TIMEOUT`.
@@ -120,6 +122,23 @@ Vue SFCs use `<script setup lang="ts">`.
   `src/router/index.ts`, not inside `ApiClient`) that logs out and redirects to
   `/login?sessionExpired=1`. Concurrent 401s must share one in-flight refresh call, not
   fire a refresh per failed request.
+- `ApiClient.ts` also exports the internal `refreshAccessToken` function it uses for that
+  401 path — `auth.store.ts`'s `trySilentLogin()` reuses it (same in-flight dedupe) to
+  attempt a **proactive** refresh from `authGuard` (`src/router/guards.ts`) whenever
+  `tokenService.hasToken()` is `false` on navigation, before redirecting to `/login`. The
+  access token lives only in memory (see below) so it's always gone after a page reload;
+  this lets a reload silently restore the session from the refresh-token cookie instead of
+  always bouncing to the login screen (added 2026-08-31, Fase 8).
+- `get`/`post`/`put`/`delete` on `apiClient` all accept an optional `signal` (AbortSignal)
+  in `ApiRequestOptions`, threaded through to Axios. The 8 composables backing
+  server-paginated lists (`useCaja`/`useClientes`/`useCompras`/`useCuentasPorCobrar`/
+  `useInventario`/`useProductos`/`useTraslados`/`useVentas`) use it: each `cargar*`
+  function aborts its own previous in-flight call before starting a new one (a
+  module-scoped `AbortController`, guarded by `if (thisController === controller)` in
+  `finally` so a superseded call's `finally` can't clobber `*Loading` after a newer call
+  already started) — added 2026-08-31 (Fase 8) to stop a fast page/size change from
+  racing an older response into overwriting a newer one. Other composables (plain-array,
+  client-side-paginated modules) don't need this — they don't refetch on every page click.
 - All errors are normalized through `error.mapper.ts` into `ApiClientError` (carries
   `status`, `code`, `correlationId`, `retryAfterMs` for 429s, `isCanceled` for aborted
   requests).

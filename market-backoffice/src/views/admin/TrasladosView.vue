@@ -102,7 +102,8 @@ onMounted(async () => {
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Traslados</h1>
       <p class="text-sm text-mk-text/70">
-        Movimientos de inventario entre tiendas. Completar registra la salida en origen y la entrada en destino.
+        Movimientos de inventario entre tiendas. Completar registra la salida en origen y la entrada en
+        destino.
       </p>
     </header>
 
@@ -217,10 +218,17 @@ onMounted(async () => {
             <td class="px-4 py-2">{{ nombreTienda(traslado.tiendaOrigenId) }}</td>
             <td class="px-4 py-2">{{ nombreTienda(traslado.tiendaDestinoId) }}</td>
             <td class="px-4 py-2">
-              <EstadoBadge :variant="ESTADO_VARIANT[traslado.estado]" :label="ESTADO_LABEL[traslado.estado]" />
+              <EstadoBadge
+                :variant="ESTADO_VARIANT[traslado.estado]"
+                :label="ESTADO_LABEL[traslado.estado]"
+              />
             </td>
             <td class="px-4 py-2">
-              <button type="button" class="mr-3 text-mk-primary hover:underline" @click="toggleDetalle(traslado)">
+              <button
+                type="button"
+                class="mr-3 text-mk-primary hover:underline"
+                @click="toggleDetalle(traslado)"
+              >
                 {{ detalleAbiertoId === traslado.id ? 'Ocultar' : 'Ver líneas' }}
               </button>
               <button
@@ -253,9 +261,16 @@ onMounted(async () => {
         <option :value="100">100 / página</option>
       </select>
       <div class="flex items-center gap-2">
-        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">Anterior</button>
+        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">
+          Anterior
+        </button>
         <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
-        <button type="button" :disabled="pagina >= totalPaginas" class="disabled:opacity-40" @click="pagina++">
+        <button
+          type="button"
+          :disabled="pagina >= totalPaginas"
+          class="disabled:opacity-40"
+          @click="pagina++"
+        >
           Siguiente
         </button>
       </div>

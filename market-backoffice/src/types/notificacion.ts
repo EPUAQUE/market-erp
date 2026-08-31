@@ -1,8 +1,5 @@
 export type TipoNotificacion =
-  | 'CUENTA_POR_PAGAR_VENCIDA'
-  | 'CUENTA_POR_COBRAR_VENCIDA'
-  | 'GASTO_PROGRAMADO_VENCIDO'
-  | 'STOCK_BAJO'
+  'CUENTA_POR_PAGAR_VENCIDA' | 'CUENTA_POR_COBRAR_VENCIDA' | 'GASTO_PROGRAMADO_VENCIDO' | 'STOCK_BAJO'
 
 export interface Notificacion {
   id: number

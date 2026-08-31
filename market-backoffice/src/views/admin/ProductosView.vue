@@ -137,7 +137,7 @@ async function onSubmit() {
   // La imagen se sube en un segundo paso porque necesita el id del producto
   // (endpoint dedicado `POST /productos/{id}/imagen`, ver productos.service.ts)
   // — al crear, ese id todavía no existe hasta que el primer paso responde.
-  let id: number | null = null
+  let id: number | null
   if (editingId.value) {
     id = (await actualizar(editingId.value, datos)) ? editingId.value : null
   } else {
@@ -256,7 +256,9 @@ onMounted(async () => {
             class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
           >
             <option value="" disabled>Seleccione…</option>
-            <option v-for="u in unidades" :key="u.id" :value="u.id">{{ u.nombre }} ({{ u.abreviacion }})</option>
+            <option v-for="u in unidades" :key="u.id" :value="u.id">
+              {{ u.nombre }} ({{ u.abreviacion }})
+            </option>
           </select>
         </div>
         <div class="space-y-1">
@@ -371,9 +373,16 @@ onMounted(async () => {
         <option :value="100">100 / página</option>
       </select>
       <div class="flex items-center gap-2">
-        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">Anterior</button>
+        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">
+          Anterior
+        </button>
         <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
-        <button type="button" :disabled="pagina >= totalPaginas" class="disabled:opacity-40" @click="pagina++">
+        <button
+          type="button"
+          :disabled="pagina >= totalPaginas"
+          class="disabled:opacity-40"
+          @click="pagina++"
+        >
           Siguiente
         </button>
       </div>

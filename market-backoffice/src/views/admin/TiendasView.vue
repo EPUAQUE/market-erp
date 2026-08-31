@@ -17,7 +17,14 @@ const pageSize = ref(10)
 
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
-const form = ref({ codigo: '', nombre: '', direccion: '', telefono: '', correo: '', grupoId: null as number | null })
+const form = ref({
+  codigo: '',
+  nombre: '',
+  direccion: '',
+  telefono: '',
+  correo: '',
+  grupoId: null as number | null,
+})
 
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
@@ -232,7 +239,9 @@ onMounted(() => {
         <option :value="100">100 / página</option>
       </select>
       <div class="flex items-center gap-2">
-        <button type="button" :disabled="page <= 1" class="disabled:opacity-40" @click="page--">Anterior</button>
+        <button type="button" :disabled="page <= 1" class="disabled:opacity-40" @click="page--">
+          Anterior
+        </button>
         <span>Página {{ page }} de {{ totalPages }}</span>
         <button type="button" :disabled="page >= totalPages" class="disabled:opacity-40" @click="page++">
           Siguiente

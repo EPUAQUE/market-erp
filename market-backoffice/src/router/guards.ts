@@ -18,7 +18,13 @@ export const authGuard: NavigationGuardWithThis<undefined> = async (to) => {
   // nunca redirigiera al dashboard, porque el getter había cacheado `false`
   // desde la primera navegación (sin sesión) del arranque de la app.
   if (!tokenService.hasToken()) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+    // Recarga de página (o primera visita): el access token en memoria ya se
+    // perdió, pero la cookie HttpOnly de refresh token puede seguir viva —
+    // se intenta restaurar la sesión antes de mandar a login.
+    const restaurada = await authStore.trySilentLogin()
+    if (!restaurada) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
   }
 
   if (!authStore.authorizationLoaded) {

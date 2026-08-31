@@ -4,9 +4,10 @@ import type { CuentaPorCobrar } from '@/types/cuentaPorCobrar'
 import type { Pagina } from '@/types/pagina'
 
 class CuentasPorCobrarService {
-  listarPorTienda(tiendaId: number, pagina: number, tamano: number) {
+  listarPorTienda(tiendaId: number, pagina: number, tamano: number, signal?: AbortSignal) {
     return apiClient.get<Pagina<CuentaPorCobrar>>(API_ENDPOINTS.cuentasPorCobrar.porTienda(tiendaId), {
       params: { page: pagina, size: tamano },
+      signal,
     })
   }
 

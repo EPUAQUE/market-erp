@@ -23,7 +23,8 @@ export function useGastosProgramados() {
   }
 
   async function crear(
-    tiendaId: number, datos: DatosGastoProgramado & { fechaInicio: string },
+    tiendaId: number,
+    datos: DatosGastoProgramado & { fechaInicio: string },
   ): Promise<boolean> {
     saveLoading.value = true
     saveError.value = null
@@ -32,7 +33,8 @@ export function useGastosProgramados() {
       items.value = [...items.value, creado]
       return true
     } catch (error) {
-      saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo crear el gasto programado.'
+      saveError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo crear el gasto programado.'
       return false
     } finally {
       saveLoading.value = false
@@ -40,7 +42,9 @@ export function useGastosProgramados() {
   }
 
   async function actualizar(
-    tiendaId: number, gasto: GastoProgramado, datos: DatosGastoProgramado,
+    tiendaId: number,
+    gasto: GastoProgramado,
+    datos: DatosGastoProgramado,
   ): Promise<boolean> {
     saveLoading.value = true
     saveError.value = null
@@ -49,7 +53,8 @@ export function useGastosProgramados() {
       items.value = items.value.map((g) => (g.id === gasto.id ? actualizado : g))
       return true
     } catch (error) {
-      saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo actualizar el gasto programado.'
+      saveError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo actualizar el gasto programado.'
       return false
     } finally {
       saveLoading.value = false
@@ -62,7 +67,8 @@ export function useGastosProgramados() {
       const actualizado = await gastosProgramadosService.activar(tiendaId, gasto.id)
       items.value = items.value.map((g) => (g.id === gasto.id ? actualizado : g))
     } catch (error) {
-      listError.value = error instanceof ApiClientError ? error.message : 'No se pudo activar el gasto programado.'
+      listError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo activar el gasto programado.'
     }
   }
 
@@ -72,7 +78,8 @@ export function useGastosProgramados() {
       const actualizado = await gastosProgramadosService.desactivar(tiendaId, gasto.id)
       items.value = items.value.map((g) => (g.id === gasto.id ? actualizado : g))
     } catch (error) {
-      listError.value = error instanceof ApiClientError ? error.message : 'No se pudo desactivar el gasto programado.'
+      listError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo desactivar el gasto programado.'
     }
   }
 
@@ -87,7 +94,16 @@ export function useGastosProgramados() {
   }
 
   return {
-    items, listLoading, listError, saveLoading, saveError,
-    cargar, crear, actualizar, activar, desactivar, generarPago,
+    items,
+    listLoading,
+    listError,
+    saveLoading,
+    saveError,
+    cargar,
+    crear,
+    actualizar,
+    activar,
+    desactivar,
+    generarPago,
   }
 }

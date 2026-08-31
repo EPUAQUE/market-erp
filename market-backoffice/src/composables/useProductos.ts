@@ -23,18 +23,25 @@ export function useProductos() {
   const totalElementos = ref(0)
   const totalPaginas = ref(1)
 
+  let cargarController: AbortController | null = null
+
   async function cargar() {
+    cargarController?.abort()
+    const controller = new AbortController()
+    cargarController = controller
     listLoading.value = true
     listError.value = null
     try {
-      const resultado = await productosService.listar(pagina.value - 1, tamano.value)
+      const resultado = await productosService.listar(pagina.value - 1, tamano.value, controller.signal)
+      if (controller.signal.aborted) return
       items.value = resultado.contenido
       totalElementos.value = resultado.totalElementos
       totalPaginas.value = resultado.totalPaginas
     } catch (error) {
+      if (error instanceof ApiClientError && error.isCanceled) return
       listError.value = error instanceof ApiClientError ? error.message : 'No se pudo cargar la lista.'
     } finally {
-      listLoading.value = false
+      if (cargarController === controller) listLoading.value = false
     }
   }
 

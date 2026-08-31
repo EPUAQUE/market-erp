@@ -45,7 +45,8 @@ export function useProductoTiendas(productoId: number) {
       items.value = items.value.map((pt) => (pt.id === id ? actualizado : pt))
       return true
     } catch (error) {
-      saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo actualizar la configuración.'
+      saveError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo actualizar la configuración.'
       return false
     } finally {
       saveLoading.value = false
@@ -66,5 +67,15 @@ export function useProductoTiendas(productoId: number) {
     }
   }
 
-  return { items, listLoading, listError, saveLoading, saveError, cargar, asignar, actualizar, alternarEstado }
+  return {
+    items,
+    listLoading,
+    listError,
+    saveLoading,
+    saveError,
+    cargar,
+    asignar,
+    actualizar,
+    alternarEstado,
+  }
 }

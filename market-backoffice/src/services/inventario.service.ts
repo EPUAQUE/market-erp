@@ -11,16 +11,27 @@ export interface DatosMovimiento {
 }
 
 class InventarioService {
-  listarPorTienda(tiendaId: number, pagina: number, tamano: number) {
+  listarPorTienda(tiendaId: number, pagina: number, tamano: number, signal?: AbortSignal) {
     return apiClient.get<Pagina<Inventario>>(API_ENDPOINTS.inventario.porTienda(tiendaId), {
       params: { page: pagina, size: tamano },
+      signal,
     })
   }
 
-  listarMovimientos(tiendaId: number, productoId: number, pagina: number, tamano: number) {
-    return apiClient.get<Pagina<MovimientoInventario>>(API_ENDPOINTS.inventario.movimientos(tiendaId, productoId), {
-      params: { page: pagina, size: tamano },
-    })
+  listarMovimientos(
+    tiendaId: number,
+    productoId: number,
+    pagina: number,
+    tamano: number,
+    signal?: AbortSignal,
+  ) {
+    return apiClient.get<Pagina<MovimientoInventario>>(
+      API_ENDPOINTS.inventario.movimientos(tiendaId, productoId),
+      {
+        params: { page: pagina, size: tamano },
+        signal,
+      },
+    )
   }
 
   registrarMovimiento(tiendaId: number, datos: DatosMovimiento) {

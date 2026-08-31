@@ -4,7 +4,8 @@ import { useUnidadesMedida } from '@/composables/useUnidadesMedida'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import type { UnidadMedida } from '@/types/unidadMedida'
 
-const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } = useUnidadesMedida()
+const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } =
+  useUnidadesMedida()
 const permissions = usePermissionsStore()
 
 const search = ref('')

@@ -84,13 +84,14 @@ onMounted(async () => {
   <div class="mx-auto max-w-3xl space-y-6 p-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Caja</h1>
-      <p class="text-sm text-mk-text/70">
-        Apertura, movimientos y cierre de turno de caja por tienda.
-      </p>
+      <p class="text-sm text-mk-text/70">Apertura, movimientos y cierre de turno de caja por tienda.</p>
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <select v-model="tiendaId" class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm">
+      <select
+        v-model="tiendaId"
+        class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+      >
         <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
       </select>
       <button type="button" class="text-sm text-mk-primary hover:underline" @click="onToggleHistorial">
@@ -260,7 +261,9 @@ onMounted(async () => {
             </tr>
             <tr v-for="sesion in historial" :key="sesion.id" class="border-b border-mk-border last:border-0">
               <td class="px-4 py-2">{{ new Date(sesion.fechaApertura).toLocaleString() }}</td>
-              <td class="px-4 py-2">{{ sesion.fechaCierre ? new Date(sesion.fechaCierre).toLocaleString() : '—' }}</td>
+              <td class="px-4 py-2">
+                {{ sesion.fechaCierre ? new Date(sesion.fechaCierre).toLocaleString() : '—' }}
+              </td>
               <td class="mk-num px-4 py-2">{{ sesion.montoInicial }}</td>
               <td class="mk-num px-4 py-2">{{ sesion.saldoEsperado }}</td>
               <td class="mk-num px-4 py-2">{{ sesion.montoFinalContado ?? '—' }}</td>
@@ -276,7 +279,10 @@ onMounted(async () => {
       </div>
 
       <div class="flex items-center justify-between text-sm text-mk-text/70">
-        <select v-model.number="historialTamano" class="rounded border border-mk-border bg-transparent px-2 py-1">
+        <select
+          v-model.number="historialTamano"
+          class="rounded border border-mk-border bg-transparent px-2 py-1"
+        >
           <option :value="10">10 / página</option>
           <option :value="25">25 / página</option>
           <option :value="50">50 / página</option>
@@ -291,7 +297,10 @@ onMounted(async () => {
           >
             Anterior
           </button>
-          <span>Página {{ historialPagina }} de {{ historialTotalPaginas }} ({{ historialTotalElementos }} en total)</span>
+          <span
+            >Página {{ historialPagina }} de {{ historialTotalPaginas }} ({{ historialTotalElementos }} en
+            total)</span
+          >
           <button
             type="button"
             :disabled="historialPagina >= historialTotalPaginas"

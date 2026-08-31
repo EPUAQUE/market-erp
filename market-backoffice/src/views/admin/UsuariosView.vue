@@ -91,7 +91,11 @@ async function toggleTiendas(usuario: Usuario) {
 
 async function onAsignarTienda(usuarioId: number) {
   if (!nuevaAsignacionTiendaId.value || !nuevaAsignacionRolId.value) return
-  const ok = await asignarTienda(usuarioId, Number(nuevaAsignacionTiendaId.value), Number(nuevaAsignacionRolId.value))
+  const ok = await asignarTienda(
+    usuarioId,
+    Number(nuevaAsignacionTiendaId.value),
+    Number(nuevaAsignacionRolId.value),
+  )
   if (ok) {
     nuevaAsignacionTiendaId.value = ''
     nuevaAsignacionRolId.value = ''
@@ -100,7 +104,11 @@ async function onAsignarTienda(usuarioId: number) {
 
 async function onAsignarGrupo(usuarioId: number) {
   if (!nuevaAsignacionGrupoId.value || !nuevaAsignacionGrupoRolId.value) return
-  const ok = await asignarGrupo(usuarioId, Number(nuevaAsignacionGrupoId.value), Number(nuevaAsignacionGrupoRolId.value))
+  const ok = await asignarGrupo(
+    usuarioId,
+    Number(nuevaAsignacionGrupoId.value),
+    Number(nuevaAsignacionGrupoRolId.value),
+  )
   if (ok) {
     nuevaAsignacionGrupoId.value = ''
     nuevaAsignacionGrupoRolId.value = ''
@@ -142,7 +150,13 @@ function abrirCrear() {
 }
 
 async function onCrear() {
-  const id = await crear(newUsername.value, newPassword.value, newNombre.value, newTelefono.value, newCorreo.value)
+  const id = await crear(
+    newUsername.value,
+    newPassword.value,
+    newNombre.value,
+    newTelefono.value,
+    newCorreo.value,
+  )
   if (!id) return
 
   // Tienda/rol son opcionales acá (ADMIN no necesita) — si se eligieron, se asignan
@@ -307,7 +321,10 @@ onMounted(async () => {
               <td class="px-4 py-2">{{ usuario.telefono ?? '—' }}</td>
               <td class="px-4 py-2">{{ usuario.correo ?? '—' }}</td>
               <td class="px-4 py-2">
-                <EstadoBadge :variant="ESTADO_VARIANT[usuario.estado]" :label="ESTADO_LABEL[usuario.estado]" />
+                <EstadoBadge
+                  :variant="ESTADO_VARIANT[usuario.estado]"
+                  :label="ESTADO_LABEL[usuario.estado]"
+                />
               </td>
               <td class="px-4 py-2">
                 <button
@@ -326,7 +343,10 @@ onMounted(async () => {
                   <div class="space-y-3">
                     <p class="text-sm font-medium text-mk-text">Tiendas asignadas</p>
                     <div v-if="tiendasLoading" class="text-sm text-mk-text/60">Cargando…</div>
-                    <ul v-else-if="(tiendasPorUsuario[usuario.id] ?? []).length > 0" class="space-y-1 text-sm">
+                    <ul
+                      v-else-if="(tiendasPorUsuario[usuario.id] ?? []).length > 0"
+                      class="space-y-1 text-sm"
+                    >
                       <li v-for="asignacion in tiendasPorUsuario[usuario.id]" :key="asignacion.id">
                         {{ nombreTienda(asignacion.tiendaId) }} — {{ asignacion.rolNombre }}
                       </li>
@@ -374,7 +394,9 @@ onMounted(async () => {
                     <p v-if="asignarError" class="text-sm text-mk-danger" role="alert">{{ asignarError }}</p>
                   </div>
 
-                  <div class="space-y-3 border-t border-mk-border pt-3 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+                  <div
+                    class="space-y-3 border-t border-mk-border pt-3 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0"
+                  >
                     <p class="text-sm font-medium text-mk-text">Grupos de tiendas asignados</p>
                     <div v-if="gruposLoading" class="text-sm text-mk-text/60">Cargando…</div>
                     <ul v-else-if="(gruposPorUsuario[usuario.id] ?? []).length > 0" class="space-y-1 text-sm">
@@ -422,7 +444,9 @@ onMounted(async () => {
                       </button>
                     </form>
                     <p v-if="gruposError" class="text-sm text-mk-danger" role="alert">{{ gruposError }}</p>
-                    <p v-if="asignarGrupoError" class="text-sm text-mk-danger" role="alert">{{ asignarGrupoError }}</p>
+                    <p v-if="asignarGrupoError" class="text-sm text-mk-danger" role="alert">
+                      {{ asignarGrupoError }}
+                    </p>
                   </div>
                 </div>
               </td>
@@ -440,7 +464,9 @@ onMounted(async () => {
         <option :value="100">100 / página</option>
       </select>
       <div class="flex items-center gap-2">
-        <button type="button" :disabled="page <= 1" class="disabled:opacity-40" @click="page--">Anterior</button>
+        <button type="button" :disabled="page <= 1" class="disabled:opacity-40" @click="page--">
+          Anterior
+        </button>
         <span>Página {{ page }} de {{ totalPages }}</span>
         <button type="button" :disabled="page >= totalPages" class="disabled:opacity-40" @click="page++">
           Siguiente

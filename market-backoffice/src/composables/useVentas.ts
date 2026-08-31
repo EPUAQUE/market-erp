@@ -17,20 +17,31 @@ export function useVentas() {
   const totalPaginas = ref(1)
 
   let tiendaActual: number | null = null
+  let cargarController: AbortController | null = null
 
   async function cargar(tiendaId: number) {
     tiendaActual = tiendaId
+    cargarController?.abort()
+    const controller = new AbortController()
+    cargarController = controller
     listLoading.value = true
     listError.value = null
     try {
-      const resultado = await ventasService.listarPorTienda(tiendaId, pagina.value - 1, tamano.value)
+      const resultado = await ventasService.listarPorTienda(
+        tiendaId,
+        pagina.value - 1,
+        tamano.value,
+        controller.signal,
+      )
+      if (controller.signal.aborted) return
       items.value = resultado.contenido
       totalElementos.value = resultado.totalElementos
       totalPaginas.value = resultado.totalPaginas
     } catch (error) {
+      if (error instanceof ApiClientError && error.isCanceled) return
       listError.value = error instanceof ApiClientError ? error.message : 'No se pudo cargar la lista.'
     } finally {
-      listLoading.value = false
+      if (cargarController === controller) listLoading.value = false
     }
   }
 

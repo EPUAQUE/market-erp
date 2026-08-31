@@ -50,7 +50,10 @@ onMounted(async () => {
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <select v-model="tiendaId" class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm">
+      <select
+        v-model="tiendaId"
+        class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+      >
         <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
       </select>
       <button

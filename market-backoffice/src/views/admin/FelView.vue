@@ -7,7 +7,8 @@ import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { DocumentoFel } from '@/types/fel'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
 
-const { items, listLoading, listError, emitirLoading, emitirError, cargar, emitir, reintentar, anular } = useFel()
+const { items, listLoading, listError, emitirLoading, emitirError, cargar, emitir, reintentar, anular } =
+  useFel()
 const { items: tiendas, cargar: cargarTiendas } = useTiendas()
 const permissions = usePermissionsStore()
 
@@ -70,7 +71,10 @@ onMounted(async () => {
       </p>
     </header>
 
-    <select v-model="tiendaId" class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm">
+    <select
+      v-model="tiendaId"
+      class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+    >
       <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
     </select>
 
@@ -126,7 +130,10 @@ onMounted(async () => {
               <td class="px-4 py-2">{{ documento.serie }}-{{ documento.numero }}</td>
               <td class="px-4 py-2 font-mono text-xs">{{ documento.uuid ?? '—' }}</td>
               <td class="px-4 py-2">
-                <EstadoBadge :variant="ESTADO_VARIANT[documento.estado]" :label="ETIQUETAS_ESTADO[documento.estado]" />
+                <EstadoBadge
+                  :variant="ESTADO_VARIANT[documento.estado]"
+                  :label="ETIQUETAS_ESTADO[documento.estado]"
+                />
               </td>
               <td class="px-4 py-2">
                 <button
@@ -147,7 +154,10 @@ onMounted(async () => {
                 </button>
               </td>
             </tr>
-            <tr v-if="anulandoId === documento.id" class="border-b border-mk-border last:border-0 bg-mk-surface">
+            <tr
+              v-if="anulandoId === documento.id"
+              class="border-b border-mk-border last:border-0 bg-mk-surface"
+            >
               <td colspan="5" class="px-4 py-3">
                 <form class="flex items-end gap-3" @submit.prevent="onAnular(documento)">
                   <div class="flex-1 space-y-1">
@@ -167,11 +177,21 @@ onMounted(async () => {
                 </form>
               </td>
             </tr>
-            <tr v-if="documento.estado === 'ERROR' && documento.mensajeError" class="border-b border-mk-border last:border-0">
-              <td colspan="5" class="px-4 py-2 text-sm text-mk-danger">Error: {{ documento.mensajeError }}</td>
+            <tr
+              v-if="documento.estado === 'ERROR' && documento.mensajeError"
+              class="border-b border-mk-border last:border-0"
+            >
+              <td colspan="5" class="px-4 py-2 text-sm text-mk-danger">
+                Error: {{ documento.mensajeError }}
+              </td>
             </tr>
-            <tr v-if="documento.estado === 'ANULADO' && documento.motivoAnulacion" class="border-b border-mk-border last:border-0">
-              <td colspan="5" class="px-4 py-2 text-sm text-mk-text/60">Motivo: {{ documento.motivoAnulacion }}</td>
+            <tr
+              v-if="documento.estado === 'ANULADO' && documento.motivoAnulacion"
+              class="border-b border-mk-border last:border-0"
+            >
+              <td colspan="5" class="px-4 py-2 text-sm text-mk-text/60">
+                Motivo: {{ documento.motivoAnulacion }}
+              </td>
             </tr>
           </template>
         </tbody>

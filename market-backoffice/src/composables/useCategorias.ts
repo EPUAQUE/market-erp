@@ -45,7 +45,8 @@ export function useCategorias() {
       items.value = items.value.map((c) => (c.id === id ? actualizada : c))
       return true
     } catch (error) {
-      saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo actualizar la categoría.'
+      saveError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo actualizar la categoría.'
       return false
     } finally {
       saveLoading.value = false

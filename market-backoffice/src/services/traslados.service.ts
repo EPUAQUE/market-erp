@@ -9,8 +9,11 @@ export interface DatosLineaTraslado {
 }
 
 class TrasladosService {
-  listar(pagina: number, tamano: number) {
-    return apiClient.get<Pagina<Traslado>>(API_ENDPOINTS.traslados.base, { params: { page: pagina, size: tamano } })
+  listar(pagina: number, tamano: number, signal?: AbortSignal) {
+    return apiClient.get<Pagina<Traslado>>(API_ENDPOINTS.traslados.base, {
+      params: { page: pagina, size: tamano },
+      signal,
+    })
   }
 
   crear(tiendaOrigenId: number, tiendaDestinoId: number, lineas: DatosLineaTraslado[]) {

@@ -10,9 +10,10 @@ export interface DatosMovimientoCaja {
 }
 
 class CajaService {
-  listarPorTienda(tiendaId: number, pagina: number, tamano: number) {
+  listarPorTienda(tiendaId: number, pagina: number, tamano: number, signal?: AbortSignal) {
     return apiClient.get<Pagina<CajaSesion>>(API_ENDPOINTS.caja.porTienda(tiendaId), {
       params: { page: pagina, size: tamano },
+      signal,
     })
   }
 

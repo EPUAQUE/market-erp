@@ -51,7 +51,7 @@ describe('useClientes', () => {
 
     await cargar()
 
-    expect(clientesService.listar).toHaveBeenCalledWith(2, 10)
+    expect(clientesService.listar).toHaveBeenCalledWith(2, 10, expect.any(AbortSignal))
     expect(items.value).toHaveLength(1)
     expect(totalElementos.value).toBe(25)
     expect(totalPaginas.value).toBe(3)

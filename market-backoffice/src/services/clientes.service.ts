@@ -11,8 +11,11 @@ export interface DatosCliente {
 }
 
 class ClientesService {
-  listar(pagina: number, tamano: number) {
-    return apiClient.get<Pagina<Cliente>>(API_ENDPOINTS.clientes.base, { params: { page: pagina, size: tamano } })
+  listar(pagina: number, tamano: number, signal?: AbortSignal) {
+    return apiClient.get<Pagina<Cliente>>(API_ENDPOINTS.clientes.base, {
+      params: { page: pagina, size: tamano },
+      signal,
+    })
   }
 
   crear(nit: string | undefined, datos: DatosCliente) {

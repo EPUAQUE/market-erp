@@ -107,7 +107,11 @@ onMounted(cargar)
           <tr v-else-if="filtered.length === 0">
             <td colspan="3" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
           </tr>
-          <tr v-for="categoria in filtered" :key="categoria.id" class="border-b border-mk-border last:border-0">
+          <tr
+            v-for="categoria in filtered"
+            :key="categoria.id"
+            class="border-b border-mk-border last:border-0"
+          >
             <td class="px-4 py-2">{{ categoria.nombre }}</td>
             <td class="px-4 py-2">
               <EstadoBadge

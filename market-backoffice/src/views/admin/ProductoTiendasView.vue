@@ -39,7 +39,14 @@ function nombreTienda(id: number) {
 
 function abrirAsignar() {
   editingId.value = null
-  form.value = { tiendaId: '', precioVenta: '', stockMinimo: '0', stockMaximo: '', permitirVenta: true, permitirIngreso: true }
+  form.value = {
+    tiendaId: '',
+    precioVenta: '',
+    stockMinimo: '0',
+    stockMaximo: '',
+    permitirVenta: true,
+    permitirIngreso: true,
+  }
   showForm.value = true
 }
 
@@ -189,7 +196,10 @@ onMounted(async () => {
             <td class="px-4 py-2">{{ pt.permitirVenta ? 'Sí' : 'No' }}</td>
             <td class="px-4 py-2">{{ pt.permitirIngreso ? 'Sí' : 'No' }}</td>
             <td class="px-4 py-2">
-              <EstadoBadge :variant="pt.activo ? 'success' : 'neutral'" :label="pt.activo ? 'Activo' : 'Inactivo'" />
+              <EstadoBadge
+                :variant="pt.activo ? 'success' : 'neutral'"
+                :label="pt.activo ? 'Activo' : 'Inactivo'"
+              />
             </td>
             <td class="px-4 py-2 whitespace-nowrap">
               <button

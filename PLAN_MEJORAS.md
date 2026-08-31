@@ -1073,12 +1073,21 @@ el propio `CLAUDE.md` del repo). Vistas grandes reales:
 `VentasView.vue` 336, `CajaView.vue` 307. Casi no hay componentes reutilizables (solo
 `EstadoBadge.vue`). No hay cancelación de requests real (el mapeo de error para
 `ERR_CANCELED` existe pero `ApiClient` nunca pasa `signal`). No hay Playwright. El
-refresh de sesión solo reacciona a un 401, no es proactivo al montar la app. Toda la
-fase sigue pendiente.
+refresh de sesión solo reacciona a un 401, no es proactivo al montar la app.
+
+**2026-08-31**: primera pasada ("base + quick wins", decisión del usuario) completa —
+ESLint 9 (flat config) + Prettier agregados y en CI, cancelación de requests real en
+los 8 composables de listados paginados server-side, y refresh silencioso al recargar
+la app. División de vistas grandes, componentes reutilizables, validación de
+formularios, accesibilidad y Playwright quedan pendientes para una siguiente pasada.
 
 ### Tareas
 
-- [ ] Agregar ESLint, Prettier y chequeos en CI.
+- [x] Agregar ESLint, Prettier y chequeos en CI. `eslint.config.js` (flat config,
+  ESLint 9 + typescript-eslint + eslint-plugin-vue) y `.prettierrc.json`; `pnpm lint`/
+  `pnpm format`/`pnpm format:check` nuevos, corridos en CI antes de typecheck. Un error
+  real encontrado y corregido (`no-useless-assignment` en `ProductosView.vue`); el resto
+  del codebase ya cumplía (solo se reformateó con Prettier, sin cambios semánticos).
 - [ ] Dividir vistas grandes (`Dashboard`, `Usuarios`, `Productos`, `Ventas`, `Caja`)
   en componentes de responsabilidad única.
 - [ ] Crear componentes reutilizables para:
@@ -1089,11 +1098,21 @@ fase sigue pendiente.
   - estados de carga, vacío y error;
   - formularios y errores de validación.
 - [ ] Evaluar una librería de validación de formularios o una convención interna común.
-- [ ] Normalizar cancelación de requests y evitar respuestas obsoletas al cambiar
-  filtros rápidamente.
+- [x] Normalizar cancelación de requests y evitar respuestas obsoletas al cambiar
+  filtros rápidamente. `ApiClient` (`get`/`post`/`put`/`delete`) acepta `signal` ahora;
+  los 8 composables detrás de listados paginados server-side (`useCaja`/`useClientes`/
+  `useCompras`/`useCuentasPorCobrar`/`useInventario`/`useProductos`/`useTraslados`/
+  `useVentas`) abortan su propia llamada anterior antes de lanzar una nueva. El resto de
+  composables (listados client-side, sin refetch por cada cambio de página) no lo
+  necesitaba — no se tocaron.
 - [ ] Agregar accesibilidad: navegación por teclado, foco, etiquetas, contraste y
   anuncios de error.
-- [ ] Implementar refresh silencioso al cargar la aplicación.
+- [x] Implementar refresh silencioso al cargar la aplicación. `authGuard` intenta
+  `authStore.trySilentLogin()` (reusa el mismo refresh con dedupe que ya usaba el
+  interceptor de 401) antes de redirigir a `/login` cuando no hay access token en
+  memoria — antes una recarga de página siempre mandaba a login aunque la cookie
+  HttpOnly de refresh token siguiera viva. Verificado en Chrome contra el backend real:
+  login, recarga completa de página, sesión se mantiene sin pasar por `/login`.
 - [ ] Agregar E2E con Playwright para flujos administrativos críticos.
 - [ ] Mantener texto en español, pero centralizarlo si se prevé personalización o i18n.
 
@@ -1304,7 +1323,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 5 — CI/pruebas | "Pipeline mínimo" completo, "Cobertura prioritaria" pendiente | Commiteado y en `main` | Verificado local y **CI real en GitHub Actions confirmado verde** en múltiples runs (5 jobs: backend, backoffice, flutter, docker-build, gitleaks) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. E2E de negocio y tests nuevos de Flutter/Vue quedan pendientes (sección "Cobertura prioritaria"). |
 | 6 — Backups | Código completo y verificado local; falta que el usuario cree el bucket/SMTP/secrets reales | Sin commitear aún | Verificado contra Postgres descartable con `rclone` local: backup.sh (dump+bundle cifrado+checksum) y restore.sh (descarga+verifica+descifra+restaura) de punta a punta con datos/imágenes/certs/.env de prueba, más `check-freshness.sh`/`alert.sh` en sus 3 escenarios. `docker compose config` limpio | `deploy/backup/*.sh` (backup/restore/check-freshness/alert), `docker-compose.yml`, `.env.example`, `.github/workflows/backup-restore-drill.yml`, `deploy/README.md`. Falta: bucket/cuenta de servicio/SMTP reales, 3 secrets de GitHub, y el ensayo de recuperación con volumen Docker perdido contra un servidor real. |
 | 7 — Auditoría/observabilidad | Completa salvo dashboards (pospuestos, requieren Prometheus/Grafana) | Sin commitear aún | `mvn verify` (564 unitarios + 24 IT, `BUILD SUCCESS`); verificado en vivo contra backend local + Postgres real (`@Auditable` y `SecurityAuditPublisher` escribiendo en `audit_event`, `REFRESH_REUTILIZADO` reproducido, correlationId end-to-end, `/actuator/prometheus` con JWT) | Nuevo módulo `auditoria` (tabla append-only + AOP `@Auditable`), `docs/auditoria.md` reescrito, `CorrelationIdFilter`, `AlertaEmailService`, `micrometer-registry-prometheus`. 2 bugs encontrados y corregidos en la verificación local (actor "anonymousUser" en login, `/actuator/health` DOWN por mail health indicator). |
-| 8 — Backoffice | Pendiente | | | |
+| 8 — Backoffice | "Base + quick wins" completa, resto pendiente | Sin commitear aún | `pnpm typecheck`/`pnpm lint`/`pnpm test` (21 tests) limpios, `pnpm build` exitoso. Verificado en Chrome contra backend local real: login → recarga de página mantiene sesión (antes caía a `/login`); navegación rápida entre 6 módulos paginados sin errores de consola | ESLint 9 (flat config) + Prettier en CI, `signal`/`AbortController` en `ApiClient` + 8 composables paginados server-side, refresh silencioso en `authGuard`. División de vistas grandes, componentes reutilizables, validación de formularios, accesibilidad y Playwright quedan para otra pasada. |
 | 9 — Flutter | Pendiente | | | |
 | 10 — Funciones comerciales | Pendiente | | | |
 | 11 — Rendimiento | Pendiente | | | |

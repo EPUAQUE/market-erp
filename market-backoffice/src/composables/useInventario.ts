@@ -25,26 +25,41 @@ export function useInventario() {
 
   let tiendaActual: number | null = null
   let productoKardexActual: number | null = null
+  let cargarController: AbortController | null = null
+  let movimientosController: AbortController | null = null
 
   async function cargar(tiendaId: number) {
     tiendaActual = tiendaId
+    cargarController?.abort()
+    const controller = new AbortController()
+    cargarController = controller
     listLoading.value = true
     listError.value = null
     try {
-      const resultado = await inventarioService.listarPorTienda(tiendaId, pagina.value - 1, tamano.value)
+      const resultado = await inventarioService.listarPorTienda(
+        tiendaId,
+        pagina.value - 1,
+        tamano.value,
+        controller.signal,
+      )
+      if (controller.signal.aborted) return
       items.value = resultado.contenido
       totalElementos.value = resultado.totalElementos
       totalPaginas.value = resultado.totalPaginas
     } catch (error) {
+      if (error instanceof ApiClientError && error.isCanceled) return
       listError.value = error instanceof ApiClientError ? error.message : 'No se pudo cargar el inventario.'
     } finally {
-      listLoading.value = false
+      if (cargarController === controller) listLoading.value = false
     }
   }
 
   async function cargarMovimientos(tiendaId: number, productoId: number) {
     tiendaActual = tiendaId
     productoKardexActual = productoId
+    movimientosController?.abort()
+    const controller = new AbortController()
+    movimientosController = controller
     movimientosLoading.value = true
     movimientosError.value = null
     try {
@@ -53,14 +68,18 @@ export function useInventario() {
         productoId,
         movimientosPagina.value - 1,
         movimientosTamano.value,
+        controller.signal,
       )
+      if (controller.signal.aborted) return
       movimientos.value = resultado.contenido
       movimientosTotalElementos.value = resultado.totalElementos
       movimientosTotalPaginas.value = resultado.totalPaginas
     } catch (error) {
-      movimientosError.value = error instanceof ApiClientError ? error.message : 'No se pudo cargar el kardex.'
+      if (error instanceof ApiClientError && error.isCanceled) return
+      movimientosError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo cargar el kardex.'
     } finally {
-      movimientosLoading.value = false
+      if (movimientosController === controller) movimientosLoading.value = false
     }
   }
 
@@ -75,7 +94,8 @@ export function useInventario() {
       }
       return true
     } catch (error) {
-      saveError.value = error instanceof ApiClientError ? error.message : 'No se pudo registrar el movimiento.'
+      saveError.value =
+        error instanceof ApiClientError ? error.message : 'No se pudo registrar el movimiento.'
       return false
     } finally {
       saveLoading.value = false

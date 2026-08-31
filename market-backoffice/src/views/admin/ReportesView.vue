@@ -3,7 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useReportes } from '@/composables/useReportes'
 import { useTiendas } from '@/composables/useTiendas'
 
-const { reporteVentas, reporteCompras, loading, error, generarReporteVentas, generarReporteCompras } = useReportes()
+const { reporteVentas, reporteCompras, loading, error, generarReporteVentas, generarReporteCompras } =
+  useReportes()
 const { items: tiendas, cargar: cargarTiendas } = useTiendas()
 
 const tiendaId = ref<number | null>(null)
@@ -90,13 +91,19 @@ onMounted(async () => {
     <form class="grid gap-3 rounded border border-mk-border p-4 sm:grid-cols-2" @submit.prevent="onGenerar">
       <div class="space-y-1">
         <label class="text-sm font-medium">Tienda</label>
-        <select v-model="tiendaId" class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2">
+        <select
+          v-model="tiendaId"
+          class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+        >
           <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
         </select>
       </div>
       <div class="space-y-1">
         <label class="text-sm font-medium">Tipo de reporte</label>
-        <select v-model="tipo" class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2">
+        <select
+          v-model="tipo"
+          class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+        >
           <option value="VENTAS">Ventas</option>
           <option value="COMPRAS">Compras</option>
         </select>
@@ -156,7 +163,11 @@ onMounted(async () => {
             <tr v-if="reporteVentas.lineas.length === 0">
               <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Sin ventas en el rango.</td>
             </tr>
-            <tr v-for="linea in reporteVentas.lineas" :key="linea.ventaId" class="border-b border-mk-border last:border-0">
+            <tr
+              v-for="linea in reporteVentas.lineas"
+              :key="linea.ventaId"
+              class="border-b border-mk-border last:border-0"
+            >
               <td class="px-4 py-2">#{{ linea.ventaId }}</td>
               <td class="px-4 py-2">#{{ linea.clienteId }}</td>
               <td class="px-4 py-2">{{ new Date(linea.fecha).toLocaleString() }}</td>

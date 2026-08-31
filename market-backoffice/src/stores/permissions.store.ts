@@ -16,7 +16,12 @@ export const usePermissionsStore = defineStore('permissions', {
     grupoIds: new Set(),
   }),
   actions: {
-    hydrate(permisos: PermissionCode[], tiendaIds: number[], alcanceGlobal: boolean, grupoIds: number[] = []) {
+    hydrate(
+      permisos: PermissionCode[],
+      tiendaIds: number[],
+      alcanceGlobal: boolean,
+      grupoIds: number[] = [],
+    ) {
       this.permisos = new Set(permisos)
       this.tiendaIds = new Set(tiendaIds)
       this.alcanceGlobal = alcanceGlobal

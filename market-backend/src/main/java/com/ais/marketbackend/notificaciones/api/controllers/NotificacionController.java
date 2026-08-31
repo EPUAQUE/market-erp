@@ -4,6 +4,8 @@ import com.ais.marketbackend.notificaciones.api.dtos.responses.NotificacionRespo
 import com.ais.marketbackend.notificaciones.api.mappers.NotificacionApiMapper;
 import com.ais.marketbackend.notificaciones.application.services.interfaces.NotificacionService;
 import com.ais.marketbackend.seguridad.infrastructure.security.RequiresPermission;
+import com.ais.marketbackend.shared.api.PaginacionParams;
+import com.ais.marketbackend.shared.responses.PaginaResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -23,18 +26,24 @@ public class NotificacionController {
 
     @GetMapping
     @RequiresPermission("NOTIFICACIONES_VER")
-    public ResponseEntity<List<NotificacionResponse>> listar(@PathVariable Long tiendaId) {
-        List<NotificacionResponse> items =
-                notificacionService.listarPorTienda(tiendaId).stream().map(mapper::toResponse).toList();
-        return ResponseEntity.ok(items);
+    public ResponseEntity<PaginaResponse<NotificacionResponse>> listar(
+            @PathVariable Long tiendaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PaginacionParams.TAMANO_DEFECTO) int size) {
+        var pagina = notificacionService.listarPorTienda(
+                tiendaId, PaginacionParams.normalizarPagina(page), PaginacionParams.normalizarTamano(size));
+        return ResponseEntity.ok(PaginaResponse.de(pagina, mapper::toResponse));
     }
 
     @GetMapping("/no-leidas")
     @RequiresPermission("NOTIFICACIONES_VER")
-    public ResponseEntity<List<NotificacionResponse>> listarNoLeidas(@PathVariable Long tiendaId) {
-        List<NotificacionResponse> items =
-                notificacionService.listarNoLeidasPorTienda(tiendaId).stream().map(mapper::toResponse).toList();
-        return ResponseEntity.ok(items);
+    public ResponseEntity<PaginaResponse<NotificacionResponse>> listarNoLeidas(
+            @PathVariable Long tiendaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PaginacionParams.TAMANO_DEFECTO) int size) {
+        var pagina = notificacionService.listarNoLeidasPorTienda(
+                tiendaId, PaginacionParams.normalizarPagina(page), PaginacionParams.normalizarTamano(size));
+        return ResponseEntity.ok(PaginaResponse.de(pagina, mapper::toResponse));
     }
 
     @PostMapping("/generar")

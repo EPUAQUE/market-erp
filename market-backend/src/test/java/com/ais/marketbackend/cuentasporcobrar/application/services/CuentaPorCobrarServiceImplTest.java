@@ -108,6 +108,34 @@ class CuentaPorCobrarServiceImplTest {
     }
 
     @Test
+    void obtenerPorVentaDevuelveLaCuentaAsociada() {
+        CuentaPorCobrar cuenta = withId(CuentaPorCobrar.nueva(7L, 2L, 3L, new BigDecimal("100.00")), 9L);
+        when(cuentaPorCobrarRepository.findByVentaId(7L)).thenReturn(Optional.of(cuenta));
+
+        CuentaPorCobrarResumen resumen = cuentaPorCobrarService.obtenerPorVenta(3L, 7L);
+
+        assertThat(resumen.id()).isEqualTo(9L);
+        assertThat(resumen.ventaId()).isEqualTo(7L);
+    }
+
+    @Test
+    void obtenerPorVentaSinCuentaLanzaNoEncontrada() {
+        when(cuentaPorCobrarRepository.findByVentaId(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> cuentaPorCobrarService.obtenerPorVenta(3L, 7L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void obtenerPorVentaDeOtraTiendaLanzaNoEncontrada() {
+        CuentaPorCobrar cuenta = withId(CuentaPorCobrar.nueva(7L, 2L, 3L, new BigDecimal("100.00")), 9L);
+        when(cuentaPorCobrarRepository.findByVentaId(7L)).thenReturn(Optional.of(cuenta));
+
+        assertThatThrownBy(() -> cuentaPorCobrarService.obtenerPorVenta(99L, 7L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void anularConIdInexistenteLanzaNoEncontrado() {
         when(cuentaPorCobrarRepository.findByIdConBloqueo(99L)).thenReturn(Optional.empty());
 

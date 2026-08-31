@@ -20,9 +20,12 @@ import org.springframework.stereotype.Component;
 /**
  * Unión de permisos de todos los roles asignados a un usuario (globales o por
  * tienda). Cachea el resultado con TTL corto — la base de datos sigue siendo la
- * fuente de verdad; un cambio de rol/tienda surte efecto en, como máximo,
- * {@link #CACHE_TTL_SEGUNDOS} segundos o al expirar el access token, lo que ocurra
- * primero.
+ * fuente de verdad. {@code UsuarioServiceImpl} llama a {@link #invalidar} tras
+ * cada cambio que puede afectar los permisos de un usuario (asignar tienda/grupo,
+ * desactivar/bloquear/activar), así que en la práctica el efecto es inmediato en
+ * esta instancia; sin esa invalidación explícita (o en una instancia distinta a la
+ * que procesó el cambio, ver PLAN_MEJORAS.md Fase 11 — multi-instancia) el peor
+ * caso sigue siendo {@link #CACHE_TTL_SEGUNDOS} segundos.
  */
 @Component
 public class PermisosEfectivosResolverImpl implements PermisosEfectivosResolver {
@@ -56,7 +59,7 @@ public class PermisosEfectivosResolverImpl implements PermisosEfectivosResolver 
         return calculado;
     }
 
-    /** Invalida la entrada cacheada de un usuario tras un cambio crítico (rol, tienda, estado). */
+    @Override
     public void invalidar(Long usuarioId) {
         cache.remove(usuarioId);
     }

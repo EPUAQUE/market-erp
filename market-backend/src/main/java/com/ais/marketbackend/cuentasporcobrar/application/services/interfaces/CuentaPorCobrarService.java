@@ -17,6 +17,15 @@ public interface CuentaPorCobrarService {
 
     CuentaPorCobrarResumen obtener(Long tiendaId, Long id);
 
+    /**
+     * Fase 11 (PLAN_MEJORAS.md): reemplaza el patrón O(n) de pedir
+     * {@code listarPorTienda} completo y filtrar por {@code ventaId} en el
+     * cliente. Lanza {@code ResourceNotFoundException} si la venta no tiene
+     * cuenta por cobrar (caso normal, ej. venta al contado) — mismo criterio
+     * que {@code CajaService.obtenerAbierta}.
+     */
+    CuentaPorCobrarResumen obtenerPorVenta(Long tiendaId, Long ventaId);
+
     /** Sin paginar — uso interno (ej. agregados del dashboard). El endpoint público usa la variante paginada. */
     List<CuentaPorCobrarResumen> listarPorTienda(Long tiendaId);
 

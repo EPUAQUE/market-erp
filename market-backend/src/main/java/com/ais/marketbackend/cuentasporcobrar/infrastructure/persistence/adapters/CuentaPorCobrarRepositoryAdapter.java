@@ -54,4 +54,9 @@ public class CuentaPorCobrarRepositoryAdapter implements CuentaPorCobrarReposito
         return PaginaMapper.desde(
                 jpaRepository.findByTiendaId(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
     }
+
+    @Override
+    public Optional<CuentaPorCobrar> findByVentaId(Long ventaId) {
+        return jpaRepository.findByVentaId(ventaId).map(mapper::toDomain);
+    }
 }

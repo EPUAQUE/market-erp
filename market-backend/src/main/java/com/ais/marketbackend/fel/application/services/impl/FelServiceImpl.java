@@ -11,6 +11,7 @@ import com.ais.marketbackend.fel.domain.exception.VentaNoCompletadaException;
 import com.ais.marketbackend.fel.domain.exception.VentaYaFacturadaException;
 import com.ais.marketbackend.fel.domain.model.DocumentoFel;
 import com.ais.marketbackend.fel.domain.repository.DocumentoFelRepository;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.ventas.application.dtos.VentaResumen;
 import com.ais.marketbackend.ventas.application.services.interfaces.VentaService;
@@ -86,6 +87,11 @@ public class FelServiceImpl implements FelService {
     @Override
     public List<DocumentoFelResumen> listarPorTienda(Long tiendaId) {
         return documentoFelRepository.findByTiendaId(tiendaId).stream().map(this::toResumen).toList();
+    }
+
+    @Override
+    public Pagina<DocumentoFelResumen> listarPorTienda(Long tiendaId, int pagina, int tamano) {
+        return documentoFelRepository.findByTiendaId(tiendaId, pagina, tamano).map(this::toResumen);
     }
 
     private DocumentoFel certificar(DocumentoFel documento, VentaResumen venta) {

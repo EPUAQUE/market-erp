@@ -48,6 +48,14 @@ public class CuentaPorCobrarController {
         return ResponseEntity.ok(mapper.toResponse(cuentaPorCobrarService.obtener(tiendaId, id)));
     }
 
+    /** Fase 11 (PLAN_MEJORAS.md): 404 si la venta no tiene cuenta por cobrar (ej. venta al contado) — caso normal. */
+    @GetMapping("/por-venta/{ventaId}")
+    @RequiresPermission("CUENTAS_POR_COBRAR_VER")
+    public ResponseEntity<CuentaPorCobrarResponse> obtenerPorVenta(
+            @PathVariable Long tiendaId, @PathVariable Long ventaId) {
+        return ResponseEntity.ok(mapper.toResponse(cuentaPorCobrarService.obtenerPorVenta(tiendaId, ventaId)));
+    }
+
     @PostMapping("/{id}/cobros")
     @RequiresPermission("CUENTAS_POR_COBRAR_COBRAR")
     public ResponseEntity<CuentaPorCobrarResponse> registrarCobro(

@@ -5,8 +5,9 @@ import com.ais.marketbackend.fel.api.dtos.responses.DocumentoFelResponse;
 import com.ais.marketbackend.fel.api.mappers.DocumentoFelApiMapper;
 import com.ais.marketbackend.fel.application.services.interfaces.FelService;
 import com.ais.marketbackend.seguridad.infrastructure.security.RequiresPermission;
+import com.ais.marketbackend.shared.api.PaginacionParams;
+import com.ais.marketbackend.shared.responses.PaginaResponse;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -26,10 +28,13 @@ public class FelController {
 
     @GetMapping
     @RequiresPermission("FEL_VER")
-    public ResponseEntity<List<DocumentoFelResponse>> listar(@PathVariable Long tiendaId) {
-        List<DocumentoFelResponse> items =
-                felService.listarPorTienda(tiendaId).stream().map(mapper::toResponse).toList();
-        return ResponseEntity.ok(items);
+    public ResponseEntity<PaginaResponse<DocumentoFelResponse>> listar(
+            @PathVariable Long tiendaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PaginacionParams.TAMANO_DEFECTO) int size) {
+        var pagina = felService.listarPorTienda(
+                tiendaId, PaginacionParams.normalizarPagina(page), PaginacionParams.normalizarTamano(size));
+        return ResponseEntity.ok(PaginaResponse.de(pagina, mapper::toResponse));
     }
 
     @GetMapping("/{id}")

@@ -27,4 +27,13 @@ public interface CuentaPorCobrarRepository {
     List<CuentaPorCobrar> findByTiendaId(Long tiendaId);
 
     Pagina<CuentaPorCobrar> findByTiendaId(Long tiendaId, int pagina, int tamano);
+
+    /**
+     * Fase 11 (PLAN_MEJORAS.md): antes no existía — cualquier consumidor que
+     * necesitara "la cuenta por cobrar de esta venta" tenía que pedir
+     * {@code findByTiendaId} completo y filtrar en memoria (patrón O(n), ver
+     * {@code market-flutter}'s {@code CuentaPorCobrarApi.buscarPorVenta}).
+     * Mismo patrón que {@code DocumentoFelRepository.findByVentaId}.
+     */
+    Optional<CuentaPorCobrar> findByVentaId(Long ventaId);
 }

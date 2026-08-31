@@ -4,6 +4,8 @@ import com.ais.marketbackend.cuentasporpagar.infrastructure.persistence.entities
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -16,4 +18,6 @@ public interface CuentaPorPagarJpaRepository extends JpaRepository<CuentaPorPaga
     Optional<CuentaPorPagarEntity> findByIdConBloqueo(@Param("id") Long id);
 
     List<CuentaPorPagarEntity> findByTiendaId(Long tiendaId);
+
+    Page<CuentaPorPagarEntity> findByTiendaId(Long tiendaId, Pageable pageable);
 }

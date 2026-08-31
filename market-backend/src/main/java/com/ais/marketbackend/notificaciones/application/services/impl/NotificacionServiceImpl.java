@@ -14,6 +14,7 @@ import com.ais.marketbackend.notificaciones.domain.model.TipoNotificacion;
 import com.ais.marketbackend.notificaciones.domain.repository.NotificacionRepository;
 import com.ais.marketbackend.productos.application.dtos.ProductoTiendaResumen;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoTiendaService;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -106,8 +107,18 @@ public class NotificacionServiceImpl implements NotificacionService {
     }
 
     @Override
+    public Pagina<NotificacionResumen> listarPorTienda(Long tiendaId, int pagina, int tamano) {
+        return notificacionRepository.findByTiendaId(tiendaId, pagina, tamano).map(this::toResumen);
+    }
+
+    @Override
     public List<NotificacionResumen> listarNoLeidasPorTienda(Long tiendaId) {
         return notificacionRepository.findByTiendaIdAndLeidaFalse(tiendaId).stream().map(this::toResumen).toList();
+    }
+
+    @Override
+    public Pagina<NotificacionResumen> listarNoLeidasPorTienda(Long tiendaId, int pagina, int tamano) {
+        return notificacionRepository.findByTiendaIdAndLeidaFalse(tiendaId, pagina, tamano).map(this::toResumen);
     }
 
     private void crearSiNueva(

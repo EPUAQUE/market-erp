@@ -12,6 +12,7 @@ import com.ais.marketbackend.notificaciones.api.mappers.NotificacionApiMapper;
 import com.ais.marketbackend.notificaciones.application.dtos.NotificacionResumen;
 import com.ais.marketbackend.notificaciones.application.services.interfaces.NotificacionService;
 import com.ais.marketbackend.notificaciones.domain.model.TipoNotificacion;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
@@ -47,20 +48,22 @@ class NotificacionControllerTest {
 
     @Test
     void listarDevuelveLasNotificacionesDeLaTienda() throws Exception {
-        when(notificacionService.listarPorTienda(1L)).thenReturn(List.of(resumen(9L, false)));
+        when(notificacionService.listarPorTienda(1L, 0, 20)).thenReturn(
+                new Pagina<>(List.of(resumen(9L, false)), 0, 20, 1, 1));
 
         mockMvc.perform(get("/api/v1/notificaciones/tiendas/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].leida").value(false));
+                .andExpect(jsonPath("$.contenido[0].leida").value(false));
     }
 
     @Test
     void listarNoLeidasDevuelveSoloLasNoLeidas() throws Exception {
-        when(notificacionService.listarNoLeidasPorTienda(1L)).thenReturn(List.of(resumen(9L, false)));
+        when(notificacionService.listarNoLeidasPorTienda(1L, 0, 20)).thenReturn(
+                new Pagina<>(List.of(resumen(9L, false)), 0, 20, 1, 1));
 
         mockMvc.perform(get("/api/v1/notificaciones/tiendas/1/no-leidas"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(9));
+                .andExpect(jsonPath("$.contenido[0].id").value(9));
     }
 
     @Test

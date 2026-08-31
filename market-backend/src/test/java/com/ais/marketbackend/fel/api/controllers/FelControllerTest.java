@@ -13,6 +13,7 @@ import com.ais.marketbackend.fel.application.dtos.DocumentoFelResumen;
 import com.ais.marketbackend.fel.application.services.interfaces.FelService;
 import com.ais.marketbackend.fel.domain.exception.VentaNoCompletadaException;
 import com.ais.marketbackend.fel.domain.model.EstadoDocumentoFel;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
@@ -52,11 +53,12 @@ class FelControllerTest {
 
     @Test
     void listarDevuelveLosDocumentosDeLaTienda() throws Exception {
-        when(felService.listarPorTienda(1L)).thenReturn(List.of(resumen(EstadoDocumentoFel.CERTIFICADO)));
+        when(felService.listarPorTienda(1L, 0, 20)).thenReturn(
+                new Pagina<>(List.of(resumen(EstadoDocumentoFel.CERTIFICADO)), 0, 20, 1, 1));
 
         mockMvc.perform(get("/api/v1/fel/tiendas/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].estado").value("CERTIFICADO"));
+                .andExpect(jsonPath("$.contenido[0].estado").value("CERTIFICADO"));
     }
 
     @Test

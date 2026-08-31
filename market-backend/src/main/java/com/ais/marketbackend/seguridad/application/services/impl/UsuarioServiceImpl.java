@@ -140,6 +140,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         usuarioTiendaRepository.save(new UsuarioTienda(null, usuarioId, tiendaId, rol));
+        permisosEfectivosResolver.invalidar(usuarioId);
         auditPublisher.publicar(TipoEventoAuditoria.TIENDA_ASIGNADA, UUID.randomUUID().toString(),
                 "usuarioId=" + usuarioId + ",tiendaId=" + tiendaId + ",rolId=" + rolId);
     }
@@ -175,6 +176,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         usuarioGrupoTiendaRepository.save(new UsuarioGrupoTienda(null, usuarioId, grupoTiendaId, rol));
+        permisosEfectivosResolver.invalidar(usuarioId);
         auditPublisher.publicar(TipoEventoAuditoria.GRUPO_ASIGNADO, UUID.randomUUID().toString(),
                 "usuarioId=" + usuarioId + ",grupoTiendaId=" + grupoTiendaId + ",rolId=" + rolId);
     }
@@ -276,6 +278,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.desactivar();
         Usuario guardado = usuarioRepository.save(usuario);
         refreshTokenRepository.revocarTodosDeUsuario(usuarioId);
+        permisosEfectivosResolver.invalidar(usuarioId);
         auditPublisher.publicar(
                 TipoEventoAuditoria.USUARIO_DESACTIVADO, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
         return toResumen(guardado);
@@ -289,6 +292,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.bloquear();
         Usuario guardado = usuarioRepository.save(usuario);
         refreshTokenRepository.revocarTodosDeUsuario(usuarioId);
+        permisosEfectivosResolver.invalidar(usuarioId);
         auditPublisher.publicar(
                 TipoEventoAuditoria.USUARIO_BLOQUEADO, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
         return toResumen(guardado);
@@ -301,6 +305,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
         usuario.activar();
         Usuario guardado = usuarioRepository.save(usuario);
+        permisosEfectivosResolver.invalidar(usuarioId);
         auditPublisher.publicar(
                 TipoEventoAuditoria.USUARIO_ACTIVADO, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
         return toResumen(guardado);

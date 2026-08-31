@@ -1,10 +1,14 @@
 import { apiClient } from '@/services/http/ApiClient'
 import { API_ENDPOINTS } from '@/config/endpoints'
 import type { DocumentoFel } from '@/types/fel'
+import type { Pagina } from '@/types/pagina'
 
 class FelService {
-  listarPorTienda(tiendaId: number) {
-    return apiClient.get<DocumentoFel[]>(API_ENDPOINTS.fel.porTienda(tiendaId))
+  listarPorTienda(tiendaId: number, pagina: number, tamano: number, signal?: AbortSignal) {
+    return apiClient.get<Pagina<DocumentoFel>>(API_ENDPOINTS.fel.porTienda(tiendaId), {
+      params: { page: pagina, size: tamano },
+      signal,
+    })
   }
 
   emitir(tiendaId: number, ventaId: number) {

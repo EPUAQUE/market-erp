@@ -65,6 +65,16 @@ public class CuentaPorCobrarServiceImpl implements CuentaPorCobrarService {
     }
 
     @Override
+    public CuentaPorCobrarResumen obtenerPorVenta(Long tiendaId, Long ventaId) {
+        CuentaPorCobrar cuenta = cuentaPorCobrarRepository.findByVentaId(ventaId)
+                .orElseThrow(() -> new ResourceNotFoundException("La venta " + ventaId + " no tiene cuenta por cobrar."));
+        if (!cuenta.getTiendaId().equals(tiendaId)) {
+            throw new ResourceNotFoundException("La venta " + ventaId + " no tiene cuenta por cobrar.");
+        }
+        return toResumen(cuenta);
+    }
+
+    @Override
     public List<CuentaPorCobrarResumen> listarPorTienda(Long tiendaId) {
         return cuentaPorCobrarRepository.findByTiendaId(tiendaId).stream().map(this::toResumen).toList();
     }

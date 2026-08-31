@@ -6,9 +6,12 @@ import com.ais.marketbackend.notificaciones.domain.model.TipoNotificacion;
 import com.ais.marketbackend.notificaciones.domain.repository.NotificacionRepository;
 import com.ais.marketbackend.notificaciones.infrastructure.persistence.mappers.NotificacionEntityMapper;
 import com.ais.marketbackend.notificaciones.infrastructure.persistence.repositories.NotificacionJpaRepository;
+import com.ais.marketbackend.shared.domain.Pagina;
+import com.ais.marketbackend.shared.infrastructure.persistence.PaginaMapper;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -42,8 +45,20 @@ public class NotificacionRepositoryAdapter implements NotificacionRepository {
     }
 
     @Override
+    public Pagina<Notificacion> findByTiendaId(Long tiendaId, int pagina, int tamano) {
+        return PaginaMapper.desde(
+                jpaRepository.findByTiendaId(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
+    }
+
+    @Override
     public List<Notificacion> findByTiendaIdAndLeidaFalse(Long tiendaId) {
         return jpaRepository.findByTiendaIdAndLeidaFalse(tiendaId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public Pagina<Notificacion> findByTiendaIdAndLeidaFalse(Long tiendaId, int pagina, int tamano) {
+        return PaginaMapper.desde(
+                jpaRepository.findByTiendaIdAndLeidaFalse(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
     }
 
     @Override

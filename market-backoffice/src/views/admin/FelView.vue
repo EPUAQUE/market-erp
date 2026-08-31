@@ -7,8 +7,21 @@ import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { DocumentoFel } from '@/types/fel'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
 
-const { items, listLoading, listError, emitirLoading, emitirError, cargar, emitir, reintentar, anular } =
-  useFel()
+const {
+  items,
+  listLoading,
+  listError,
+  emitirLoading,
+  emitirError,
+  pagina,
+  tamano,
+  totalElementos,
+  totalPaginas,
+  cargar,
+  emitir,
+  reintentar,
+  anular,
+} = useFel()
 const { items: tiendas, cargar: cargarTiendas } = useTiendas()
 const permissions = usePermissionsStore()
 
@@ -31,7 +44,15 @@ const ESTADO_VARIANT: Record<string, EstadoBadgeVariant> = {
 }
 
 watch(tiendaId, (id) => {
+  pagina.value = 1
   if (id !== null) cargar(id)
+})
+
+watch(tamano, () => {
+  pagina.value = 1
+})
+watch([pagina, tamano], () => {
+  if (tiendaId.value !== null) cargar(tiendaId.value)
 })
 
 async function onEmitir() {
@@ -196,6 +217,29 @@ onMounted(async () => {
           </template>
         </tbody>
       </table>
+    </div>
+
+    <div class="flex items-center justify-between text-sm text-mk-text/70">
+      <select v-model.number="tamano" class="rounded border border-mk-border bg-transparent px-2 py-1">
+        <option :value="10">10 / página</option>
+        <option :value="25">25 / página</option>
+        <option :value="50">50 / página</option>
+        <option :value="100">100 / página</option>
+      </select>
+      <div class="flex items-center gap-2">
+        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">
+          Anterior
+        </button>
+        <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
+        <button
+          type="button"
+          :disabled="pagina >= totalPaginas"
+          class="disabled:opacity-40"
+          @click="pagina++"
+        >
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 </template>

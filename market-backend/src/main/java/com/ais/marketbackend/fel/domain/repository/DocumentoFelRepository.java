@@ -1,6 +1,7 @@
 package com.ais.marketbackend.fel.domain.repository;
 
 import com.ais.marketbackend.fel.domain.model.DocumentoFel;
+import com.ais.marketbackend.shared.domain.Pagina;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,9 @@ public interface DocumentoFelRepository {
     Optional<DocumentoFel> findByVentaId(Long ventaId);
 
     List<DocumentoFel> findByTiendaId(Long tiendaId);
+
+    /** Fase 11 (PLAN_MEJORAS.md): crece 1:1 con cada venta facturada — el endpoint público usa esta variante. */
+    Pagina<DocumentoFel> findByTiendaId(Long tiendaId, int pagina, int tamano);
 
     /** Siguiente correlativo de la serie para la tienda — usado al emitir un nuevo documento. */
     long siguienteNumero(Long tiendaId, String serie);

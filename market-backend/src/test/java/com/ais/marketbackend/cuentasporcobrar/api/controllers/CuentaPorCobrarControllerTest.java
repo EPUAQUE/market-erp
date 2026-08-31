@@ -15,6 +15,7 @@ import com.ais.marketbackend.cuentasporcobrar.domain.model.EstadoCuentaPorCobrar
 import com.ais.marketbackend.cuentasporcobrar.domain.model.MetodoPago;
 import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
+import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -79,6 +80,25 @@ class CuentaPorCobrarControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"monto\":-5,\"metodoPago\":\"EFECTIVO\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void obtenerPorVentaDevuelveLaCuenta() throws Exception {
+        when(cuentaPorCobrarService.obtenerPorVenta(1L, 5L)).thenReturn(resumen(9L, EstadoCuentaPorCobrar.PENDIENTE));
+
+        mockMvc.perform(get("/api/v1/cuentas-por-cobrar/tiendas/1/por-venta/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(9))
+                .andExpect(jsonPath("$.ventaId").value(5));
+    }
+
+    @Test
+    void obtenerPorVentaSinCuentaDevuelve404() throws Exception {
+        when(cuentaPorCobrarService.obtenerPorVenta(1L, 5L))
+                .thenThrow(new ResourceNotFoundException("La venta 5 no tiene cuenta por cobrar."));
+
+        mockMvc.perform(get("/api/v1/cuentas-por-cobrar/tiendas/1/por-venta/5"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

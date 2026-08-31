@@ -10,4 +10,7 @@ import com.ais.marketbackend.seguridad.domain.model.PermisosEfectivos;
 public interface PermisosEfectivosResolver {
 
     PermisosEfectivos resolver(Long usuarioId);
+
+    /** Invalida la entrada cacheada de un usuario tras un cambio crítico (rol, tienda, estado). */
+    void invalidar(Long usuarioId);
 }

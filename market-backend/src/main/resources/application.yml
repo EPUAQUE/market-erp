@@ -19,6 +19,24 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
 
+  # Fase 11 (PLAN_MEJORAS.md): antes dependía en silencio de los defaults de
+  # HikariCP (maximum-pool-size=10, minimum-idle=igual al máximo — 10
+  # conexiones siempre abiertas incluso sin carga). Los mismos valores por
+  # defecto quedan acá, ahora explícitos y configurables por env var — no se
+  # subió maximum-pool-size sin datos reales de carga (ver comentario de
+  # Argon2 más abajo, mismo criterio: no aumentar un límite sin medir antes).
+  # minimum-idle sí se bajó de 10 a 2: deja que el pool se achique en horario
+  # de poco tráfico en vez de mantener 10 conexiones ociosas contra Postgres
+  # todo el tiempo.
+  datasource:
+    hikari:
+      pool-name: market-backend-hikari
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT_MS:30000}
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT_MS:600000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}
+
   servlet:
     multipart:
       max-file-size: 5MB
@@ -108,6 +126,10 @@ app:
     # apunta a un volumen nombrado (ver docker-compose.yml), en desarrollo local
     # cae en una carpeta relativa al working directory.
     productos-imagenes-dir: ${PRODUCTOS_IMAGENES_DIR:./data/productos-imagenes}
+    # Fase 11: límite propio de imagen de producto (2MB), más chico que el
+    # límite genérico de multipart (5MB, spring.servlet.multipart arriba) que
+    # aplica a toda la app.
+    productos-imagenes-max-bytes: ${PRODUCTOS_IMAGENES_MAX_BYTES:2097152}
   alertas:
     # Fase 7 (PLAN_MEJORAS.md): mismo canal/env vars que deploy/backup/alert.sh en
     # Fase 6 — AlertaEmailService cae a solo-log si "to" queda vacío (sin SMTP

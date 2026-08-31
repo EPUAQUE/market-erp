@@ -7,9 +7,12 @@ import com.ais.marketbackend.fel.infrastructure.persistence.entities.FelCorrelat
 import com.ais.marketbackend.fel.infrastructure.persistence.mappers.DocumentoFelEntityMapper;
 import com.ais.marketbackend.fel.infrastructure.persistence.repositories.DocumentoFelJpaRepository;
 import com.ais.marketbackend.fel.infrastructure.persistence.repositories.FelCorrelativoJpaRepository;
+import com.ais.marketbackend.shared.domain.Pagina;
+import com.ais.marketbackend.shared.infrastructure.persistence.PaginaMapper;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -60,6 +63,12 @@ public class DocumentoFelRepositoryAdapter implements DocumentoFelRepository {
     @Override
     public List<DocumentoFel> findByTiendaId(Long tiendaId) {
         return jpaRepository.findByTiendaId(tiendaId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public Pagina<DocumentoFel> findByTiendaId(Long tiendaId, int pagina, int tamano) {
+        return PaginaMapper.desde(
+                jpaRepository.findByTiendaId(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
     }
 
     /**

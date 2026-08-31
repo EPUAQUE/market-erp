@@ -1,14 +1,21 @@
 import { apiClient } from '@/services/http/ApiClient'
 import { API_ENDPOINTS } from '@/config/endpoints'
 import type { Notificacion } from '@/types/notificacion'
+import type { Pagina } from '@/types/pagina'
 
 class NotificacionesService {
-  listarPorTienda(tiendaId: number) {
-    return apiClient.get<Notificacion[]>(API_ENDPOINTS.notificaciones.porTienda(tiendaId))
+  listarPorTienda(tiendaId: number, pagina: number, tamano: number, signal?: AbortSignal) {
+    return apiClient.get<Pagina<Notificacion>>(API_ENDPOINTS.notificaciones.porTienda(tiendaId), {
+      params: { page: pagina, size: tamano },
+      signal,
+    })
   }
 
-  listarNoLeidas(tiendaId: number) {
-    return apiClient.get<Notificacion[]>(API_ENDPOINTS.notificaciones.noLeidas(tiendaId))
+  listarNoLeidas(tiendaId: number, pagina: number, tamano: number, signal?: AbortSignal) {
+    return apiClient.get<Pagina<Notificacion>>(API_ENDPOINTS.notificaciones.noLeidas(tiendaId), {
+      params: { page: pagina, size: tamano },
+      signal,
+    })
   }
 
   generar(tiendaId: number) {

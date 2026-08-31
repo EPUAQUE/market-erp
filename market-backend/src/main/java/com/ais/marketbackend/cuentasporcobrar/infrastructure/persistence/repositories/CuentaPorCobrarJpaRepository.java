@@ -20,4 +20,6 @@ public interface CuentaPorCobrarJpaRepository extends JpaRepository<CuentaPorCob
     List<CuentaPorCobrarEntity> findByTiendaId(Long tiendaId);
 
     Page<CuentaPorCobrarEntity> findByTiendaId(Long tiendaId, Pageable pageable);
+
+    Optional<CuentaPorCobrarEntity> findByVentaId(Long ventaId);
 }

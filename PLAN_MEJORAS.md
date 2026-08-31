@@ -1258,22 +1258,77 @@ implementado y es configurable (`PasswordEncoderConfig`), pero no hay configurac
 explícita de HikariCP (se usan valores por defecto de Spring Boot) ni medición de costo
 real de Argon2.
 
+**2026-08-31**: auditoría completa hecha (agente de exploración, file:line por punto) +
+implementación de los hallazgos accionables sin necesitar datos de carga real. Detalle
+por tarea abajo. Quedan pendientes, por necesitar decisiones/datos que no puedo generar
+solo: volúmenes esperados (número de negocio, debe darlo el usuario), `EXPLAIN ANALYZE`
+con datos representativos (necesita esos volúmenes primero) y prueba real de múltiples
+instancias (necesita la infraestructura desplegada, no solo el código).
+
 ### Tareas
 
 - [ ] Definir volúmenes esperados: tiendas, productos, tickets/día, líneas/ticket y
-  usuarios concurrentes.
-- [ ] Probar los listados y dashboards con datos representativos.
-- [ ] Revisar si otros listados (no productos/ventas/clientes) siguen sin paginación
-  server-side.
-- [ ] Verificar si hace falta una consulta directa de CxC por `ventaId` (hoy no existe
-  el accesor ni se detectó el antipatrón O(n) descrito).
-- [ ] Revisar planes de ejecución e índices con `EXPLAIN ANALYZE`.
-- [ ] Medir el costo real de Argon2 (ya configurable) y configurar explícitamente el
-  pool de conexiones HikariCP con carga real.
-- [ ] Definir estrategia de imágenes: límites, miniaturas, limpieza y almacenamiento
-  externo si crece el volumen.
-- [ ] Probar múltiples instancias antes de habilitarlas: rate limiting, schedulers,
-  outbox, FEL y tareas periódicas deben coordinarse.
+  usuarios concurrentes. **Pendiente — es una decisión de negocio del usuario, no algo
+  que se pueda inferir del código.**
+- [ ] Probar los listados y dashboards con datos representativos. **Pendiente** —
+  depende de la tarea anterior (sin volúmenes definidos, no hay "representativo" que
+  generar).
+- [x] Revisar si otros listados (no productos/ventas/clientes) siguen sin paginación
+  server-side. Auditados los 19 controllers de listado del backend. La mayoría son
+  catálogos pequeños acotados por naturaleza (categorías, marcas, unidades, proveedores,
+  grupos de tienda, tiendas, roles, usuarios, producto×tienda) — correctamente sin
+  paginar. Tres crecían sin límite natural, igual que ventas/CxC: **cuentas por pagar,
+  FEL y notificaciones** — los tres migrados a `PaginaResponse` (backend + backoffice,
+  mismo patrón que ventas/CxC/traslados/productos/inventario/caja/compras/clientes).
+- [x] Verificar si hace falta una consulta directa de CxC por `ventaId`. Confirmado: no
+  existía (`CuentaPorCobrarRepository` solo tenía `findByTiendaId`), y el único call
+  site del patrón O(n) (`market-flutter`'s `CuentaPorCobrarApi.buscarPorVenta`) estaba
+  sin usar (código muerto — el flujo que lo necesitaba se simplificó en una fase
+  anterior). Agregado `findByVentaId` (mismo patrón que `DocumentoFelRepository`) +
+  nuevo endpoint `GET /cuentas-por-cobrar/tiendas/{tiendaId}/por-venta/{ventaId}` (404
+  si la venta no tiene cuenta — caso normal, ej. venta al contado), verificado contra
+  el backend real con `curl`.
+- [ ] Revisar planes de ejecución e índices con `EXPLAIN ANALYZE`. **Pendiente** —
+  depende de volúmenes representativos (tarea de arriba); sin datos reales de carga,
+  un `EXPLAIN ANALYZE` contra una BD casi vacía no dice nada útil sobre el plan real.
+- [x] Medir el costo real de Argon2. Microbenchmark en esta máquina de desarrollo (no
+  "hardware de producción" — ese paso sigue pendiente del usuario, ver
+  `seguridad-desarrolladores.md` §4): **~56.6ms promedio** por hash con los parámetros
+  actuales (m=19456 KiB, t=2, p=1), muy por debajo del objetivo OWASP de ~250-500ms —
+  hay margen real para subir el costo, pero no se subió unilateralmente (la doc ya
+  dice explícitamente que la decisión final necesita medirse en el hardware real de
+  producción, no en una laptop de desarrollo).
+- [x] Configurar explícitamente el pool de conexiones HikariCP. Antes dependía en
+  silencio de los defaults de Spring Boot (`maximum-pool-size=10`, `minimum-idle`
+  igual al máximo). Ahora explícito en `application.yml`, configurable por env var,
+  con los mismos valores de tope (no subidos sin datos de carga real) pero
+  `minimum-idle` bajado de 10 a 2 (deja que el pool se achique sin tráfico).
+- [x] Definir estrategia de imágenes de producto. Auditado: ya había whitelist de
+  tipo de contenido (JPG/PNG/WEBP) pero ningún límite de tamaño propio (dependía
+  solo del límite genérico de multipart, 5MB para toda la app) — agregado un límite
+  específico de 2MB (`app.storage.productos-imagenes-max-bytes`, configurable).
+  Miniaturas: no se generan (confirmado, cero referencias a librerías de imagen en
+  el proyecto) — documentado como no implementado, no urgente al día de hoy sin
+  volumen real de catálogo. Almacenamiento: filesystem en un volumen Docker nombrado,
+  ya incluido en el backup a GCS (Fase 6) — migrar a un object storage dedicado
+  (GCS directo) queda como paso futuro si el volumen de imágenes crece, no antes.
+- [x] Probar múltiples instancias antes de habilitarlas — evaluado (no se puede
+  "probar" de verdad sin desplegar 2+ réplicas reales). Dos componentes de estado en
+  memoria local rompen con 2+ instancias: `InMemoryLoginRateLimiter` (ya documentado
+  en Fase 4 — rate limiting por IP se resetea/duplica por instancia, necesita Redis
+  u otro almacén compartido) y, hallazgo nuevo de esta auditoría,
+  `PermisosEfectivosResolverImpl` (caché de permisos por usuario, TTL 30s) — un
+  cambio de rol/tienda en la instancia A no invalida la caché de la instancia B. De
+  paso se encontró un bug real (no solo de multi-instancia): el método `invalidar()`
+  de ese caché existía pero **nunca se llamaba desde ningún lado**, ni siquiera en
+  una sola instancia — un cambio de tienda/grupo/estado de usuario tardaba hasta 30s
+  en reflejarse en sus permisos efectivos aunque solo hubiera una instancia corriendo.
+  Corregido: `UsuarioServiceImpl` ahora invalida la caché del usuario afectado tras
+  `asignarTienda`/`asignarGrupo`/`desactivar`/`bloquear`/`activar`. El resto ya está
+  listo para multi-instancia sin cambios: el correlativo FEL usa lock de base de
+  datos (no memoria local), el scheduler de limpieza de refresh tokens es una
+  operación idempotente contra la BD, y no hay ningún `@Cacheable`/caché adicional en
+  el proyecto.
 
 ### Criterio de aceptación
 
@@ -1359,4 +1414,4 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 8 — Backoffice | "Base + quick wins" completa, resto pendiente | `8b8b7b9`, `e33afa6` | `pnpm typecheck`/`pnpm lint`/`pnpm test` (21 tests) limpios, `pnpm build` exitoso. Verificado en Chrome contra backend local real: login → recarga de página mantiene sesión (antes caía a `/login`); navegación rápida entre 6 módulos paginados sin errores de consola. **CI real en GitHub Actions confirmado verde** (run `33428154424`, los 5 jobs) | ESLint 9 (flat config) + Prettier en CI, `signal`/`AbortController` en `ApiClient` + 8 composables paginados server-side, refresh silencioso en `authGuard`. División de vistas grandes, componentes reutilizables, validación de formularios, accesibilidad y Playwright quedan para otra pasada. Un push necesitó una segunda corrección: `InventarioView.vue` no había convergido en una pasada de Prettier (interpolación al límite de `printWidth`) — CI lo detectó porque no reconfirmé `format:check` tras el `format --write` inicial. |
 | 9 — Flutter | "Tests + dividir pos_screen" completa, resto pendiente (necesita hardware o decisiones del usuario) | `3087abe` | `flutter analyze` limpio, `flutter test`: 62 tests (antes 1), `dart format --set-exit-if-changed .` limpio, `flutter build web` exitoso. **CI real en GitHub Actions confirmado verde** (run `33436255761`, los 5 jobs, incluido `flutter build apk --release`) | `pos_screen.dart` (826 líneas) dividido en `presentation/pos/*.dart`. Tests nuevos: dominio de carrito, wiring de `CarritoNotifier`, clasificación de `ApiException`, parsers de `Venta`/`CuentaPorCobrar`/`ProductoCatalogo`, widgets de `TiendaPickerScreen`/`CobroSheet`/`PendientesErrorScreen`. `CheckoutNotifier`/auth-refresh/`SyncEngineNotifier` quedan sin test unitario puro (acoplados a `ApiClient`/Isar, sin librería de mocking en el proyecto). |
 | 10 — Funciones comerciales | Pendiente | | | |
-| 11 — Rendimiento | Pendiente | | | |
+| 11 — Rendimiento | Auditoría + hallazgos accionables completos, resto pendiente de volúmenes de negocio del usuario | Sin commitear aún | `mvn verify` backend (con Docker), `pnpm typecheck`/`lint`/`format:check`/`test`/`build` backoffice — todo limpio. Verificado contra backend real: los 3 listados migrados (CxP/FEL/notificaciones) devuelven el envelope paginado correcto (`curl`), nuevo endpoint de CxC por venta confirmado (404 esperado sin cuenta), vistas renderizadas en Chrome sin errores de consola | HikariCP explícito, límite de tamaño de imagen de producto (2MB), fix real de `PermisosEfectivosResolverImpl.invalidar()` (nunca se llamaba, ni en single-instance), `CuentaPorCobrarRepository.findByVentaId` + endpoint nuevo, y paginación server-side agregada a Cuentas por Pagar/FEL/Notificaciones (backend + backoffice) — los 3 crecían sin límite natural igual que ventas/CxC. Benchmark de Argon2 en dev (~56.6ms, con margen real pero sin subir el costo sin medir en hardware de producción). Volúmenes esperados, `EXPLAIN ANALYZE` con datos representativos y prueba real de múltiples instancias quedan pendientes — necesitan una decisión de negocio o infraestructura desplegada que no puedo generar solo. |

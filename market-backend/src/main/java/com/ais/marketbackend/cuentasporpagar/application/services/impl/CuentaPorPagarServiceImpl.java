@@ -9,6 +9,7 @@ import com.ais.marketbackend.cuentasporpagar.application.services.interfaces.Cue
 import com.ais.marketbackend.cuentasporpagar.domain.model.CuentaPorPagar;
 import com.ais.marketbackend.cuentasporpagar.domain.model.Pago;
 import com.ais.marketbackend.cuentasporpagar.domain.repository.CuentaPorPagarRepository;
+import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -70,6 +71,11 @@ public class CuentaPorPagarServiceImpl implements CuentaPorPagarService {
     @Override
     public List<CuentaPorPagarResumen> listarPorTienda(Long tiendaId) {
         return cuentaPorPagarRepository.findByTiendaId(tiendaId).stream().map(this::toResumen).toList();
+    }
+
+    @Override
+    public Pagina<CuentaPorPagarResumen> listarPorTienda(Long tiendaId, int pagina, int tamano) {
+        return cuentaPorPagarRepository.findByTiendaId(tiendaId, pagina, tamano).map(this::toResumen);
     }
 
     private CuentaPorPagar obtenerORequerida(Long tiendaId, Long id) {

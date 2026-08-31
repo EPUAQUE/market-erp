@@ -27,15 +27,26 @@ public class ImagenProductoAlmacenamientoService {
             "image/webp", "webp");
 
     private final Path directorio;
+    private final long maxBytes;
 
     public ImagenProductoAlmacenamientoService(
-            @Value("${app.storage.productos-imagenes-dir}") String directorioConfigurado) {
+            @Value("${app.storage.productos-imagenes-dir}") String directorioConfigurado,
+            // Fase 11 (PLAN_MEJORAS.md): antes solo existía el límite genérico de
+            // spring.servlet.multipart.max-file-size (5MB, para toda la app). Una
+            // imagen de catálogo no necesita 5MB — un límite propio más chico evita
+            // que una foto sin comprimir infle el volumen de imágenes sin motivo.
+            @Value("${app.storage.productos-imagenes-max-bytes:2097152}") long maxBytes) {
         this.directorio = Path.of(directorioConfigurado).toAbsolutePath().normalize();
+        this.maxBytes = maxBytes;
     }
 
     public String guardar(MultipartFile archivo) {
         if (archivo == null || archivo.isEmpty()) {
             throw new ImagenInvalidaException("El archivo de imagen está vacío.");
+        }
+        if (archivo.getSize() > maxBytes) {
+            throw new ImagenInvalidaException(
+                    "La imagen supera el tamaño máximo permitido (" + (maxBytes / 1024 / 1024) + "MB).");
         }
         String extension = EXTENSIONES_PERMITIDAS.get(archivo.getContentType());
         if (extension == null) {

@@ -1,6 +1,7 @@
 package com.ais.marketbackend.fel.application.services.interfaces;
 
 import com.ais.marketbackend.fel.application.dtos.DocumentoFelResumen;
+import com.ais.marketbackend.shared.domain.Pagina;
 import java.util.List;
 
 public interface FelService {
@@ -15,5 +16,8 @@ public interface FelService {
 
     DocumentoFelResumen obtener(Long tiendaId, Long id);
 
+    /** Sin paginar — uso interno. El endpoint público usa la variante paginada. */
     List<DocumentoFelResumen> listarPorTienda(Long tiendaId);
+
+    Pagina<DocumentoFelResumen> listarPorTienda(Long tiendaId, int pagina, int tamano);
 }

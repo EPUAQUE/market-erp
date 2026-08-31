@@ -5,9 +5,12 @@ import com.ais.marketbackend.cuentasporpagar.domain.model.CuentaPorPagar;
 import com.ais.marketbackend.cuentasporpagar.domain.repository.CuentaPorPagarRepository;
 import com.ais.marketbackend.cuentasporpagar.infrastructure.persistence.mappers.CuentaPorPagarEntityMapper;
 import com.ais.marketbackend.cuentasporpagar.infrastructure.persistence.repositories.CuentaPorPagarJpaRepository;
+import com.ais.marketbackend.shared.domain.Pagina;
+import com.ais.marketbackend.shared.infrastructure.persistence.PaginaMapper;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,5 +47,11 @@ public class CuentaPorPagarRepositoryAdapter implements CuentaPorPagarRepository
     @Override
     public List<CuentaPorPagar> findByTiendaId(Long tiendaId) {
         return jpaRepository.findByTiendaId(tiendaId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public Pagina<CuentaPorPagar> findByTiendaId(Long tiendaId, int pagina, int tamano) {
+        return PaginaMapper.desde(
+                jpaRepository.findByTiendaId(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
     }
 }

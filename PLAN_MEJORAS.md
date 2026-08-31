@@ -822,14 +822,60 @@ no bloquean un build JS normal), y `docker build` de ambas imágenes reales
 
 ### Cobertura prioritaria
 
-- [ ] E2E: login -> abrir caja -> vender -> verificar inventario/caja.
-- [ ] E2E: compra -> recibir -> inventario -> cuenta por pagar.
-- [ ] E2E: crédito -> cobro -> caja -> saldo.
-- [ ] E2E: traslado entre tiendas.
-- [ ] E2E: permisos y aislamiento entre tiendas/grupos.
+**2026-08-31**: alcance decidido con el usuario — los 5 flujos E2E como IT de
+backend (`*IT`, MockMvc + Testcontainers/Postgres real, mismo patrón ya usado
+en el proyecto) en vez de Playwright (no instalado en ningún proyecto todavía,
+instalarlo es un esfuerzo propio) + tests Vue de guards/refresh/permisos/
+composables. Tests Flutter de checkout/cola/refresh siguen bloqueados por la
+misma razón documentada en Fase 9 (acoplados a `ApiClient`/Isar, sin librería
+de mocking en ese proyecto). Pruebas contractuales de DTOs quedan pendientes.
+
+- [x] E2E: login -> abrir caja -> vender -> verificar inventario/caja.
+  `VentaContadoE2EIT` — primer test del repo que hace **login real por HTTP**
+  y reutiliza el JWT devuelto para llamar endpoints protegidos (antes, todos
+  los `*IT` autenticaban con un `SecurityContextHolder` simulado, sin pasar
+  por HTTP en absoluto).
+- [x] E2E: compra -> recibir -> inventario -> cuenta por pagar.
+  `CompraRecepcionE2EIT`.
+- [x] E2E: crédito -> cobro -> caja -> saldo. `VentaCreditoCobroE2EIT` — de
+  paso ejercita contra el backend real el endpoint nuevo de Fase 11
+  (`GET .../por-venta/{ventaId}`).
+- [x] E2E: traslado entre tiendas. `TrasladoE2EIT`.
+- [x] E2E: permisos y aislamiento entre tiendas/grupos. `AislamientoTiendaE2EIT`
+  — mismo endpoint, mismo usuario, la única variable es la tienda del path:
+  404 en la tienda de su alcance (el interceptor lo dejó pasar, el servicio
+  simplemente no encontró una caja abierta) vs. 403 en una tienda fuera de su
+  alcance (el interceptor lo rechazó antes de llegar al servicio) — confirma
+  que es específicamente un límite de autorización, no un efecto colateral
+  de "no hay caja".
 - [ ] Tests Flutter para carrito, checkout, cola, refresh, caja y parsers.
-- [ ] Tests Vue para guards, refresh, permisos y principales composables.
-- [ ] Pruebas contractuales de DTOs entre backend y clientes.
+  Carrito y parsers ya cubiertos en Fase 9; checkout/cola/refresh siguen
+  bloqueados (ver nota de Fase 9: `CheckoutNotifier`/`SyncEngineNotifier`
+  acoplados a `ApiClient.instance`/Isar, sin librería de mocking en ese
+  proyecto).
+- [x] Tests Vue para guards, refresh, permisos y principales composables.
+  `guards.spec.ts` (7 casos: `requiresAuth: false`, refresh silencioso
+  exitoso/fallido, `loadAuthorization` fallido, permiso faltante/presente, no
+  repetir `loadAuthorization` si ya estaba cargada), `auth.store.spec.ts` (5
+  casos: `login`, `trySilentLogin` exitoso/fallido, `logout` con y sin fallo
+  del backend), `permissions.store.spec.ts` (5 casos), más `useVentas.spec.ts`
+  y `useCaja.spec.ts` (11 casos) para dos composables "principales" del
+  negocio sin cobertura hasta ahora.
+- [ ] Pruebas contractuales de DTOs entre backend y clientes. Pendiente —
+  necesita decidir herramienta/formato (ej. schemas compartidos, contract
+  testing tipo Pact) antes de empezar, no algo que se pueda improvisar en
+  esta pasada.
+
+**Hallazgo de infraestructura, no de negocio**: Spring Boot 4 dividió
+`spring-boot-starter-test` — ya no arrastra soporte de MockMvc
+(`@AutoConfigureMockMvc` se movió a `org.springframework.boot.webmvc.test.autoconfigure`,
+en un módulo nuevo `spring-boot-starter-webmvc-test`) ni Jackson bajo su
+paquete clásico (Jackson 3 renombró `com.fasterxml.jackson.databind` a
+`tools.jackson.databind` para `core`/`databind`, dejando `com.fasterxml.jackson.annotations`
+solo para anotaciones). Ninguno de los `*IT` existentes lo había necesitado
+antes porque ninguno hacía HTTP real — los 5 IT de esta fase son los
+primeros. Corregido: nueva dependencia `spring-boot-starter-webmvc-test`
+(scope test) en `pom.xml`, imports actualizados a los paquetes nuevos.
 
 ### Criterio de aceptación
 
@@ -1408,7 +1454,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | **Completa** | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 24 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular), venta (completar/anular) y usuario (asignarTienda/asignarGrupo, serializando la regla "no asignación mixta" entre las dos tablas usuario_tienda/usuario_grupo_tienda). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. `GlobalExceptionHandler` traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. |
 | 4 — Sesiones/seguridad | **Completa** salvo "tienda activa tras restaurar" (es de cliente, fuera de alcance) y rate limiter distribuido (no aplica hoy) | `b988a8a`, `110c3d0` | `mvn verify`: 574 unitarios + 24 IT, `BUILD SUCCESS`. En vivo: bloqueo de usuario invalida su token ya emitido de inmediato (sin esperar TTL), confirmado con curl. **CI real en GitHub Actions confirmado verde** (run `33423714537`, los 5 jobs) | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin (`POST /usuarios/{id}/password/restablecer`). `debe_cambiar_password` bloquea el resto de la API. `SecurityVersionValidator` revalida `sver`; `POST /usuarios/{id}/sesiones/revocar` revoca sesiones. Caddy + Nginx con cabeceras de seguridad. **2026-08-31**: llaves dev/test retiradas del tracking de git (script `generar-llaves.sh` + paso nuevo en CI); rotación de llaves JWT probada (`JwtRotacionTest`); MFA evaluado y documentado (no implementado, decisión del usuario); política de contraseña/bloqueo/recuperación/baja documentada (`seguridad-desarrolladores.md` §13-14); "baja de empleados" pasó de dominio-sin-endpoint a 3 rutas reales (`desactivar`/`bloquear`/`activar`, permiso `USUARIOS_CAMBIAR_ESTADO`) — de paso se corrigió un bug de Fase 7 (`entidadId` de auditoría con el id del actor en vez del usuario objetivo). Bug de CI encontrado y corregido tras el push (`110c3d0`): `ProfileStartupIT` arranca perfil `local` real y lee `./local-dev/certs/dev-public.pem`, pero el workflow solo generaba llaves de test — faltaba el paso equivalente para `local-dev/certs`. |
-| 5 — CI/pruebas | "Pipeline mínimo" completo, "Cobertura prioritaria" pendiente | Commiteado y en `main` | Verificado local y **CI real en GitHub Actions confirmado verde** en múltiples runs (5 jobs: backend, backoffice, flutter, docker-build, gitleaks) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. E2E de negocio y tests nuevos de Flutter/Vue quedan pendientes (sección "Cobertura prioritaria"). |
+| 5 — CI/pruebas | "Pipeline mínimo" completo; "Cobertura prioritaria" completa salvo Flutter (bloqueado, ver Fase 9) y pruebas contractuales de DTOs (pendiente, necesita elegir herramienta) | Sin commitear aún | `mvn verify`: 579 unitarios + 29 IT (24 previos + 5 nuevos de flujo E2E), `BUILD SUCCESS`. `pnpm typecheck`/`lint`/`format:check`/`test`/`build` backoffice limpios (21→53 tests). CI real en GitHub Actions confirmado verde en múltiples runs previos (5 jobs) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. **2026-08-31**: 5 IT de flujo de negocio E2E nuevos (`e2e/*E2EIT.java` + helper `ApoyoE2E`, primer uso de login real + JWT real vía HTTP en este proyecto) + tests Vue de guards/refresh/permisos/composables (`guards.spec.ts`, `auth.store.spec.ts`, `permissions.store.spec.ts`, `useVentas.spec.ts`, `useCaja.spec.ts`). De paso se encontró que Spring Boot 4 separó `@AutoConfigureMockMvc` y Jackson 3 a paquetes nuevos — nueva dependencia `spring-boot-starter-webmvc-test` agregada. |
 | 6 — Backups | Código completo y verificado local; falta que el usuario cree el bucket/SMTP/secrets reales | Sin commitear aún | Verificado contra Postgres descartable con `rclone` local: backup.sh (dump+bundle cifrado+checksum) y restore.sh (descarga+verifica+descifra+restaura) de punta a punta con datos/imágenes/certs/.env de prueba, más `check-freshness.sh`/`alert.sh` en sus 3 escenarios. `docker compose config` limpio | `deploy/backup/*.sh` (backup/restore/check-freshness/alert), `docker-compose.yml`, `.env.example`, `.github/workflows/backup-restore-drill.yml`, `deploy/README.md`. Falta: bucket/cuenta de servicio/SMTP reales, 3 secrets de GitHub, y el ensayo de recuperación con volumen Docker perdido contra un servidor real. |
 | 7 — Auditoría/observabilidad | Completa salvo dashboards (pospuestos, requieren Prometheus/Grafana) | Sin commitear aún | `mvn verify` (564 unitarios + 24 IT, `BUILD SUCCESS`); verificado en vivo contra backend local + Postgres real (`@Auditable` y `SecurityAuditPublisher` escribiendo en `audit_event`, `REFRESH_REUTILIZADO` reproducido, correlationId end-to-end, `/actuator/prometheus` con JWT) | Nuevo módulo `auditoria` (tabla append-only + AOP `@Auditable`), `docs/auditoria.md` reescrito, `CorrelationIdFilter`, `AlertaEmailService`, `micrometer-registry-prometheus`. 2 bugs encontrados y corregidos en la verificación local (actor "anonymousUser" en login, `/actuator/health` DOWN por mail health indicator). |
 | 8 — Backoffice | "Base + quick wins" completa, resto pendiente | `8b8b7b9`, `e33afa6` | `pnpm typecheck`/`pnpm lint`/`pnpm test` (21 tests) limpios, `pnpm build` exitoso. Verificado en Chrome contra backend local real: login → recarga de página mantiene sesión (antes caía a `/login`); navegación rápida entre 6 módulos paginados sin errores de consola. **CI real en GitHub Actions confirmado verde** (run `33428154424`, los 5 jobs) | ESLint 9 (flat config) + Prettier en CI, `signal`/`AbortController` en `ApiClient` + 8 composables paginados server-side, refresh silencioso en `authGuard`. División de vistas grandes, componentes reutilizables, validación de formularios, accesibilidad y Playwright quedan para otra pasada. Un push necesitó una segunda corrección: `InventarioView.vue` no había convergido en una pasada de Prettier (interpolación al límite de `printWidth`) — CI lo detectó porque no reconfirmé `format:check` tras el `format --write` inicial. |

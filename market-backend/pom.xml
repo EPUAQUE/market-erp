@@ -110,6 +110,14 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Fase 5 (PLAN_MEJORAS.md), IT de flujo de negocio E2E: spring-boot-starter-test
+             ya no arrastra soporte de MockMvc/@AutoConfigureMockMvc — Spring Boot 4 lo
+             separó a este módulo dedicado (junto con el resto del split de webmvc). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>

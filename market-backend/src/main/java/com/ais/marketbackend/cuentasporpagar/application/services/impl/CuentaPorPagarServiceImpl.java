@@ -1,5 +1,6 @@
 package com.ais.marketbackend.cuentasporpagar.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.caja.application.services.interfaces.CajaService;
 import com.ais.marketbackend.caja.domain.model.TipoMovimientoCaja;
 import com.ais.marketbackend.cuentasporpagar.application.dtos.CuentaPorPagarResumen;
@@ -40,6 +41,8 @@ public class CuentaPorPagarServiceImpl implements CuentaPorPagarService {
 
     @Override
     @Transactional
+    @Auditable(accion = "CUENTA_POR_PAGAR_PAGO", entidad = "CUENTA_POR_PAGAR", tiendaIdParam = "tiendaId",
+            entidadIdParam = "id")
     public CuentaPorPagarResumen registrarPago(Long tiendaId, Long id, BigDecimal monto) {
         CuentaPorPagar cuenta = obtenerConBloqueoORequerida(tiendaId, id);
         cuenta.registrarPago(monto);
@@ -51,6 +54,8 @@ public class CuentaPorPagarServiceImpl implements CuentaPorPagarService {
 
     @Override
     @Transactional
+    @Auditable(accion = "CUENTA_POR_PAGAR_ANULADA", entidad = "CUENTA_POR_PAGAR", tiendaIdParam = "tiendaId",
+            entidadIdParam = "id")
     public CuentaPorPagarResumen anular(Long tiendaId, Long id) {
         CuentaPorPagar cuenta = obtenerConBloqueoORequerida(tiendaId, id);
         cuenta.anular();

@@ -886,39 +886,119 @@ Actuator) pero sin `micrometer-registry-prometheus` ni endpoint expuesto. El
 correlation ID solo se usa en respuestas de error, no propagado por MDC/filtro a logs
 generales ni a respuestas exitosas. Toda la fase sigue pendiente.
 
+**Resuelto (2026-08-31):** decisiones acordadas con el usuario — observabilidad
+acotada a solo exponer `/actuator/prometheus` (sin montar Prometheus/Grafana en la
+VM todavía), alertas por el mismo canal de correo ya armado en Fase 6
+(`ALERT_SMTP_*`/`ALERT_EMAIL_*`). `docs/auditoria.md` reescrito por completo — el
+outbox/BD-separada/poller descrito nunca existió en código; se optó por la salida
+que el propio documento permitía ("reducir el diseño a una primera versión
+realista"): escritura directa en `audit_event`, misma transacción que la operación
+de negocio, sin outbox.
+
+Nuevo módulo `auditoria` (tabla `audit_event`, **append-only** — mismo trigger
+`BEFORE UPDATE OR DELETE` que ya protege `movimiento_inventario` — con
+`actor_id`/`actor_username`/`tienda_id`/`accion`/`entidad`/`entidad_id`/
+`resultado`/`correlation_id`/`detalle`; lectura vía `GET /api/v1/auditoria` y
+`GET /api/v1/auditoria/tiendas/{tiendaId}`, permiso `AUDITORIA_VER` sembrado para
+`ADMIN` y `AUDITOR`). Nueva anotación `@Auditable` + un solo `AuditoriaAspect`
+(Spring AOP — primer uso en el proyecto, requirió `spring-boot-starter-aspectj`,
+el reemplazo de `spring-boot-starter-aop` en Spring Boot 4.x, confirmado al
+fallar la build con el nombre viejo) aplicada a 19 métodos en 8 servicios
+(`ProductoTiendaServiceImpl`, `InventarioServiceImpl`, `CajaServiceImpl`,
+`VentaServiceImpl`, `CompraServiceImpl`, `CuentaPorPagarServiceImpl`,
+`TrasladoServiceImpl`, `FelServiceImpl`) — cubre 8 de las 9 categorías pedidas;
+"exportaciones de reportes" queda fuera porque esa función no existe todavía
+(`ReporteController` solo devuelve JSON, ningún endpoint de exportación — alcance
+de Fase 10, no inventado acá). `login/logout/refresh/bloqueo` y
+`usuarios/roles/asignaciones` se cubrieron extendiendo `SecurityAuditPublisherImpl`
+(ya tenía 14 call sites en `AuthServiceImpl`/`UsuarioServiceImpl` — **cero cambios**
+en esos call sites) para que, además de logear/contar como siempre, también
+persista en `audit_event` y dispare alerta por correo en los dos tipos de
+severidad alta. Se cerró el hueco encontrado de `RATE_LIMIT_ALCANZADO` (declarado
+en el enum, nunca disparado) agregándolo en `GlobalExceptionHandler.handleRateLimit`.
+
+Nuevo `CorrelationIdFilter` (registrado con `Ordered.HIGHEST_PRECEDENCE`, fuera de
+la cadena de Spring Security, para cubrir hasta un 401/429) pone el
+`correlationId` en MDC en cada request — aparece en toda línea de log
+(`logging.pattern.level`) y como header en toda respuesta, no solo errores.
+`GlobalExceptionHandler`/`SecurityAuditPublisherImpl`/`AuditoriaAspect` lo leen de
+ahí en vez de generar cada uno el suyo. `micrometer-registry-prometheus` agregado,
+`/actuator/prometheus` expuesto con el mismo alcance de red que `/health`
+(`127.0.0.1:8080`). Nuevo `AlertaEmailService` (`spring-boot-starter-mail`,
+mismas env vars `ALERT_SMTP_*`/`ALERT_EMAIL_*` de Fase 6) — nunca rompe el flujo
+que la disparó, cae a solo-log sin SMTP configurado.
+
+**Dos bugs encontrados y corregidos durante la verificación en el backend local
+real (no en `mvn verify`, que no los detecta):** (1) `LOGIN_EXITOSO`/eventos de
+login-refresh quedaban con `actorUsername="anonymousUser"` en vez del usuario
+real — `AnonymousAuthenticationToken` de Spring Security reporta
+`isAuthenticated()==true` igual que una sesión real, así que la resolución de
+actor tomaba la rama equivocada; corregido excluyéndolo explícitamente en
+`SecurityAuditPublisherImpl` y `AuditoriaAspect`. (2) Agregar
+`spring-boot-starter-mail` activó un `MailHealthIndicator` automático que
+intenta una conexión SMTP real en cada chequeo — `/actuator/health` pasó a
+devolver `DOWN` solo porque no había SMTP configurado, sin relación con si el
+backend en sí estaba sano; corregido con `management.health.mail.enabled: false`.
+
+Verificado: `mvn verify` (564 unitarios + 24 IT, `BUILD SUCCESS`, con los 21
+tests que instanciaban `GlobalExceptionHandler` a mano actualizados para su
+constructor nuevo). En vivo contra el backend local + Postgres real: creé un
+producto y lo asigné a una tienda (`PRODUCTO_TIENDA_ASIGNADO` con actor/tienda/
+entidadId correctos vía `@Auditable`), y reproduje una reutilización real de
+refresh token (`REFRESH_REUTILIZADO`, `resultado=FALLO`, alerta cayendo a
+solo-log sin romper la respuesta) — ambos aparecieron correctos en
+`GET /api/v1/auditoria`, con el mismo `correlationId` de la request en cada uno.
+Confirmé el header `X-Correlation-Id` en una respuesta exitosa (antes solo en
+errores) y `/actuator/prometheus` devolviendo métricas reales con JWT.
+
+**Pendiente, requiere que el usuario decida infraestructura (no completable
+desde acá):** dashboards reales (Grafana u otro) y alertas basadas en umbrales
+de métricas (latencia HTTP, tasa de error) — dependen de que se monte
+Prometheus/Grafana, decisión explícitamente pospuesta esta pasada.
+
 ### Auditoría
 
-- [ ] Corregir `docs/auditoria.md` para separar claramente diseño futuro de funciones
-  existentes mientras se implementa.
-- [ ] Implementar el outbox operativo descrito o reducir el diseño a una primera
-  versión realista y durable.
-- [ ] Auditar, como mínimo:
-  - login, logout, refresh reutilizado y bloqueo;
-  - cambios de usuarios, roles y asignaciones;
-  - precios y configuración por tienda;
-  - ajustes de inventario;
-  - apertura, movimientos y cierre de caja;
-  - ventas, anulaciones, devoluciones y cobros;
-  - compras, pagos y traslados;
-  - emisión/anulación FEL;
-  - exportaciones de reportes.
-- [ ] Registrar actor, tienda, fecha, acción, entidad, resultado y correlation ID sin
-  almacenar contraseñas, tokens ni cuerpos sensibles.
-- [ ] Proteger la auditoría contra modificación y aplicar retención definida.
+- [x] Corregir `docs/auditoria.md` para separar claramente diseño futuro de
+  funciones existentes mientras se implementa — reescrito por completo,
+  describe el diseño real (sin outbox), no lo aspiracional.
+- [x] Implementar el outbox operativo descrito o reducir el diseño a una primera
+  versión realista y durable — se optó por la segunda opción, documentado el
+  porqué en `docs/auditoria.md` §1.
+- [x] Auditar, como mínimo:
+  - [x] login, logout, refresh reutilizado y bloqueo;
+  - [x] cambios de usuarios, roles y asignaciones;
+  - [x] precios y configuración por tienda;
+  - [x] ajustes de inventario;
+  - [x] apertura, movimientos y cierre de caja;
+  - [x] ventas y anulaciones (devoluciones no existen como función todavía —
+    Fase 10 — nada que auditar ahí);
+  - [x] compras, pagos y traslados;
+  - [x] emisión/anulación FEL;
+  - [ ] exportaciones de reportes — la función no existe todavía (Fase 10), no
+    hay dónde enganchar la auditoría.
+- [x] Registrar actor, tienda, fecha, acción, entidad, resultado y correlation ID
+  sin almacenar contraseñas, tokens ni cuerpos sensibles.
+- [x] Proteger la auditoría contra modificación (trigger append-only, mismo
+  patrón que `movimiento_inventario`) y aplicar retención definida — retención
+  definida como "indefinida, purga manual de DBA si algún día hace falta" en
+  vez de un borrado automático que necesitaría deshabilitar la protección
+  recién construida (ver `docs/auditoria.md` §3).
 
 ### Observabilidad
 
-- [ ] Agregar registry Prometheus u otro backend real de métricas.
-- [ ] Exponer métricas en una red administrativa protegida.
-- [ ] Crear dashboards para:
-  - latencia y errores HTTP;
-  - conflictos de inventario/contabilidad;
-  - errores y tiempo de certificación FEL;
-  - refresh reutilizados y rate limiting;
-  - edad/cantidad de pendientes offline reportados;
-  - backups y espacio en disco.
-- [ ] Agregar correlation ID extremo a extremo en backend y clientes.
-- [ ] Configurar alertas accionables y un runbook por alerta.
+- [x] Agregar registry Prometheus u otro backend real de métricas
+  (`micrometer-registry-prometheus`).
+- [x] Exponer métricas en una red administrativa protegida — mismo alcance que
+  `/health` (`127.0.0.1:8080` únicamente).
+- [ ] Crear dashboards — pospuesto por decisión del usuario, sin
+  Prometheus/Grafana montado todavía.
+- [x] Agregar correlation ID extremo a extremo en backend (`CorrelationIdFilter`
+  + MDC + header en toda respuesta) — clientes (Flutter/Vue) quedan fuera de
+  esta pasada, es trabajo del lado backend únicamente.
+- [x] Configurar alertas accionables y un runbook por alerta — para los dos
+  tipos implementables sin Prometheus (`REFRESH_REUTILIZADO`,
+  `RATE_LIMIT_ALCANZADO`); alertas basadas en umbrales de métricas quedan
+  pendientes de la decisión de infraestructura de arriba.
 
 ### Criterio de aceptación
 
@@ -1165,7 +1245,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 4 — Sesiones/seguridad | Rate limiter, cambio/restablecimiento de contraseña, `sver`/revocar sesiones y cabeceras de seguridad resueltos; resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 564 unitarios + 24 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`). `debe_cambiar_password` ahora sí bloquea el resto de la API vía claim + `DebeCambiarPasswordFilter`. `SecurityVersionValidator` revalida `sver` en toda petición autenticada; `POST /usuarios/{id}/sesiones/revocar` (`USUARIOS_REVOCAR_SESIONES`) revoca sesiones sin tocar contraseña/estado. Caddy + Nginx agregan CSP/HSTS/X-Content-Type-Options/Referrer-Policy/Permissions-Policy. Resto (tienda activa tras restaurar, MFA, rate limiter distribuido, retirar llave dev/test del repo, probar rotación de llaves JWT, política de contraseña/bloqueo/baja) sigue pendiente. |
 | 5 — CI/pruebas | "Pipeline mínimo" completo, "Cobertura prioritaria" pendiente | Sin commitear aún | Verificado local: `mvn verify` (24 IT, `BUILD SUCCESS`), `pnpm typecheck/test/build`, `flutter analyze/test/build web`, `docker build` de ambas imágenes. CI real en GitHub sin correr aún (primer push pendiente) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. E2E de negocio y tests nuevos de Flutter/Vue quedan pendientes (sección "Cobertura prioritaria"). |
 | 6 — Backups | Código completo y verificado local; falta que el usuario cree el bucket/SMTP/secrets reales | Sin commitear aún | Verificado contra Postgres descartable con `rclone` local: backup.sh (dump+bundle cifrado+checksum) y restore.sh (descarga+verifica+descifra+restaura) de punta a punta con datos/imágenes/certs/.env de prueba, más `check-freshness.sh`/`alert.sh` en sus 3 escenarios. `docker compose config` limpio | `deploy/backup/*.sh` (backup/restore/check-freshness/alert), `docker-compose.yml`, `.env.example`, `.github/workflows/backup-restore-drill.yml`, `deploy/README.md`. Falta: bucket/cuenta de servicio/SMTP reales, 3 secrets de GitHub, y el ensayo de recuperación con volumen Docker perdido contra un servidor real. |
-| 7 — Auditoría/observabilidad | Pendiente | | | |
+| 7 — Auditoría/observabilidad | Completa salvo dashboards (pospuestos, requieren Prometheus/Grafana) | Sin commitear aún | `mvn verify` (564 unitarios + 24 IT, `BUILD SUCCESS`); verificado en vivo contra backend local + Postgres real (`@Auditable` y `SecurityAuditPublisher` escribiendo en `audit_event`, `REFRESH_REUTILIZADO` reproducido, correlationId end-to-end, `/actuator/prometheus` con JWT) | Nuevo módulo `auditoria` (tabla append-only + AOP `@Auditable`), `docs/auditoria.md` reescrito, `CorrelationIdFilter`, `AlertaEmailService`, `micrometer-registry-prometheus`. 2 bugs encontrados y corregidos en la verificación local (actor "anonymousUser" en login, `/actuator/health` DOWN por mail health indicator). |
 | 8 — Backoffice | Pendiente | | | |
 | 9 — Flutter | Pendiente | | | |
 | 10 — Funciones comerciales | Pendiente | | | |

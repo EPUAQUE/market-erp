@@ -24,6 +24,22 @@ spring:
       max-file-size: 5MB
       max-request-size: 5MB
 
+  # host queda "" por default (no ausente) — MailSenderAutoConfiguration igual crea
+  # el bean JavaMailSender con ese host vacío, que solo falla al intentar enviar
+  # (capturado por AlertaEmailService), nunca al arrancar la app. Mismo canal
+  # (ALERT_SMTP_*) que deploy/backup/alert.sh en Fase 6.
+  mail:
+    host: ${ALERT_SMTP_HOST:}
+    port: ${ALERT_SMTP_PORT:587}
+    username: ${ALERT_SMTP_USER:}
+    password: ${ALERT_SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -35,13 +51,25 @@ management:
   endpoints:
     web:
       exposure:
-        # Solo /actuator/health queda expuesto — SecurityConfig ya permite esa única
-        # ruta sin autenticar; cualquier otro endpoint de Actuator quedaría detrás de
-        # JWT igualmente, pero limitar la exposición evita que exista siquiera.
-        include: health
+        # /health sin autenticar (ver SecurityConfig); /prometheus (Fase 7,
+        # PLAN_MEJORAS.md) sí exige JWT como cualquier otro endpoint no listado acá,
+        # y de todos modos solo escucha en 127.0.0.1:8080 (docker-compose.yml) — no
+        # se monta Prometheus/Grafana todavía, esto solo deja el endpoint listo para
+        # cuando se decida dónde correr ese stack.
+        include: health,prometheus
   endpoint:
     health:
       show-details: never
+  health:
+    # Sin esto, agregar spring-boot-starter-mail (Fase 7) activa un health
+    # indicator que intenta una conexión SMTP real en cada chequeo — /actuator/health
+    # pasaba a reportar DOWN por un SMTP sin configurar/no alcanzable, algo que no
+    # tiene nada que ver con si el backend en sí está sano. El correo es una
+    # alerta secundaria y opcional (ver AlertaEmailService), nunca debe determinar
+    # si la app está "saludable". Detectado corriendo el backend local tras esta
+    # fase — /actuator/health devolvía DOWN.
+    mail:
+      enabled: false
 
 app:
   security:
@@ -80,7 +108,18 @@ app:
     # apunta a un volumen nombrado (ver docker-compose.yml), en desarrollo local
     # cae en una carpeta relativa al working directory.
     productos-imagenes-dir: ${PRODUCTOS_IMAGENES_DIR:./data/productos-imagenes}
+  alertas:
+    # Fase 7 (PLAN_MEJORAS.md): mismo canal/env vars que deploy/backup/alert.sh en
+    # Fase 6 — AlertaEmailService cae a solo-log si "to" queda vacío (sin SMTP
+    # configurado). No requerido para arrancar en ningún perfil, incluido prod.
+    email:
+      from: ${ALERT_EMAIL_FROM:}
+      to: ${ALERT_EMAIL_TO:}
 
 logging:
   level:
     com.ais.marketbackend: INFO
+  pattern:
+    # Fase 7: correlationId (puesto en MDC por CorrelationIdFilter) en TODA línea de
+    # log, no solo en el cuerpo de una respuesta de error como antes.
+    level: "%5p [correlationId=%X{correlationId:-}]"

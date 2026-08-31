@@ -1,5 +1,6 @@
 package com.ais.marketbackend.traslados.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
@@ -65,6 +66,8 @@ public class TrasladoServiceImpl implements TrasladoService {
 
     @Override
     @Transactional
+    @Auditable(accion = "TRASLADO_CREADO", entidad = "TRASLADO", tiendaIdParam = "tiendaOrigenId",
+            entidadIdFromReturn = true)
     public TrasladoResumen crear(Long tiendaOrigenId, Long tiendaDestinoId, List<NuevaLineaTraslado> lineas) {
         autorizacionTiendaService.exigirAccesoATodas(List.of(tiendaOrigenId, tiendaDestinoId));
         List<LineaTraslado> lineasDominio = lineas.stream()
@@ -76,6 +79,7 @@ public class TrasladoServiceImpl implements TrasladoService {
 
     @Override
     @Transactional
+    @Auditable(accion = "TRASLADO_COMPLETADO", entidad = "TRASLADO", entidadIdParam = "id")
     public TrasladoResumen completar(Long id) {
         Traslado traslado = obtenerConBloqueoORequerido(id);
         exigirAccesoOFingirNoEncontrado(id, traslado);
@@ -94,6 +98,7 @@ public class TrasladoServiceImpl implements TrasladoService {
 
     @Override
     @Transactional
+    @Auditable(accion = "TRASLADO_ANULADO", entidad = "TRASLADO", entidadIdParam = "id")
     public TrasladoResumen anular(Long id) {
         Traslado traslado = obtenerConBloqueoORequerido(id);
         exigirAccesoOFingirNoEncontrado(id, traslado);

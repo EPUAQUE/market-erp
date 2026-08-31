@@ -34,7 +34,7 @@ class CajaControllerTest {
         cajaService = mock(CajaService.class);
         CajaController controller = new CajaController(cajaService, new CajaApiMapper());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

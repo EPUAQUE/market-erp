@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="auditoria-001-audit-event" author="market-backend">
+        <createTable tableName="audit_event">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="fecha" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <!-- Nullable: no siempre hay un usuario autenticado todavía (ej. LOGIN_FALLIDO,
+                 RATE_LIMIT_ALCANZADO antes de validar credenciales). -->
+            <column name="actor_id" type="BIGINT"/>
+            <!-- Denormalizado a propósito: sobrevive aunque el usuario cambie de nombre o
+                 se desactive/borre después — la auditoría no debe depender de que la fila
+                 de usuario siga existiendo igual. -->
+            <column name="actor_username" type="VARCHAR(100)"/>
+            <column name="tienda_id" type="BIGINT"/>
+            <column name="accion" type="VARCHAR(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entidad" type="VARCHAR(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entidad_id" type="VARCHAR(60)"/>
+            <column name="resultado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="correlation_id" type="VARCHAR(100)"/>
+            <!-- Sanitizado por el productor antes de llegar acá — nunca contraseñas,
+                 tokens ni cuerpos de request completos (ver Fase 7, PLAN_MEJORAS.md). -->
+            <column name="detalle" type="TEXT"/>
+        </createTable>
+
+        <createIndex tableName="audit_event" indexName="ix_audit_event_fecha">
+            <column name="fecha"/>
+        </createIndex>
+        <createIndex tableName="audit_event" indexName="ix_audit_event_tienda_fecha">
+            <column name="tienda_id"/>
+            <column name="fecha"/>
+        </createIndex>
+        <createIndex tableName="audit_event" indexName="ix_audit_event_actor_fecha">
+            <column name="actor_id"/>
+            <column name="fecha"/>
+        </createIndex>
+        <createIndex tableName="audit_event" indexName="ix_audit_event_correlation_id">
+            <column name="correlation_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Append-only, mismo patrón exacto que movimiento_inventario
+         (inventario/001-inventario.xml) — un registro de auditoría que se puede editar
+         o borrar por la propia aplicación no sirve como auditoría. Ver PLAN_MEJORAS.md
+         Fase 7, "Retención": la purga real, si algún día hace falta por espacio, es un
+         proceso manual de DBA fuera de la app (deshabilitar el trigger a mano), nunca
+         código de aplicación — automatizar el borrado necesitaría deshabilitar esta
+         misma protección. -->
+    <changeSet id="auditoria-001-audit-event-append-only" author="market-backend">
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION prevent_audit_event_mutation() RETURNS trigger AS $$
+            BEGIN
+                RAISE EXCEPTION 'audit_event es append-only: no se permite UPDATE ni DELETE';
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER trg_audit_event_append_only
+            BEFORE UPDATE OR DELETE ON audit_event
+            FOR EACH ROW EXECUTE FUNCTION prevent_audit_event_mutation();
+        </sql>
+        <rollback>
+            <sql>
+                DROP TRIGGER IF EXISTS trg_audit_event_append_only ON audit_event;
+                DROP FUNCTION IF EXISTS prevent_audit_event_mutation();
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="auditoria-001-seed-permisos" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="AUDITORIA_VER"/>
+            <column name="descripcion" value="Ver el registro de auditoría del sistema"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'AUDITORIA_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'AUDITOR')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'AUDITORIA_VER')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

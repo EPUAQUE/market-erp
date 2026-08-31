@@ -1,5 +1,6 @@
 package com.ais.marketbackend.compras.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.compras.application.dtos.CompraResumen;
 import com.ais.marketbackend.compras.application.dtos.LineaCompraResumen;
 import com.ais.marketbackend.compras.application.dtos.NuevaLineaCompra;
@@ -42,6 +43,7 @@ public class CompraServiceImpl implements CompraService {
 
     @Override
     @Transactional
+    @Auditable(accion = "COMPRA_CREADA", entidad = "COMPRA", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public CompraResumen crear(Long tiendaId, Long proveedorId, List<NuevaLineaCompra> lineas) {
         List<LineaCompra> lineasDominio = lineas.stream()
                 .map(l -> LineaCompra.nueva(l.productoId(), l.cantidad(), l.costoUnitario()))
@@ -52,6 +54,7 @@ public class CompraServiceImpl implements CompraService {
 
     @Override
     @Transactional
+    @Auditable(accion = "COMPRA_RECIBIDA", entidad = "COMPRA", tiendaIdParam = "tiendaId", entidadIdParam = "id")
     public CompraResumen recibir(Long tiendaId, Long id) {
         Compra compra = obtenerConBloqueoORequerida(tiendaId, id);
         compra.recibir();
@@ -67,6 +70,7 @@ public class CompraServiceImpl implements CompraService {
 
     @Override
     @Transactional
+    @Auditable(accion = "COMPRA_ANULADA", entidad = "COMPRA", tiendaIdParam = "tiendaId", entidadIdParam = "id")
     public CompraResumen anular(Long tiendaId, Long id) {
         Compra compra = obtenerConBloqueoORequerida(tiendaId, id);
         compra.anular();

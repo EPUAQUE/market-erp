@@ -76,6 +76,8 @@
     <include file="db/changelog/modules/fel/002-fel-correlativo.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/fel/003-check-numero.xml" relativeToChangelogFile="false"/>
 
+    <include file="db/changelog/modules/auditoria/001-audit-event.xml" relativeToChangelogFile="false"/>
+
     <!-- Va al final: referencia permisos sembrados por todos los módulos de arriba. -->
     <include file="db/changelog/modules/seguridad/006-seed-roles-operativos.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/007-seed-categorias-ver-operativo.xml" relativeToChangelogFile="false"/>

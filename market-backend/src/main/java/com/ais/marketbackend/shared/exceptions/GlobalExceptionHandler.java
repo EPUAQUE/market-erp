@@ -1,6 +1,9 @@
 package com.ais.marketbackend.shared.exceptions;
 
 import com.ais.marketbackend.seguridad.domain.exception.RateLimitExcedidoException;
+import com.ais.marketbackend.seguridad.domain.service.SecurityAuditPublisher;
+import com.ais.marketbackend.seguridad.domain.service.TipoEventoAuditoria;
+import com.ais.marketbackend.shared.infrastructure.web.CorrelationIdFilter;
 import com.ais.marketbackend.shared.responses.ApiErrorResponse;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,13 +30,26 @@ public class GlobalExceptionHandler {
     private static final String METRICA_CONFLICTO = "market.business_exception";
 
     private final MeterRegistry meterRegistry;
+    private final SecurityAuditPublisher auditPublisher;
 
-    public GlobalExceptionHandler(MeterRegistry meterRegistry) {
+    public GlobalExceptionHandler(MeterRegistry meterRegistry, SecurityAuditPublisher auditPublisher) {
         this.meterRegistry = meterRegistry;
+        this.auditPublisher = auditPublisher;
     }
 
+    /**
+     * Único punto donde se traduce {@code RateLimitExcedidoException} a HTTP — antes
+     * de Fase 7, {@code TipoEventoAuditoria.RATE_LIMIT_ALCANZADO} estaba declarado
+     * pero nunca se disparaba (confirmado al auditar el código). Acá, en vez de en
+     * {@code InMemoryLoginRateLimiter}, porque ya es el punto centralizado para
+     * CUALQUIER endpoint rate-limitado (mismo criterio que {@code handleBusiness} de
+     * abajo para {@code market.business_exception}), no solo login.
+     */
     @ExceptionHandler(RateLimitExcedidoException.class)
     public ResponseEntity<ApiErrorResponse> handleRateLimit(RateLimitExcedidoException ex, HttpServletRequest request) {
+        String correlationId = correlationId(request);
+        auditPublisher.publicar(
+                TipoEventoAuditoria.RATE_LIMIT_ALCANZADO, correlationId, "path=" + request.getRequestURI());
         ApiErrorResponse body = errorBody(ex.httpStatus(), ex.errorCode(), ex.getMessage(), request);
         return ResponseEntity.status(ex.httpStatus())
                 .header("Retry-After", String.valueOf(ex.getRetryAfter().toSeconds()))
@@ -141,8 +158,19 @@ public class GlobalExceptionHandler {
         return ApiErrorResponse.of(status.value(), errorCode, message, request.getRequestURI(), correlationId(request));
     }
 
+    /**
+     * {@code CorrelationIdFilter} ya puso uno en MDC para toda request (Fase 7) —
+     * leerlo de ahí en vez de regenerar evita que esta respuesta de error tenga un
+     * correlationId distinto al que ya quedó en los logs de la misma request. El
+     * header/UUID nuevo quedan solo como red de seguridad si por algo el filtro no
+     * corrió (no debería pasar en producción).
+     */
     private String correlationId(HttpServletRequest request) {
-        String header = request.getHeader("X-Correlation-Id");
+        String deMdc = MDC.get(CorrelationIdFilter.MDC_KEY);
+        if (deMdc != null && !deMdc.isBlank()) {
+            return deMdc;
+        }
+        String header = request.getHeader(CorrelationIdFilter.HEADER);
         return header != null && !header.isBlank() ? header : UUID.randomUUID().toString();
     }
 }

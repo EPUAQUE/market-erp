@@ -42,7 +42,7 @@ class GlobalExceptionHandlerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new ControladorDePrueba())
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

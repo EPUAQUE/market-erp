@@ -36,7 +36,7 @@ class InventarioControllerTest {
         inventarioService = mock(InventarioService.class);
         InventarioController controller = new InventarioController(inventarioService, new InventarioApiMapper());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

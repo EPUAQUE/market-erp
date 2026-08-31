@@ -36,7 +36,7 @@ class CuentaPorCobrarControllerTest {
         CuentaPorCobrarController controller =
                 new CuentaPorCobrarController(cuentaPorCobrarService, new CuentaPorCobrarApiMapper());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

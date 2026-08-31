@@ -1,5 +1,6 @@
 package com.ais.marketbackend.inventario.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
@@ -58,6 +59,8 @@ public class InventarioServiceImpl implements InventarioService {
      * se propaga tal cual — el límite de un solo reintento evita enmascarar errores reales.
      */
     @Override
+    @Auditable(accion = "INVENTARIO_AJUSTADO", entidad = "INVENTARIO", tiendaIdParam = "tiendaId",
+            entidadIdParam = "productoId")
     public InventarioResumen registrarMovimiento(
             Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario,
             TipoMovimiento tipoMovimiento) {

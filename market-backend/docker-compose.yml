@@ -66,6 +66,15 @@ services:
       SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Guatemala}
+      # Alertas por correo (Fase 7, PLAN_MEJORAS.md) — mismo canal/env vars que ya
+      # usa el servicio "backup" (Fase 6) para no duplicar configuración. Todas
+      # opcionales: sin ALERT_EMAIL_TO, AlertaEmailService cae a solo-log.
+      ALERT_SMTP_HOST: ${ALERT_SMTP_HOST:-}
+      ALERT_SMTP_PORT: ${ALERT_SMTP_PORT:-587}
+      ALERT_SMTP_USER: ${ALERT_SMTP_USER:-}
+      ALERT_SMTP_PASSWORD: ${ALERT_SMTP_PASSWORD:-}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM:-}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
     volumes:
       - ./deploy/certs:/certs:ro
       # Volumen nombrado (no bind mount) a propósito: Docker inicializa su

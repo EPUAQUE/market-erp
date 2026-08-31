@@ -37,7 +37,7 @@ class ProductoTiendaControllerTest {
 
         ProductoTiendaController controller = new ProductoTiendaController(productoTiendaService, mapper);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

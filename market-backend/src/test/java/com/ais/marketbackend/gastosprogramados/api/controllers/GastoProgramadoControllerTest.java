@@ -35,7 +35,7 @@ class GastoProgramadoControllerTest {
         GastoProgramadoController controller =
                 new GastoProgramadoController(gastoProgramadoService, new GastoProgramadoApiMapper());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

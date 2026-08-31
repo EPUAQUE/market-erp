@@ -48,6 +48,27 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Expone /actuator/prometheus (Fase 7, PLAN_MEJORAS.md) — mismo alcance de red
+             restringido que /actuator/health hoy (127.0.0.1 vía docker-compose.yml). -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <!-- Primer uso de AOP en el proyecto: sostiene @Auditable/AuditoriaAspect
+             (Fase 7) — un solo aspecto en vez de repetir la llamada de auditoría a mano
+             en ~20 métodos de servicio. Spring Boot 4.x renombró el starter clásico
+             "spring-boot-starter-aop" a "spring-boot-starter-aspectj" (confirmado: el
+             nombre viejo ya no existe en el BOM administrado de esta versión). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aspectj</artifactId>
+        </dependency>
+        <!-- Alertas por correo (Fase 7) — refresh reutilizado / rate limit alcanzado.
+             Mismo canal (ALERT_SMTP_*) que ya usa deploy/backup/alert.sh en Fase 6. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

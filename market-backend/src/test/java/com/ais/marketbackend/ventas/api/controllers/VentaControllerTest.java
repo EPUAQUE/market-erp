@@ -50,7 +50,7 @@ class VentaControllerTest {
         usuarioService = mock(UsuarioService.class);
         VentaController controller = new VentaController(ventaService, new VentaApiMapper(), usuarioService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
 
         authentication = mock(Authentication.class);

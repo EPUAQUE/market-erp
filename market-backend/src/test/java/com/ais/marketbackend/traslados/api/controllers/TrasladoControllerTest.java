@@ -38,7 +38,7 @@ class TrasladoControllerTest {
         trasladoService = mock(TrasladoService.class);
         TrasladoController controller = new TrasladoController(trasladoService, new TrasladoApiMapper());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

@@ -34,7 +34,7 @@ class CuentaPorPagarControllerTest {
         CuentaPorPagarController controller =
                 new CuentaPorPagarController(cuentaPorPagarService, new CuentaPorPagarApiMapper());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

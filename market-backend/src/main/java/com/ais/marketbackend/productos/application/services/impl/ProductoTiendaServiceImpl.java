@@ -1,5 +1,6 @@
 package com.ais.marketbackend.productos.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.productos.application.dtos.ProductoTiendaResumen;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoTiendaService;
 import com.ais.marketbackend.productos.domain.exception.ConfiguracionTiendaDuplicadaException;
@@ -52,6 +53,8 @@ public class ProductoTiendaServiceImpl implements ProductoTiendaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "PRODUCTO_TIENDA_ASIGNADO", entidad = "PRODUCTO_TIENDA", tiendaIdParam = "tiendaId",
+            entidadIdParam = "productoId")
     public ProductoTiendaResumen asignar(
             Long productoId, Long tiendaId, BigDecimal precioVenta, BigDecimal stockMinimo, BigDecimal stockMaximo,
             boolean permitirVenta, boolean permitirIngreso) {
@@ -66,6 +69,7 @@ public class ProductoTiendaServiceImpl implements ProductoTiendaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "PRODUCTO_TIENDA_ACTUALIZADO", entidad = "PRODUCTO_TIENDA", entidadIdParam = "id")
     public ProductoTiendaResumen actualizar(
             Long id, BigDecimal precioVenta, BigDecimal stockMinimo, BigDecimal stockMaximo, boolean permitirVenta,
             boolean permitirIngreso) {

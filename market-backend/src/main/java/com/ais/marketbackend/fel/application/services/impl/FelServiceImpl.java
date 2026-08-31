@@ -1,5 +1,6 @@
 package com.ais.marketbackend.fel.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.fel.application.dtos.DocumentoFelResumen;
 import com.ais.marketbackend.fel.application.ports.CertificadorFelPort;
 import com.ais.marketbackend.fel.application.ports.ResultadoCertificacionFel;
@@ -44,6 +45,7 @@ public class FelServiceImpl implements FelService {
 
     @Override
     @Transactional
+    @Auditable(accion = "FEL_EMITIDO", entidad = "DOCUMENTO_FEL", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public DocumentoFelResumen emitir(Long tiendaId, Long ventaId) {
         VentaResumen venta = ventaService.obtener(tiendaId, ventaId);
         if (venta.estado() != EstadoVenta.COMPLETADA) {
@@ -60,6 +62,7 @@ public class FelServiceImpl implements FelService {
 
     @Override
     @Transactional
+    @Auditable(accion = "FEL_REINTENTADO", entidad = "DOCUMENTO_FEL", tiendaIdParam = "tiendaId", entidadIdParam = "id")
     public DocumentoFelResumen reintentar(Long tiendaId, Long id) {
         DocumentoFel documento = obtenerConBloqueoORequerido(tiendaId, id);
         VentaResumen venta = ventaService.obtener(tiendaId, documento.getVentaId());
@@ -68,6 +71,7 @@ public class FelServiceImpl implements FelService {
 
     @Override
     @Transactional
+    @Auditable(accion = "FEL_ANULADO", entidad = "DOCUMENTO_FEL", tiendaIdParam = "tiendaId", entidadIdParam = "id")
     public DocumentoFelResumen anular(Long tiendaId, Long id, String motivo) {
         DocumentoFel documento = obtenerConBloqueoORequerido(tiendaId, id);
         documento.anular(motivo);

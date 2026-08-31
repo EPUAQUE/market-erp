@@ -1,206 +1,169 @@
-# Auditoría de sesiones, navegación y acciones
+# Auditoría de seguridad y operaciones críticas
 
-Subsistema de auditoría de **actividad de usuario y seguridad**. No sustituye a la
-auditoría de seguridad existente (`SecurityAuditService` + logger `SECURITY_AUDIT`),
-que se conserva como respaldo operativo; ambos coexisten.
+Este documento describía originalmente (versión previa a Fase 7, PLAN_MEJORAS.md)
+un subsistema con outbox, base de auditoría separada, poller multi-instancia,
+dead-letter y particionamiento — **nada de eso llegó a implementarse**. Este
+documento ahora describe lo que **sí existe en el código**, y por qué se optó por
+un diseño más simple.
 
-> **Distinción importante.** Si existen tablas de histórico por trigger de BD sobre
-> filas de seguridad (usuarios, roles, permisos…), registran *cambios de estado de
-> fila*. `AUDIT_EVENT` registra *actividad* (autenticación, navegación, negocio,
-> seguridad) observada por el backend. Son cosas distintas y viven en bases distintas.
+## 1. Por qué no el outbox
 
-## 1. Flujo
+El diseño original resuelve un problema real cuando el destino final está
+desacoplado o puede fallar de forma independiente (una cola externa, un SIEM, un
+servicio de auditoría aparte). En este proyecto el destino es una tabla
+(`audit_event`) en la **misma base de datos operativa** — escribir el evento en
+la **misma transacción** que la operación de negocio que audita da mejor
+consistencia (ambos comitean o ninguno) que un outbox con poller asíncrono, sin
+la complejidad de reclamos, backoff, dead-letter ni coordinación multi-instancia.
 
-```text
-Controller / Service / Seguridad
-        -> AuditPublisher            (contrato; los productores solo conocen esto)
-        -> OutboxAuditPublisher      (escribe en AUDIT_OUTBOX, base OPERATIVA,
-                                       dentro de la transacción en curso)
-        -> [ AUDIT_OUTBOX ]          (patrón outbox, entrega confiable)
-        -> AuditEventProcessor       (poller programado; reclama lote seguro)
-        -> AuditWriter               (escribe idempotente en la base de AUDITORÍA)
-        -> [ AUDIT_EVENT / AUDIT_SESSION ]   (MARKET_AUDIT, PostgreSQL aparte)
+No hay una base `MARKET_AUDIT` separada, no hay `AuditEventProcessor`, no hay
+`schemaVersion`, no hay claim de outbox. Todo lo que sigue es lo real.
+
+## 2. Dos productores, un mismo destino
+
+### 2.1 `SecurityAuditPublisher` (seguridad: login/logout/refresh/asignaciones)
+
+Interfaz existente desde antes de Fase 7, implementada por
+`SecurityAuditPublisherImpl` (`seguridad/infrastructure/security/`). Cubre los
+14 call sites ya existentes en `AuthServiceImpl` (login, refresh, refresh
+reutilizado, logout) y `UsuarioServiceImpl` (alta de usuario, asignación de
+tienda/grupo, cambio/restablecimiento de contraseña, revocación de sesiones) —
+**ninguno de esos call sites cambió** para lograr esto. `publicar(tipo,
+correlationId, detalle)` ahora, además de logear a `SECURITY_AUDIT` y contar
+`market.security.evento` (como siempre hacía), también:
+
+- Persiste una fila en `audit_event` (resuelve el actor de
+  `SecurityContextHolder` si hay uno autenticado — caso de las asignaciones
+  hechas por un admin sobre otro usuario — o, si no, del propio `usuarioId`
+  que el detalle ya venía incluyendo de forma consistente en los 14 call
+  sites — caso de login/refresh, donde sujeto y actor son la misma persona).
+- Dispara una alerta por correo para `REFRESH_REUTILIZADO` (señal fuerte de
+  secuestro de sesión) y `RATE_LIMIT_ALCANZADO` (fuerza bruta/credential
+  stuffing) — ver §4.
+
+`RATE_LIMIT_ALCANZADO` estaba declarado en `TipoEventoAuditoria` desde antes
+pero nunca se disparaba (confirmado al auditar el código antes de esta fase).
+Se agregó el llamado en `GlobalExceptionHandler.handleRateLimit` — punto único
+ya usado para traducir esa excepción a HTTP en cualquier endpoint
+rate-limitado, no solo login.
+
+### 2.2 `@Auditable` + `AuditoriaAspect` (operaciones de negocio)
+
+Nueva anotación `auditoria.infrastructure.aop.Auditable` + un solo
+`AuditoriaAspect` (Spring AOP, primer uso de AOP en este proyecto — requirió
+agregar `spring-boot-starter-aspectj`, el reemplazo de
+`spring-boot-starter-aop` en Spring Boot 4.x). Se anota el método de servicio,
+sin tocar su cuerpo:
+
+```java
+@Auditable(accion = "VENTA_COMPLETADA", entidad = "VENTA", tiendaIdParam = "tiendaId", entidadIdParam = "id")
+public VentaResumen completar(Long tiendaId, Long id, List<PagoInmediato> pagosInmediatos) { ... }
 ```
 
-- El request de negocio **no** espera la escritura final en `MARKET_AUDIT`: solo
-  inserta una fila en el outbox (misma transacción que el cambio de negocio).
-- El **único propietario** de las escrituras en `MARKET_AUDIT` es el procesador.
-- Una librería/productor **nunca** escribe directamente en la base de auditoría.
+El aspecto resuelve `tienda`/`entidadId` por el **nombre real del parámetro**
+(`-parameters` ya activo en `maven-compiler-plugin`) o, para métodos `crear`
+donde el id solo existe en el objeto devuelto, por reflexión sobre `.id()` del
+resultado (`entidadIdFromReturn = true` — todos los DTO `*Resumen` de este
+proyecto son records con ese accessor). El actor se resuelve de
+`SecurityContextHolder` — seguro, porque todo método cubierto está detrás de
+`@RequiresPermission` en su controller. El `resultado` (`EXITO`/`FALLO`) se
+deriva de si el método lanzó excepción.
 
-## 2. Responsabilidades
+Cubre 8 de las 9 categorías de auditoría que pedía Fase 7: precios/configuración
+por tienda (`ProductoTiendaServiceImpl.asignar/actualizar`), ajustes de
+inventario (`InventarioServiceImpl.registrarMovimiento`), caja
+(`CajaServiceImpl.abrir/registrarMovimiento/cerrar`), ventas
+(`VentaServiceImpl.completar/anular`), compras
+(`CompraServiceImpl.crear/recibir/anular`), cuentas por pagar
+(`CuentaPorPagarServiceImpl.registrarPago/anular`), traslados
+(`TrasladoServiceImpl.crear/completar/anular`) y FEL
+(`FelServiceImpl.emitir/reintentar/anular`).
 
-| Componente | Responsabilidad |
-| --- | --- |
-| `AuditPublisher` | Contrato de publicación. Única dependencia de los productores. |
-| `OutboxAuditPublisher` | Serializa el evento y lo guarda en `AUDIT_OUTBOX` (base operativa). Fail-open. |
-| `AuditOutbox` / `AuditOutboxRepository` | Cola durable + reclamo seguro multi-instancia. |
-| `AuditEventProcessor` | Poller: reclama, procesa, reintenta, dead-letter. Recuperación tras reinicio. |
-| `OutboxManager` | Transiciones del outbox (reclamo/DONE/fallo/backoff) en la base operativa. |
-| `AuditWriter` | Escribe eventos y materializa el ciclo de vida de sesiones en la base de auditoría. Idempotente. |
-| `AuditQueryService` | Consultas y exportación del historial (solo lectura). |
-| `AuthAuditRecorder` | Eventos de login/logout en transacción propia y corta. |
-| `AuditCaptureInterceptor` | Captura automática de acceso/denegación en endpoints `@RequiresPermission`. |
+**"Exportaciones de reportes" queda fuera** — confirmado que
+`ReporteController` solo devuelve JSON hoy, no existe ningún endpoint de
+exportación (CSV/PDF/Excel) para auditar. Es alcance de Fase 10, no se inventó
+esa función acá.
 
-### Extraer el procesador a un servicio independiente
+> **No es estrictamente atómico con la operación de negocio.** El aspecto corre
+> alrededor del proxy transaccional del método (orden por defecto de Spring
+> para aspectos sin `@Order`), así que `registrar(...)` corre en su propia
+> transacción, inmediatamente después de que la transacción de negocio ya
+> comiteó (caso éxito) o ya hizo rollback (caso fallo — y ahí es exactamente
+> el comportamiento deseado: el evento de auditoría de un fallo debe
+> sobrevivir aunque el cambio de negocio se revierta). El único riesgo real es
+> una falla de infraestructura entre ambos commits en el caso éxito — raro, y
+> de todos modos mejor que no tener auditoría. `SecurityAuditPublisherImpl`,
+> llamado desde DENTRO del método de negocio (no vía este aspecto), sí escribe
+> en la misma transacción.
 
-Los productores dependen solo de `AuditPublisher`. Para separar el procesador:
+## 3. `audit_event` — append-only, sin outbox
 
-1. Sustituir `OutboxAuditPublisher` por una implementación que publique al transporte
-   nuevo (p. ej. Kafka) — **sin tocar los módulos de negocio**.
-2. Mover `AuditEventProcessor`, `AuditWriter` y los repositorios/entidades de
-   `audit.persistence` a un servicio aparte que consuma ese transporte y sea el único
-   con credenciales de `MARKET_AUDIT`.
-3. El contrato `AuditEvent` (JSON, versionado con `schemaVersion`) es la frontera.
+Una sola tabla, en la base operativa (`auditoria/001-audit-event.xml`):
+`id, fecha, actor_id, actor_username, tienda_id, accion, entidad, entidad_id,
+resultado, correlation_id, detalle`. `actor_id`/`tienda_id` son nullable (no
+todo evento tiene uno — login fallido no tiene tienda; rate limit no tiene
+actor todavía). `actor_username` está denormalizado a propósito: sobrevive
+aunque el usuario cambie de nombre o se desactive después.
 
-## 3. Entrega confiable, reintentos y dead-letter
+**Append-only vía trigger**, mismo patrón exacto que `movimiento_inventario`
+(`inventario/001-inventario.xml`): `BEFORE UPDATE OR DELETE` con `RAISE
+EXCEPTION`. Nadie, ni la propia aplicación, puede editar o borrar una fila ya
+escrita.
 
-- **Outbox** en la base operativa. Cada evento tiene `eventId` (UUID) único.
-- **Reclamo multi-instancia**: `findClaimableIds` + `claim(... WHERE status=PENDING)` con
-  `claimToken` único por lote. El bloqueo de fila serializa los UPDATE concurrentes:
-  cada fila la toma exactamente una instancia.
-- **Idempotencia**: `AUDIT_EVENT.EVENT_ID` es UNIQUE y `AuditWriter` comprueba
-  `existsByEventId` antes de insertar. El outbox se marca `DONE` **solo tras** confirmar
-  la escritura → semántica efectivamente-una-vez sobre entrega at-least-once.
-- **Sin transacción distribuida**: la escritura en auditoría (tx de auditoría) y el
-  marcado del outbox (tx operativa) son transacciones separadas.
-- **Backoff** exponencial acotado (`backoff-base`·2ⁿ ≤ `backoff-max`); tras
-  `max-attempts` la fila pasa a `DEAD` (dead-letter).
-- **Recuperación tras reinicio**: las filas viven en la BD; `requeueStale` devuelve a
-  `PENDING` las que quedaron `PROCESSING` más de `claim-timeout`.
-- **Política ante fallos**: `fail-open` para navegación y operaciones ordinarias (un
-  fallo de auditoría no rompe el flujo HTTP). Toda pérdida/atraso/dead-letter es
-  visible por métricas. Configurable para exigir `fail-closed` en acciones críticas.
+**Retención — decisión explícita, no automatizada.** El propio trigger que
+protege contra modificación bloquearía también un borrado automático
+programado — automatizarlo necesitaría deshabilitar la protección recién
+construida, lo que la vacía de sentido (mismo criterio que
+`movimiento_inventario`, que tampoco tiene borrado automático). Política:
+**retener indefinidamente**; una purga real, si algún día hace falta por
+espacio, es un proceso manual de DBA fuera de la aplicación (deshabilitar el
+trigger a mano, purgar, re-habilitarlo) — nunca código de aplicación.
 
-## 4. Sesiones y JWT
+## 4. Alertas por correo
 
-- Al autenticar se genera un `sessionId` (UUID) y se añade al JWT como claim `sid`.
-- Se emite `LOGIN` (AUTH/SUCCESS) asociado a esa sesión; el procesador crea `AUDIT_SESSION`.
-- `POST /api/v1/auth/logout` registra `LOGOUT` y el procesador cierra la sesión
-  (`end_reason=LOGOUT`). **No** invalida el JWT: la API es stateless y el cliente
-  descarta el token. Una revocación real requeriría un registro de sesiones consultado
-  por el Resource Server (no implementado; documentado como extensión).
-- **Tokens sin `sid`** (emitidos antes de esta función) siguen siendo válidos: `sid` es
-  opcional; su ausencia se trata como contexto autenticado sin sesión de auditoría.
-- Se conservan `sub`, `jti` y `sver`. El JWT nunca se almacena en auditoría.
+`shared.infrastructure.alertas.AlertaEmailService` (`JavaMailSender`,
+`spring-boot-starter-mail`), configurado con las mismas variables de entorno
+`ALERT_SMTP_*`/`ALERT_EMAIL_*` que ya usa `deploy/backup/alert.sh` (Fase 6,
+PLAN_MEJORAS.md) — un solo canal, no dos configuraciones distintas. Sin
+`ALERT_EMAIL_TO` configurado, cae a solo-log (mismo criterio que el lado
+shell) — nunca propaga una excepción hacia el flujo que la disparó.
 
-### Dos métricas de tiempo (no confundir)
+Dos tipos de alerta, disparados desde `SecurityAuditPublisherImpl`:
 
-- **Duración calendario**: `ended_at − started_at` (o ahora, si sigue abierta).
-- **Tiempo activo estimado** (`active_millis`): acumulado por actividad/heartbeat. Es
-  una **estimación**; **no** equivale al tiempo que el usuario observó la pantalla.
-
-## 5. Navegación y heartbeat (declarados por el cliente)
-
-- `POST /api/v1/audit/navigation`: identidad, sesión e IP se toman del **contexto
-  autenticado**, nunca del cuerpo. Valida `navType` contra una allowlist y el acceso a
-  la pantalla contra los permisos efectivos del usuario. Marca los eventos como
-  `CLIENT_DECLARED`.
-- `POST /api/v1/audit/heartbeat`: actualiza actividad **como máximo una vez por
-  ventana** (`heartbeat-window`); tolerante a duplicados. El cierre por inactividad lo
-  hace `AuditSessionMaintenance` (programado).
-
-### Regla técnico vs semántico (anti-doble-registro)
-
-- La **captura automática** (`AuditCaptureInterceptor`) registra: toda **denegación**
-  (403) y las **lecturas** exitosas (GET). **No** registra mutaciones exitosas.
-- Las **mutaciones** (crear, editar, eliminar, importar, exportar) emiten un **evento
-  semántico** desde el servicio de negocio, con tipo e id del objeto afectado. Así no se
-  registra dos veces el mismo hecho.
-
-## 6. Consultas administrativas
-
-Bajo el permiso `AUDITORIA_VER` (`@RequiresPermission`, fail-closed):
-
-- `GET /api/v1/audit/events` — búsqueda paginada por usuario, sesión, tienda, módulo,
-  categoría, resultado y rango de fechas.
-- `GET /api/v1/audit/sessions/{sessionId}` — detalle con duración calendario y tiempo
-  activo estimado.
-- `GET /api/v1/audit/events/export?format=csv` — exportación **con permiso adicional**
-  `AUDITORIA_EXPORTAR`, auditada, con neutralización de inyección de fórmulas CSV.
-
-Permisos planos separados: consultar = `AUDITORIA_VER`, exportar = `AUDITORIA_EXPORTAR`
-(ver el modelo RBAC en `seguridad-desarrolladores.md`). No se devuelven entidades JPA;
-solo DTOs y respuestas paginadas.
-
-## 7. Privacidad y datos prohibidos
-
-Nunca se almacena en logs, outbox ni auditoría: contraseñas/hashes, JWT/refresh tokens
-ni `Authorization`, llaves/secretos/cadenas de conexión, cuerpos completos de
-request/response, ni datos personales innecesarios.
-
-- IP: `MASK` (enmascara último octeto/segmento), `HASH` (HMAC-SHA-256) o `NONE`.
-- User-Agent: hasheado y acotado.
-- `metadata`: mapa pequeño, saneado (anti log-injection) y de tamaño acotado.
-- Ningún trigger ni proceso de auditoría copia jamás `password_hash` (ni ningún otro
-  campo sensible) hacia una tabla de histórico: los triggers de fila deben excluir
-  explícitamente esas columnas o escribir `NULL` en su lugar.
-
-## 8. Migraciones (dos bases, Liquibase)
-
-| Base | Location | Contenido |
+| Tipo | Qué significa | Qué hacer |
 | --- | --- | --- |
-| Operativa | `classpath:db/changelog` (`db.changelog-master.xml`) | `audit_outbox`, tablas de negocio y seguridad de los demás módulos. |
-| Auditoría | `classpath:db/audit-changelog` (`db.changelog-master.xml`) | `audit_session`, `audit_event` (append-only), índices, particionamiento mensual. |
+| `REFRESH_REUTILIZADO` | Alguien reenvió un refresh token ya consumido — posible sesión comprometida (token robado, o dos dispositivos compitiendo por el mismo). El backend ya revoca toda la familia de tokens del usuario automáticamente. | Revisar `audit_event` filtrando por ese `actor_id` para ver el patrón (IP, hora). Si se confirma compromiso, contactar al usuario y considerar `POST /usuarios/{id}/sesiones/revocar` igual (ya son revocadas, pero fuerza el flujo de aviso). |
+| `RATE_LIMIT_ALCANZADO` | Se agotó el límite de intentos de login para una IP o un usuario — posible fuerza bruta o credential stuffing. | Revisar `audit_event`/logs por esa IP/usuario. Si es un patrón sostenido, considerar bloqueo a nivel de firewall/Caddy (fuera del alcance de este backend). |
 
-- Liquibase operativo: datasource primario, autoconfiguración de Spring Boot.
-- Liquibase de auditoría: bean dedicado con su propio `DataSource`, activado con
-  `app.audit.liquibase.enabled=true`.
-- `audit_event` es append-only: un trigger `BEFORE UPDATE OR DELETE` con
-  `RAISE EXCEPTION` bloquea cualquier modificación o borrado de fila (PostgreSQL no
-  soporta `INSTEAD OF` sobre tablas base, solo sobre vistas). Cuenta de mínimos
-  privilegios: procesador con `INSERT` (+ `UPDATE` en sesiones), consulta/exportación
-  con `SELECT` únicamente.
+## 5. Observabilidad — solo lo mínimo, sin Prometheus/Grafana todavía
 
-> La tabla `audit_outbox` (base operativa) se crea por changeset Liquibase; en pruebas
-> puede generarse por entidades JPA (`ddl-auto=create-drop`), pero en producción
-> (`ddl-auto=none`) solo existe por migración.
+`/actuator/prometheus` expuesto (`micrometer-registry-prometheus`), mismo
+alcance de red que `/actuator/health` (`127.0.0.1:8080` únicamente vía
+`docker-compose.yml`) — decisión explícita del usuario: no se monta
+Prometheus/Grafana en la VM todavía, esto solo deja el endpoint listo para
+cuando se decida dónde correr ese stack. Dashboards y alertas basadas en
+umbrales de métricas (latencia HTTP, tasa de error) quedan pendientes de esa
+decisión de infraestructura — no se puede completar sin ella.
 
-## 9. Retención y rendimiento
+`CorrelationIdFilter` (`shared.infrastructure.web`) pone un `correlationId`
+en `MDC` en cada request (header `X-Correlation-Id` de entrada, o un UUID
+nuevo) — aparece en toda línea de log (`logging.pattern.level` en
+`application.yml`) y se agrega como header en toda respuesta, no solo en
+errores como antes. `GlobalExceptionHandler`, `SecurityAuditPublisherImpl` y
+`AuditoriaAspect` lo leen de MDC en vez de generar cada uno el suyo.
 
-- Retención caliente (`retention.hot-days`) y archivado (`archive-days`) configurables.
-- **Particionamiento declarativo nativo de PostgreSQL** (`PARTITION BY RANGE` sobre
-  `occurred_at`, una partición mensual). Eliminación **por partición completa**
-  (`DROP TABLE audit_event_2026_01`), no fila a fila.
-- Índices por usuario, sesión, fecha, tienda, permiso y resultado (ver
-  `db/audit-changelog`).
-- Métricas: publicados, pendientes, edad del más antiguo, procesados, duplicados,
-  reintentos, dead-letter, duración de lote, fallos de conexión.
+## 6. Privacidad
 
-### Fórmula de capacidad (no inventar cifras)
+`detalle` es texto sanitizado que arma el productor antes de llegar a
+`AuditEvent` — nunca contraseñas, hashes, tokens completos ni cuerpos de
+request/response. Mismo criterio que ya tenía `SecurityAuditPublisherImpl`
+desde antes de esta fase.
 
-```text
-eventos_por_día = usuarios_activos × sesiones_por_usuario × eventos_por_sesión
-almacenamiento  = eventos × tamaño_promedio × factor_de_índices_y_respaldo
-```
+## 7. Consulta
 
-### Procedimiento de prueba de carga
-
-1. Configurar `MARKET_AUDIT` (Testcontainers PostgreSQL o instancia dedicada).
-2. Generar N publicaciones concurrentes (`AuditPublisher.publish`) y medir la latencia
-   añadida al request (debe tender a ~coste de un INSERT en la base operativa).
-3. Ejecutar el procesador y medir throughput (eventos/s), tamaño de lote efectivo y
-   atraso de la cola (`audit.outbox.oldest_age_seconds`).
-4. Reportar throughput, latencia añadida, tamaño de lote y atraso. Si no hay
-   infraestructura, dejar el escenario preparado y documentar cómo ejecutarlo.
-
-## 10. Observabilidad
-
-Micrometer/Actuator (sin datos sensibles): contadores `audit.events.*`
-(published/processed/duplicates/retries/dead_letter), `audit.db.connection_failures`,
-gauges `audit.outbox.pending|dead_letter|oldest_age_seconds`, timer `audit.processor.batch`.
-Health separados: `auditDb` (conectividad) y `auditProcessor` (atraso/dead-letter).
-
-## 11. Criterios medibles para adoptar Kafka / ClickHouse / OpenSearch
-
-Mantener PostgreSQL como fuente de verdad hasta que se cumpla alguno de forma sostenida:
-
-- **Kafka/broker**: el atraso del outbox (`oldest_age_seconds`) crece de forma
-  monótona bajo carga normal pese a lotes máximos, o se requieren varios consumidores
-  independientes del evento.
-- **ClickHouse**: el volumen supera lo que el particionamiento mensual + índices
-  sostienen para las consultas analíticas objetivo (p. ej. > cientos de millones de
-  filas con agregaciones interactivas).
-- **OpenSearch/Elasticsearch**: se requiere búsqueda de texto libre/ad-hoc sobre la
-  metadata que los índices relacionales no cubren.
-
-Hasta entonces, solo se documentan como puntos de extensión.
+`GET /api/v1/auditoria` (todo, paginado) y `GET /api/v1/auditoria/tiendas/{tiendaId}`
+(filtrado por tienda), permiso `AUDITORIA_VER` — sembrado para `ADMIN` y
+`AUDITOR` (rol ya existente, ver `seguridad/010-seed-auditor-permisos.xml`).
+Sin filtros adicionales (por actor, acción, rango de fechas) en esta pasada —
+si hace falta, es una extensión chica sobre `AuditEventRepository`, no un
+rediseño.

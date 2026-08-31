@@ -39,7 +39,7 @@ class CompraControllerTest {
         compraService = mock(CompraService.class);
         CompraController controller = new CompraController(compraService, new CompraApiMapper());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry()))
+                .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
     }
 

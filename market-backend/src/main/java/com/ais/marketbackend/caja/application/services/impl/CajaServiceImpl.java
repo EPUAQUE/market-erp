@@ -1,5 +1,6 @@
 package com.ais.marketbackend.caja.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.caja.application.dtos.CajaSesionResumen;
 import com.ais.marketbackend.caja.application.dtos.MovimientoCajaResumen;
 import com.ais.marketbackend.caja.application.services.interfaces.CajaService;
@@ -53,11 +54,13 @@ public class CajaServiceImpl implements CajaService {
     }
 
     @Override
+    @Auditable(accion = "CAJA_ABIERTA", entidad = "CAJA_SESION", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public CajaSesionResumen abrir(Long tiendaId, BigDecimal montoInicial) {
         return abrir(tiendaId, montoInicial, null);
     }
 
     @Override
+    @Auditable(accion = "CAJA_ABIERTA", entidad = "CAJA_SESION", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public CajaSesionResumen abrir(Long tiendaId, BigDecimal montoInicial, String correlationId) {
         String correlationIdNormalizado = normalizarCorrelationId(correlationId);
         if (correlationIdNormalizado != null) {
@@ -106,6 +109,7 @@ public class CajaServiceImpl implements CajaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "CAJA_MOVIMIENTO", entidad = "CAJA_SESION", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public CajaSesionResumen registrarMovimiento(
             Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto) {
         // @Transactional propio (no solo delegar): esta sobrecarga es una llamada
@@ -118,6 +122,7 @@ public class CajaServiceImpl implements CajaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "CAJA_MOVIMIENTO", entidad = "CAJA_SESION", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public CajaSesionResumen registrarMovimiento(
             Long tiendaId, TipoMovimientoCaja tipo, String concepto, BigDecimal monto, String correlationId) {
         String correlationIdNormalizado = normalizarCorrelationId(correlationId);
@@ -144,6 +149,7 @@ public class CajaServiceImpl implements CajaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "CAJA_CERRADA", entidad = "CAJA_SESION", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public CajaSesionResumen cerrar(Long tiendaId, BigDecimal montoFinalContado) {
         // Mismo motivo que la sobrecarga de 4 argumentos de registrarMovimiento.
         return cerrar(tiendaId, montoFinalContado, null);
@@ -151,6 +157,7 @@ public class CajaServiceImpl implements CajaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "CAJA_CERRADA", entidad = "CAJA_SESION", tiendaIdParam = "tiendaId", entidadIdFromReturn = true)
     public CajaSesionResumen cerrar(Long tiendaId, BigDecimal montoFinalContado, String correlationId) {
         String correlationIdNormalizado = normalizarCorrelationId(correlationId);
         Optional<CajaSesion> abierta = cajaSesionRepository.findAbiertaByTiendaIdConBloqueo(tiendaId);

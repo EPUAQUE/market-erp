@@ -1,5 +1,6 @@
 package com.ais.marketbackend.ventas.application.services.impl;
 
+import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.caja.application.services.interfaces.CajaService;
 import com.ais.marketbackend.caja.domain.model.TipoMovimientoCaja;
 import com.ais.marketbackend.clientes.application.dtos.ClienteResumen;
@@ -173,12 +174,14 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "VENTA_COMPLETADA", entidad = "VENTA", tiendaIdParam = "tiendaId", entidadIdParam = "id")
     public VentaResumen completar(Long tiendaId, Long id) {
         return completar(tiendaId, id, List.of());
     }
 
     @Override
     @Transactional
+    @Auditable(accion = "VENTA_COMPLETADA", entidad = "VENTA", tiendaIdParam = "tiendaId", entidadIdParam = "id")
     public VentaResumen completar(Long tiendaId, Long id, List<PagoInmediato> pagosInmediatos) {
         Venta venta = obtenerConBloqueoORequerida(tiendaId, id);
         // exigirBorrador() (dentro de completar()) va primero, antes de cualquier otra
@@ -259,6 +262,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional
+    @Auditable(accion = "VENTA_ANULADA", entidad = "VENTA", tiendaIdParam = "tiendaId", entidadIdParam = "id")
     public VentaResumen anular(Long tiendaId, Long id) {
         Venta venta = obtenerConBloqueoORequerida(tiendaId, id);
         venta.anular();

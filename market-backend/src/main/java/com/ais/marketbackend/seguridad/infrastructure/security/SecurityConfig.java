@@ -1,11 +1,14 @@
 package com.ais.marketbackend.seguridad.infrastructure.security;
 
+import com.ais.marketbackend.shared.infrastructure.web.CorrelationIdFilter;
 import com.ais.marketbackend.shared.responses.ApiErrorResponse;
 import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.UUID;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -54,6 +57,21 @@ public class SecurityConfig {
                 .addFilterAfter(new DebeCambiarPasswordFilter(objectMapper), BearerTokenAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Registrado fuera de la cadena de Spring Security a propósito ({@code
+     * Ordered.HIGHEST_PRECEDENCE} lo pone antes que el propio {@code
+     * FilterChainProxy} de Security en la cadena de servlet) — así hasta un 401 de
+     * autenticación o un 429 de rate limit, que nunca llegan a un {@code @RestController},
+     * tienen correlationId.
+     */
+    @Bean
+    public FilterRegistrationBean<CorrelationIdFilter> correlationIdFilterRegistration() {
+        FilterRegistrationBean<CorrelationIdFilter> registration =
+                new FilterRegistrationBean<>(new CorrelationIdFilter());
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
     }
 
     private org.springframework.security.web.AuthenticationEntryPoint authenticationEntryPoint() {

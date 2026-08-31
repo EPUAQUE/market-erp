@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
@@ -141,14 +141,14 @@ jobs:
       # el pipeline por vulnerabilidades de imagen base que el equipo
       # todavia no puede parchear.
       - name: Escaneo de vulnerabilidades - backend
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: market-backend:ci
           format: table
           exit-code: "0"
 
       - name: Escaneo de vulnerabilidades - backoffice
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: market-backoffice:ci
           format: table

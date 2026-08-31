@@ -51,6 +51,7 @@ export const API_ENDPOINTS = {
     tiendaActivar: (productoId: number, id: number) => `/api/v1/productos/${productoId}/tiendas/${id}/activar`,
     tiendaDesactivar: (productoId: number, id: number) =>
       `/api/v1/productos/${productoId}/tiendas/${id}/desactivar`,
+    porTienda: (tiendaId: number) => `/api/v1/productos/tiendas/${tiendaId}`,
   },
   inventario: {
     porTienda: (tiendaId: number) => `/api/v1/inventario/tiendas/${tiendaId}`,

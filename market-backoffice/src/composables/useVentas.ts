@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { ventasService, type DatosLineaVenta } from '@/services/ventas.service'
 import { ApiClientError } from '@/services/http/ApiClient'
-import type { Venta } from '@/types/venta'
+import type { MetodoPago, Venta } from '@/types/venta'
 
 export function useVentas() {
   const items = ref<Venta[]>([])
@@ -39,11 +39,16 @@ export function useVentas() {
     if (tiendaActual !== null) await cargar(tiendaActual)
   }
 
-  async function crear(tiendaId: number, clienteId: number, lineas: DatosLineaVenta[]): Promise<boolean> {
+  async function crear(
+    tiendaId: number,
+    clienteId: number,
+    lineas: DatosLineaVenta[],
+    metodoPago: MetodoPago,
+  ): Promise<boolean> {
     saveLoading.value = true
     saveError.value = null
     try {
-      await ventasService.crear(tiendaId, clienteId, lineas)
+      await ventasService.crear(tiendaId, clienteId, lineas, metodoPago)
       await recargar()
       return true
     } catch (error) {

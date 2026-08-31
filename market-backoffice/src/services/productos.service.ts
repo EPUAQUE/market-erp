@@ -52,6 +52,12 @@ class ProductosService {
     return apiClient.get<ProductoTienda[]>(API_ENDPOINTS.productos.tiendas(productoId))
   }
 
+  listarPorTienda(tiendaId: number, tamano = 5000) {
+    return apiClient.get<Pagina<ProductoTienda>>(API_ENDPOINTS.productos.porTienda(tiendaId), {
+      params: { page: 0, size: tamano },
+    })
+  }
+
   asignarTienda(productoId: number, tiendaId: number, datos: DatosProductoTienda) {
     return apiClient.post<ProductoTienda>(API_ENDPOINTS.productos.tiendas(productoId), { tiendaId, ...datos })
   }

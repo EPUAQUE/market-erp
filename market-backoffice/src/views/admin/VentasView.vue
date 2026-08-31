@@ -6,8 +6,10 @@ import { useClientes } from '@/composables/useClientes'
 import { useProductos } from '@/composables/useProductos'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { resolverImagenUrl } from '@/utils/imagenUrl'
+import { productosService } from '@/services/productos.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
-import type { Venta } from '@/types/venta'
+import type { MetodoPago, Venta } from '@/types/venta'
+import type { ProductoTienda } from '@/types/producto'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
 
 const ESTADO_VARIANT: Record<string, EstadoBadgeVariant> = {
@@ -20,6 +22,15 @@ const ESTADO_LABEL: Record<string, string> = {
   COMPLETADA: 'Completada',
   ANULADA: 'Anulada',
 }
+
+// MIXTO se excluye a propósito: requiere un desglose de pagos por canal que
+// esta pantalla no captura — `completar()` aquí no manda `pagos`.
+const METODOS_PAGO: { valor: MetodoPago; etiqueta: string }[] = [
+  { valor: 'EFECTIVO', etiqueta: 'Efectivo' },
+  { valor: 'TARJETA', etiqueta: 'Tarjeta' },
+  { valor: 'TRANSFERENCIA', etiqueta: 'Transferencia' },
+  { valor: 'CREDITO', etiqueta: 'Crédito' },
+]
 
 const {
   items,
@@ -47,8 +58,29 @@ const detalleAbiertoId = ref<number | null>(null)
 
 const form = ref({
   clienteId: '',
+  metodoPago: '' as MetodoPago | '',
   lineas: [{ productoId: '', cantidad: '', precioUnitario: '' }],
 })
+
+// Precios del producto en la tienda seleccionada (ProductoTienda.precioVenta),
+// para autocompletar "Precio unitario" al elegir un producto en la línea —
+// el catálogo genérico de useProductos() no trae precio, solo vive por tienda.
+const productoTiendas = ref<ProductoTienda[]>([])
+
+async function cargarProductoTiendas(id: number) {
+  const pagina = await productosService.listarPorTienda(id)
+  productoTiendas.value = pagina.contenido
+}
+
+function precioDeProducto(productoId: number): string | undefined {
+  return productoTiendas.value.find((pt) => pt.productoId === productoId)?.precioVenta
+}
+
+function onSeleccionarProducto(index: number) {
+  const productoId = Number(form.value.lineas[index].productoId)
+  const precio = precioDeProducto(productoId)
+  if (precio !== undefined) form.value.lineas[index].precioUnitario = precio
+}
 
 function nombreCliente(clienteId: number): string {
   return clientes.value.find((c) => c.id === clienteId)?.nombre ?? `#${clienteId}`
@@ -74,6 +106,7 @@ function abrirCrear() {
   const consumidorFinal = clientes.value.find((c) => c.nombre === 'Consumidor Final')
   form.value = {
     clienteId: consumidorFinal ? String(consumidorFinal.id) : '',
+    metodoPago: '',
     lineas: [{ productoId: '', cantidad: '', precioUnitario: '' }],
   }
   showForm.value = true
@@ -82,7 +115,10 @@ function abrirCrear() {
 watch(tiendaId, (id) => {
   detalleAbiertoId.value = null
   pagina.value = 1
-  if (id !== null) cargar(id)
+  if (id !== null) {
+    cargar(id)
+    cargarProductoTiendas(id)
+  }
 })
 
 watch(tamano, () => {
@@ -93,7 +129,7 @@ watch([pagina, tamano], () => {
 })
 
 async function onSubmit() {
-  if (tiendaId.value === null) return
+  if (tiendaId.value === null || form.value.metodoPago === '') return
   const ok = await crear(
     tiendaId.value,
     Number(form.value.clienteId),
@@ -102,6 +138,7 @@ async function onSubmit() {
       cantidad: l.cantidad,
       precioUnitario: l.precioUnitario,
     })),
+    form.value.metodoPago,
   )
   if (ok) showForm.value = false
 }
@@ -165,6 +202,20 @@ onMounted(async () => {
         </select>
       </div>
 
+      <div class="space-y-1">
+        <label class="text-sm font-medium">Método de pago</label>
+        <select
+          v-model="form.metodoPago"
+          required
+          class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
+        >
+          <option value="" disabled>Seleccione…</option>
+          <option v-for="metodo in METODOS_PAGO" :key="metodo.valor" :value="metodo.valor">
+            {{ metodo.etiqueta }}
+          </option>
+        </select>
+      </div>
+
       <div class="space-y-2">
         <label class="text-sm font-medium">Líneas</label>
         <div v-for="(linea, index) in form.lineas" :key="index" class="grid gap-3 sm:grid-cols-4">
@@ -179,6 +230,7 @@ onMounted(async () => {
               v-model="linea.productoId"
               required
               class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+              @change="onSeleccionarProducto(index)"
             >
               <option value="" disabled>Producto…</option>
               <option v-for="producto in productos" :key="producto.id" :value="producto.id">

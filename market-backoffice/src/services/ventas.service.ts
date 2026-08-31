@@ -1,6 +1,6 @@
 import { apiClient } from '@/services/http/ApiClient'
 import { API_ENDPOINTS } from '@/config/endpoints'
-import type { Venta } from '@/types/venta'
+import type { MetodoPago, Venta } from '@/types/venta'
 import type { Pagina } from '@/types/pagina'
 
 export interface DatosLineaVenta {
@@ -16,8 +16,8 @@ class VentasService {
     })
   }
 
-  crear(tiendaId: number, clienteId: number, lineas: DatosLineaVenta[]) {
-    return apiClient.post<Venta>(API_ENDPOINTS.ventas.porTienda(tiendaId), { clienteId, lineas })
+  crear(tiendaId: number, clienteId: number, lineas: DatosLineaVenta[], metodoPago: MetodoPago) {
+    return apiClient.post<Venta>(API_ENDPOINTS.ventas.porTienda(tiendaId), { clienteId, lineas, metodoPago })
   }
 
   completar(tiendaId: number, id: number) {

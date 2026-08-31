@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancela una corrida anterior en el mismo PR/rama si llega un push nuevo —
+# evita quemar minutos de CI en un estado ya obsoleto.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Java/Maven)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      # `verify` encadena test (unitarios) -> *IT (Testcontainers/Postgres,
+      # Docker ya viene en el runner) -> package (jar) en un solo comando.
+      - name: mvn verify (unitarios + integración + jar)
+        working-directory: market-backend
+        run: ./mvnw -B verify
+
+  backoffice:
+    name: Backoffice (Vue/pnpm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.15.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: market-backoffice/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        working-directory: market-backoffice
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: market-backoffice
+        run: pnpm typecheck
+
+      - name: Tests
+        working-directory: market-backoffice
+        run: pnpm test
+
+      - name: Build de producción
+        working-directory: market-backoffice
+        env:
+          VITE_API_BASE_URL: https://ci-placeholder.invalid
+          VITE_API_TIMEOUT: "15000"
+        run: pnpm build
+
+  flutter:
+    name: Flutter (POS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.8"
+          channel: stable
+
+      - name: pub get
+        working-directory: market-flutter
+        run: flutter pub get
+
+      # Red de seguridad: si alguien cambió una @collection de Isar y no
+      # corrió build_runner antes de commitear, esto lo detecta acá en vez
+      # de dejar un .g.dart desactualizado llegar a main.
+      - name: Regenerar codigo de Isar y verificar que no haya diff
+        working-directory: market-flutter
+        run: |
+          dart run build_runner build
+          git diff --exit-code -- lib/
+
+      - name: Analyze
+        working-directory: market-flutter
+        run: flutter analyze
+
+      - name: Tests
+        working-directory: market-flutter
+        run: flutter test
+
+      # Smoke build rápido, sin Android SDK — confirma que el árbol de
+      # imports no rompe el build web (ver CLAUDE.md, Isar + dart2js).
+      - name: Build web (smoke)
+        working-directory: market-flutter
+        run: flutter build web --dart-define=API_BASE_URL=https://ci-placeholder.invalid
+
+      # APK de release solo en main: firma con la debug key (no hay
+      # signingConfigs propio todavía) — sirve como smoke build, no para
+      # publicar. Ver PLAN_MEJORAS.md Fase 9.
+      - name: Build APK release (solo main)
+        if: github.ref == 'refs/heads/main'
+        working-directory: market-flutter
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://ci-placeholder.invalid
+
+      - name: Subir APK como artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-flutter-release-apk
+          path: market-flutter/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+  docker-build:
+    name: Construir imagenes Docker (post-tests)
+    needs: [backend, backoffice]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build imagen backend
+        run: docker build -t market-backend:ci ./market-backend
+
+      - name: Build imagen backoffice
+        run: |
+          docker build \
+            --build-arg VITE_API_BASE_URL=https://ci-placeholder.invalid \
+            -t market-backoffice:ci \
+            ./market-backoffice
+
+      # Informativo (exit-code 0): reporta CVEs de las imagenes sin bloquear
+      # el pipeline por vulnerabilidades de imagen base que el equipo
+      # todavia no puede parchear.
+      - name: Escaneo de vulnerabilidades - backend
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: market-backend:ci
+          format: table
+          exit-code: "0"
+
+      - name: Escaneo de vulnerabilidades - backoffice
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: market-backoffice:ci
+          format: table
+          exit-code: "0"
+
+  gitleaks:
+    name: Escaneo de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

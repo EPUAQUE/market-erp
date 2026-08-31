@@ -1,0 +1,5 @@
+# El wrapper de Maven es un script POSIX — debe conservar LF (nunca CRLF) sin
+# importar la config local de git de quien lo commitee, o falla en Linux
+# (runners de CI) con "bad interpreter". El .cmd es su contraparte Windows.
+/mvnw text eol=lf
+/mvnw.cmd text eol=crlf

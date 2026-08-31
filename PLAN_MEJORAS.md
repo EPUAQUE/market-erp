@@ -688,32 +688,79 @@ equivalente (toda la fase sigue pendiente). El Dockerfile del backend sí usa
 `-DskipTests`. La versión de Java está fijada (`pom.xml` + Dockerfile en Java 25), pero
 falta Maven Wrapper, `packageManager`/Corepack en el backoffice y FVM en Flutter.
 
+**Resuelto (2026-08-30) — "Pipeline mínimo" completo, "Cobertura prioritaria"
+sigue pendiente (ver abajo):** nuevo `.github/workflows/ci.yml` con 5 jobs —
+`backend` (`./mvnw -B verify`, cubre unitarios + `*IT` con Testcontainers/Postgres
+real + empaquetado del jar en un solo comando; `LiquibaseMigrationIT` ya valida
+desde base vacía dentro de ese mismo `verify`), `backoffice` (`pnpm install
+--frozen-lockfile` → `typecheck` → `test` → `build`), `flutter` (`pub get` →
+regenera código de Isar y falla si queda diff sin commitear → `analyze` →
+`test` → `build web` de humo; en `main` además `build apk --release`, subido
+como artifact — sin keystore propio, firma con la debug key existente,
+suficiente para build/smoke, no para publicar), `docker-build` (con
+`needs: [backend, backoffice]`, nunca corre si algo falló antes — construye
+las dos imágenes reales y corre Trivy en modo informativo sobre ambas) y
+`gitleaks` (escaneo de secretos, independiente). `-DskipTests` se mantuvo en
+el `Dockerfile` del backend a propósito — la vía elegida por el plan fue
+"garantizar que la imagen dependa de un job de pruebas exitoso" (`needs`),
+no duplicar los tests dentro del build de Docker.
+
+Fijado en el mismo pase: Maven Wrapper (`market-backend/mvnw`/`mvnw.cmd`/`.mvn/`,
+pinneado a Maven 3.9.12; también se agregó `market-backend/.gitattributes`
+forzando `eol=lf` en `mvnw` y el bit ejecutable en el índice de git —
+`core.fileMode=false` en este repo lo perdía silenciosamente, lo que habría
+roto `./mvnw` en el runner Linux con "Permission denied"), `packageManager`/
+`engines` en `market-backoffice/package.json` (`pnpm@11.15.1`, Node `>=20`),
+y `market-flutter/.fvmrc` (`3.38.8`, coincide con la versión ya instalada y
+con el constraint `^3.10.7` de Dart). Escaneo de dependencias vía nuevo
+`.github/dependabot.yml` (`maven`, `npm`, `pub`, `docker` × 2, `github-actions`
+— `pub` confirmado como ecosistema soportado por Dependabot antes de usarlo).
+
+Verificado localmente (no se puede correr GitHub Actions sin `act`, que no
+está instalado — la prueba real es el primer push): `./mvnw -B verify`
+(`BUILD SUCCESS`, incluye los 24 IT existentes), `pnpm typecheck && pnpm test
+&& pnpm build` (build de producción no necesitó `.env` — confirma que
+`VITE_API_BASE_URL` dummy alcanza), `flutter analyze`/`flutter test`/`flutter
+build web` (limpios; los warnings de compatibilidad Wasm son informativos,
+no bloquean un build JS normal), y `docker build` de ambas imágenes reales
+(backend y backoffice) fuera de CI, sanity-check antes de commitear.
+
 ### Pipeline mínimo
 
-- [ ] Crear `.github/workflows/ci.yml` o equivalente.
-- [ ] Backend:
-  - `mvn test`;
-  - `mvn verify` con PostgreSQL/Testcontainers;
-  - compilación del jar;
-  - validación Liquibase desde una base vacía y desde una versión anterior.
-- [ ] Backoffice:
-  - instalación con lockfile;
-  - typecheck;
-  - tests;
-  - build de producción.
-- [ ] Flutter:
-  - `flutter analyze`;
-  - `flutter test`;
-  - build APK release al menos en ramas de entrega.
-- [ ] Construcción de imágenes Docker solo después de pasar pruebas.
-- [ ] Eliminar `-DskipTests` del camino de release o garantizar que la imagen dependa de
-  un job de pruebas exitoso.
-- [ ] Agregar escaneo de secretos, dependencias e imágenes.
-- [ ] Fijar versiones de herramientas:
-  - Maven Wrapper;
-  - versión Java;
-  - `packageManager`/Corepack para pnpm;
-  - FVM o versión Flutter documentada.
+- [x] Crear `.github/workflows/ci.yml` o equivalente.
+- [x] Backend:
+  - [x] `mvn test`;
+  - [x] `mvn verify` con PostgreSQL/Testcontainers;
+  - [x] compilación del jar;
+  - [x] validación Liquibase desde una base vacía — cubierta por
+    `LiquibaseMigrationIT`, ya corre dentro de `mvn verify`.
+  - [ ] validación Liquibase desde una versión anterior — sin mecanismo hoy
+    (no hay tags de Liquibase ni snapshot de un release previo); queda
+    pendiente, no se inventó nada nuevo en esta pasada.
+- [x] Backoffice:
+  - [x] instalación con lockfile;
+  - [x] typecheck;
+  - [x] tests;
+  - [x] build de producción.
+- [x] Flutter:
+  - [x] `flutter analyze`;
+  - [x] `flutter test`;
+  - [x] build APK release al menos en ramas de entrega — solo en `main`,
+    firmado con la debug key (sin keystore propio todavía, ver Fase 9).
+- [x] Construcción de imágenes Docker solo después de pasar pruebas (job
+  `docker-build` con `needs: [backend, backoffice]`).
+- [x] Eliminar `-DskipTests` del camino de release o garantizar que la imagen
+  dependa de un job de pruebas exitoso — se optó por la segunda opción
+  (`needs`), `-DskipTests` se mantuvo en el `Dockerfile` a propósito para no
+  correr los tests dos veces.
+- [x] Agregar escaneo de secretos (Gitleaks), dependencias (Dependabot) e
+  imágenes (Trivy, informativo — no bloquea por CVEs de imagen base que el
+  equipo no puede parchear todavía).
+- [x] Fijar versiones de herramientas:
+  - [x] Maven Wrapper;
+  - [x] versión Java (ya estaba fija, sin cambios);
+  - [x] `packageManager`/Corepack para pnpm;
+  - [x] FVM (`.fvmrc`) o versión Flutter documentada.
 
 ### Cobertura prioritaria
 
@@ -1051,7 +1098,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | **Completa** | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 24 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular), venta (completar/anular) y usuario (asignarTienda/asignarGrupo, serializando la regla "no asignación mixta" entre las dos tablas usuario_tienda/usuario_grupo_tienda). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. `GlobalExceptionHandler` traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. |
 | 4 — Sesiones/seguridad | Rate limiter, cambio/restablecimiento de contraseña, `sver`/revocar sesiones y cabeceras de seguridad resueltos; resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 564 unitarios + 24 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`). `debe_cambiar_password` ahora sí bloquea el resto de la API vía claim + `DebeCambiarPasswordFilter`. `SecurityVersionValidator` revalida `sver` en toda petición autenticada; `POST /usuarios/{id}/sesiones/revocar` (`USUARIOS_REVOCAR_SESIONES`) revoca sesiones sin tocar contraseña/estado. Caddy + Nginx agregan CSP/HSTS/X-Content-Type-Options/Referrer-Policy/Permissions-Policy. Resto (tienda activa tras restaurar, MFA, rate limiter distribuido, retirar llave dev/test del repo, probar rotación de llaves JWT, política de contraseña/bloqueo/baja) sigue pendiente. |
-| 5 — CI/pruebas | Pendiente | | | |
+| 5 — CI/pruebas | "Pipeline mínimo" completo, "Cobertura prioritaria" pendiente | Sin commitear aún | Verificado local: `mvn verify` (24 IT, `BUILD SUCCESS`), `pnpm typecheck/test/build`, `flutter analyze/test/build web`, `docker build` de ambas imágenes. CI real en GitHub sin correr aún (primer push pendiente) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. E2E de negocio y tests nuevos de Flutter/Vue quedan pendientes (sección "Cobertura prioritaria"). |
 | 6 — Backups | Pendiente | | | |
 | 7 — Auditoría/observabilidad | Pendiente | | | |
 | 8 — Backoffice | Pendiente | | | |

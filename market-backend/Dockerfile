@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Build stage -------------------------------------------------------
-FROM maven:3-eclipse-temurin-25 AS build
+FROM maven:3-eclipse-temurin-26 AS build
 WORKDIR /app
 
 # Capa de dependencias separada del código: mientras el pom.xml no cambie,

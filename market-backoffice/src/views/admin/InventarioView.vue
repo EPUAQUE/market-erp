@@ -314,9 +314,7 @@ onMounted(async () => {
             Anterior
           </button>
           <span>
-            Página {{ movimientosPagina }} de {{ movimientosTotalPaginas }} ({{
-              movimientosTotalElementos
-            }}
+            Página {{ movimientosPagina }} de {{ movimientosTotalPaginas }} ({{ movimientosTotalElementos }}
             en total)
           </span>
           <button

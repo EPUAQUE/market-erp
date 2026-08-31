@@ -12,6 +12,11 @@
 # no un glob, así que ya no los toca.
 market-backend/deploy/certs/*.pem
 market-backend/deploy/backups/
+# Fase 4 (PLAN_MEJORAS.md): llaves de dev/test, cada quien las genera local con
+# local-dev/certs/generar-llaves.sh / src/test/resources/certs/generar-llaves.sh
+# (CI las genera con el mismo script antes de correr los tests).
+market-backend/local-dev/certs/*.pem
+market-backend/src/test/resources/certs/*.pem
 
 # --- IDE / editor / sesión local ---
 .idea/

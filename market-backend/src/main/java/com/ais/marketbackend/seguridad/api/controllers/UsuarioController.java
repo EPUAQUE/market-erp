@@ -101,4 +101,30 @@ public class UsuarioController {
         usuarioService.revocarSesiones(usuarioId);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Baja de empleado (Fase 4, PLAN_MEJORAS.md): el dominio ya tenía
+     * {@code Usuario.desactivar()} desde antes de esta fase pero nunca estuvo
+     * expuesto por HTTP — no había forma real de dar de baja a alguien vía la API.
+     * No hay protección contra que un admin se desactive a sí mismo (ver
+     * seguridad-desarrolladores.md §4, "Baja de empleados") — usar con cuidado.
+     */
+    @PostMapping("/{usuarioId}/desactivar")
+    @RequiresPermission("USUARIOS_CAMBIAR_ESTADO")
+    public ResponseEntity<UsuarioResponse> desactivar(@PathVariable Long usuarioId) {
+        return ResponseEntity.ok(mapper.toResponse(usuarioService.desactivar(usuarioId)));
+    }
+
+    /** Mismo caso que {@link #desactivar}, motivo distinto (sospecha de seguridad, no cese normal). */
+    @PostMapping("/{usuarioId}/bloquear")
+    @RequiresPermission("USUARIOS_CAMBIAR_ESTADO")
+    public ResponseEntity<UsuarioResponse> bloquear(@PathVariable Long usuarioId) {
+        return ResponseEntity.ok(mapper.toResponse(usuarioService.bloquear(usuarioId)));
+    }
+
+    @PostMapping("/{usuarioId}/activar")
+    @RequiresPermission("USUARIOS_CAMBIAR_ESTADO")
+    public ResponseEntity<UsuarioResponse> activar(@PathVariable Long usuarioId) {
+        return ResponseEntity.ok(mapper.toResponse(usuarioService.activar(usuarioId)));
+    }
 }

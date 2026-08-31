@@ -120,6 +120,42 @@ class UsuarioControllerTest {
         verify(usuarioService).revocarSesiones(1L);
     }
 
+    @Test
+    void desactivarDelegaAlServicioYDevuelveElUsuarioActualizado() throws Exception {
+        when(usuarioService.desactivar(1L)).thenReturn(
+                new UsuarioResumen(1L, "ana", EstadoUsuario.INACTIVO, "Ana Pérez", "12345678", "ana@example.com"));
+
+        mockMvc.perform(post("/api/v1/usuarios/1/desactivar"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("INACTIVO"));
+
+        verify(usuarioService).desactivar(1L);
+    }
+
+    @Test
+    void bloquearDelegaAlServicioYDevuelveElUsuarioActualizado() throws Exception {
+        when(usuarioService.bloquear(1L)).thenReturn(
+                new UsuarioResumen(1L, "ana", EstadoUsuario.BLOQUEADO, "Ana Pérez", "12345678", "ana@example.com"));
+
+        mockMvc.perform(post("/api/v1/usuarios/1/bloquear"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("BLOQUEADO"));
+
+        verify(usuarioService).bloquear(1L);
+    }
+
+    @Test
+    void activarDelegaAlServicioYDevuelveElUsuarioActualizado() throws Exception {
+        when(usuarioService.activar(1L)).thenReturn(
+                new UsuarioResumen(1L, "ana", EstadoUsuario.ACTIVO, "Ana Pérez", "12345678", "ana@example.com"));
+
+        mockMvc.perform(post("/api/v1/usuarios/1/activar"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ACTIVO"));
+
+        verify(usuarioService).activar(1L);
+    }
+
     /** Mapper manual mínimo para el test — evita depender del bean generado por MapStruct en este módulo aislado. */
     private static class UsuarioApiMapperImplForTest implements UsuarioApiMapper {
         @Override

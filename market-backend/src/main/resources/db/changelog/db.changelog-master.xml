@@ -87,4 +87,5 @@
     <include file="db/changelog/modules/seguridad/011-usuario-grupo-tienda.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/012-usuario-debe-cambiar-password.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/013-seed-permiso-revocar-sesiones.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/014-seed-permiso-cambiar-estado-usuario.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

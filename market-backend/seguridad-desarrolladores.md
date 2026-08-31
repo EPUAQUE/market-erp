@@ -311,4 +311,125 @@ Fuera del código de la aplicación, deben resolverse en la plataforma:
 
 Un changeset por cambio de esquema; nunca editar un changeset ya aplicado en un ambiente
 compartido — se agrega uno nuevo.
+
+---
+
+## 13. Política de contraseña, bloqueo, recuperación y baja de empleados
+
+Fase 4 (PLAN_MEJORAS.md) pedía definir esto explícitamente — acá se documenta lo
+que YA aplica el código (no se inventó nada nuevo salvo lo marcado "Fase 4, nuevo"),
+más las decisiones de política que no eran puramente técnicas.
+
+### Contraseña
+
+- Longitud: 12–64 code points (`PasswordPolicy`, §4), sin reglas de composición,
+  Unicode completo permitido. **Decisión**: no se agregan reglas de composición
+  (mayúscula+número+símbolo, etc.) — la evidencia de NIST/OWASP actual las
+  desaconseja (empujan a patrones predecibles); longitud mínima + Argon2id ya dan
+  más resistencia real a fuerza bruta.
+- Expiración forzada por tiempo: **no implementada, decisión explícita de no
+  hacerlo** — expirar contraseñas periódicamente sin motivo también está
+  desaconsejado por la guía NIST vigente (empuja a variaciones triviales
+  predecibles); el mecanismo real de forzar un cambio ya existe y se usa donde
+  corresponde (`debe_cambiar_password`, ver §4) — al restablecer administrativamente,
+  no en un cronograma arbitrario.
+
+### Bloqueo
+
+Dos mecanismos, en capas distintas:
+
+- **Automático, temporal**: rate limiter de login (`InMemoryLoginRateLimiter`, §6) —
+  por IP y por usuario, se recupera solo con el tiempo (token bucket). No requiere
+  intervención humana, cubre fuerza bruta/credential stuffing normal.
+- **Manual, indefinido**: `POST /api/v1/usuarios/{id}/bloquear` (**Fase 4, nuevo** —
+  el dominio (`Usuario.bloquear()`) existía desde antes de esta fase pero nunca
+  estuvo expuesto por HTTP, confirmado al auditar `UsuarioController`). Marca
+  `estado=BLOQUEADO`, revoca sesiones activas de inmediato (refresh tokens +
+  access tokens ya emitidos vía `sver`). Pensado para sospecha de cuenta
+  comprometida — reversible con `POST /{id}/activar`.
+
+### Recuperación de contraseña olvidada
+
+**Decisión: solo mediada por administrador, sin flujo de autoservicio por
+correo.** `POST /api/v1/usuarios/{usuarioId}/password/restablecer` (§4) genera
+una temporal, un ADMIN se la entrega al empleado por el canal que use la empresa
+(no queda en ningún log ni respuesta salvo esa única vez). No hay
+"forgot password" con link por correo. Motivo: la base de usuarios es personal
+interno de confianza en una sola organización (no un público masivo
+autoregistrado) — el costo/riesgo de un flujo de correo (spoofing, tokens de
+reset que interceptar, infra de correo transaccional adicional) no se justifica
+frente a "pedirle a un ADMIN que lo restablezca" cuando son unos pocos empleados
+por tienda. Revisar esta decisión si la base de usuarios crece mucho o deja de
+ser 100% personal interno.
+
+### Baja de empleados
+
+**Fase 4, nuevo** — antes de esta fase no existía ninguna forma de dar de baja a
+un usuario vía la API (el dominio tenía `desactivar()` pero estaba muerto, sin
+controller). Ahora:
+
+- `POST /api/v1/usuarios/{id}/desactivar` — cese normal, `estado=INACTIVO`,
+  revoca sesiones activas de inmediato. Reversible con `/activar`.
+- Un usuario `INACTIVO`/`BLOQUEADO` no puede autenticarse (`Usuario.estaActivo()`,
+  ya validado en `AuthServiceImpl.login`) ni seguir usando un token ya emitido
+  (`sver` sube en la desactivación → `SecurityVersionValidator` lo rechaza en la
+  próxima petición, no hace falta esperar a que expire).
+- Permiso único `USUARIOS_CAMBIAR_ESTADO` para las 3 transiciones
+  (desactivar/bloquear/activar) — es la misma clase de acción administrativa, no
+  ameritan permisos separados.
+- **Límite conocido, no resuelto acá**: no hay protección contra que un ADMIN se
+  desactive/bloquee a sí mismo, ni contra quedarse sin ningún ADMIN activo (no se
+  valida "¿queda al menos un ADMIN?" antes de aplicar el cambio). Bajo riesgo
+  operativo hoy (equipos chicos, cambios manuales poco frecuentes) pero es una
+  guardia real que falta si el equipo crece — agregar un chequeo de "no sos vos
+  mismo" / "no sos el último ADMIN activo" antes de estas 3 transiciones si eso
+  deja de ser cierto.
+
+---
+
+## 14. MFA — evaluación (Fase 4, PLAN_MEJORAS.md)
+
+**Evaluado, no implementado** — el plan pide explícitamente "evaluar", no
+construir; implementarlo es alcance de una fase aparte (nueva dependencia TOTP,
+flujo de enrolamiento, códigos de respaldo, cambios en `AuthController`/login,
+UI en backoffice y Flutter). Queda documentado acá para cuando se decida.
+
+### Qué agregaría
+
+Un segundo factor (TOTP — Google Authenticator/Authy/1Password, o WebAuthn/
+passkeys) cierra el hueco real que sigue abierto hoy: si la contraseña de un
+ADMIN se filtra (phishing, reuso de contraseña en otro sitio que sufrió una
+brecha), no hay ninguna segunda barrera — Argon2id protege el hash en reposo,
+no una contraseña ya conocida por el atacante.
+
+### Con qué construirlo, si se decide
+
+- **TOTP** (RFC 6238): librería `dev.samstevens.totp` (Java, sin dependencias
+  pesadas) o `nimbus-jose-jwt`'s ecosystem no lo cubre — sería una dependencia
+  nueva. Flujo: enrolar (generar secreto, mostrar QR, confirmar un código antes
+  de activar) → login pasa a 2 pasos (`password` correcta → pedir TOTP → recién
+  ahí emitir tokens) → códigos de respaldo de un solo uso (para cuando se pierde
+  el dispositivo).
+- **WebAuthn/passkeys**: más fricción de implementación (protocolo más nuevo,
+  librería como `webauthn4j`), pero mejor UX (sin apps externas) y resistente a
+  phishing por diseño (a diferencia de TOTP, que un sitio falso sí puede
+  capturar y reenviar). Recomendado sobre TOTP si se va a invertir en esto,
+  justamente por eso — pero más trabajo de integración.
+
+### A quién aplicarlo primero
+
+**Decisión pendiente del usuario, no técnica**: el plan menciona "administradores
+y auditores" — tiene sentido exigirlo ahí primero (son las cuentas de mayor
+impacto si se comprometen: `ADMIN` tiene alcance global, `AUDITOR` ve todo el
+historial) antes de exigirlo a cajeros/encargados de tienda, donde la fricción
+adicional en cada login pesa más frente al riesgo real (acceso limitado a su
+propia tienda).
+
+### Por qué no se implementó ya
+
+Igual que la evaluación de logging remoto en `market-flutter` (ver su
+`CLAUDE.md`) — agregar una dependencia nueva y un flujo que toca login en los 3
+clientes (backend + backoffice + Flutter) es una decisión de producto, no algo
+para decidir unilateralmente sin que el usuario elija el mecanismo (TOTP vs
+WebAuthn) y confirme el alcance (solo ADMIN/AUDITOR, o todos).
 </content>

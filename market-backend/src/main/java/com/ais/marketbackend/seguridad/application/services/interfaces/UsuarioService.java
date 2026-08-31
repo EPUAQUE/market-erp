@@ -74,4 +74,24 @@ public interface UsuarioService {
      * contraseña.
      */
     void revocarSesiones(Long usuarioId);
+
+    /**
+     * Baja de empleado (Fase 4, PLAN_MEJORAS.md): marca la cuenta {@code INACTIVO}
+     * y revoca todas sus sesiones activas — invalida de inmediato cualquier access
+     * token ya emitido (versión de seguridad) y todos sus refresh tokens. A
+     * diferencia de {@link #bloquear(Long)}, pensado para un cese normal (no una
+     * sospecha de seguridad); reversible con {@link #activar(Long)}.
+     */
+    UsuarioResumen desactivar(Long usuarioId);
+
+    /**
+     * Bloqueo administrativo inmediato (sospecha de compromiso, incidente de
+     * seguridad) — misma invalidación de sesiones que {@link #desactivar(Long)},
+     * estado distinto ({@code BLOQUEADO}) para diferenciar el motivo en pantalla y
+     * en auditoría. Reversible con {@link #activar(Long)}.
+     */
+    UsuarioResumen bloquear(Long usuarioId);
+
+    /** Reactiva una cuenta {@code INACTIVO} o {@code BLOQUEADO} — vuelve a {@code ACTIVO}. */
+    UsuarioResumen activar(Long usuarioId);
 }

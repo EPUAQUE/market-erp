@@ -85,6 +85,12 @@ public class SecurityAuditPublisherImpl implements SecurityAuditPublisher {
     }
 
     private void registrarEnAuditoria(TipoEventoAuditoria tipo, String correlationId, String detalle) {
+        // El "usuarioId=" que los 14 call sites ya embeben en detalle es siempre el
+        // SUJETO/entidad afectada por el evento — para login/refresh coincide con
+        // quien actúa, pero para una asignación/bloqueo hecho por un admin sobre
+        // OTRO usuario es el usuario objetivo, nunca el admin que ejecuta la acción.
+        String entidadId = extraerUsuarioIdDeDetalle(detalle);
+
         Long actorId = null;
         String actorUsername = null;
 
@@ -97,12 +103,12 @@ public class SecurityAuditPublisherImpl implements SecurityAuditPublisher {
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
             actorUsername = authentication.getName();
             actorId = usuarioRepository.findByUsername(actorUsername).map(Usuario::getId).orElse(null);
-        } else {
-            Matcher matcher = USUARIO_ID_EN_DETALLE.matcher(detalle == null ? "" : detalle);
-            if (matcher.find()) {
-                actorId = Long.valueOf(matcher.group(1));
-                actorUsername = usuarioRepository.findById(actorId).map(Usuario::getUsername).orElse(null);
-            }
+        } else if (entidadId != null) {
+            // Sin autenticación real (login/refresh): el sujeto del evento ES el actor
+            // — a diferencia del caso de arriba (admin actuando sobre otro usuario),
+            // acá no hay nadie más a quien atribuírselo.
+            actorId = Long.valueOf(entidadId);
+            actorUsername = usuarioRepository.findById(actorId).map(Usuario::getUsername).orElse(null);
         }
 
         ResultadoAuditoria resultado = tipo.name().endsWith("_FALLIDO") || tipo.name().endsWith("_REUTILIZADO")
@@ -110,8 +116,12 @@ public class SecurityAuditPublisherImpl implements SecurityAuditPublisher {
                 ? ResultadoAuditoria.FALLO : ResultadoAuditoria.EXITO;
 
         AuditEvent evento = AuditEvent.nuevo(
-                actorId, actorUsername, null, tipo.name(), "SEGURIDAD", actorId != null ? actorId.toString() : null,
-                resultado, correlationId, detalle);
+                actorId, actorUsername, null, tipo.name(), "SEGURIDAD", entidadId, resultado, correlationId, detalle);
         auditoriaRegistrador.registrar(evento);
+    }
+
+    private String extraerUsuarioIdDeDetalle(String detalle) {
+        Matcher matcher = USUARIO_ID_EN_DETALLE.matcher(detalle == null ? "" : detalle);
+        return matcher.find() ? matcher.group(1) : null;
     }
 }

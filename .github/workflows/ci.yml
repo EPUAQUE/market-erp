@@ -25,6 +25,13 @@ jobs:
           java-version: "25"
           cache: maven
 
+      # Llaves JWT de test (Fase 4, PLAN_MEJORAS.md): ya no están commiteadas
+      # (ver .gitignore) — sin esto, application-test.yml no encuentra
+      # test-private.pem/test-public.pem y mvn verify falla al arrancar.
+      - name: Generar llaves JWT de test
+        working-directory: market-backend/src/test/resources/certs
+        run: ./generar-llaves.sh
+
       # `verify` encadena test (unitarios) -> *IT (Testcontainers/Postgres,
       # Docker ya viene en el runner) -> package (jar) en un solo comando.
       - name: mvn verify (unitarios + integración + jar)

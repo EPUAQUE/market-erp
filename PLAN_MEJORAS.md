@@ -649,10 +649,64 @@ despliegue real (solo revisado por configuración) — verificar que Google Font
 cargando y que ninguna feature del backoffice dependa de un origen no listado en el
 CSP antes de producción.
 
+**Resuelto (2026-08-31):** decisiones acordadas con el usuario — MFA solo evaluado y
+documentado (no implementado, es alcance de una fase aparte); llaves de dev/test
+retiradas del tracking de git (sin reescribir historial — son solo de dev/test,
+riesgo bajo, y `ProdSafetyGuard` ya rechaza cualquier llave `dev-*` en `prod`).
+
+Llaves JWT de dev (`local-dev/certs/dev-*.pem`) y de test
+(`src/test/resources/certs/test-*.pem`) sacadas del tracking (`git rm --cached`,
+siguen en disco) — nuevo `.gitignore` para ambas rutas, nuevo script
+`generar-llaves.sh` en cada carpeta (genera el par si no existe, mismo comando
+`openssl` que ya estaba documentado). `.github/workflows/ci.yml` corre el script
+de test antes de `mvn verify` — sin esto el primer push habría roto CI (el archivo
+ya no estaría en el checkout). Verificado localmente: borré los `.pem` de test,
+corrí el script, corrí `mvn test` — 564 tests, limpio.
+
+Rotación de llaves JWT: confirmado que el mecanismo YA existe en `JwtConfig`
+(`activeKid` elige qué llave firma tokens nuevos, `keys` es una lista — todas
+validan) — solo faltaba una prueba real. Nuevo `JwtRotacionTest` (sin Spring
+context, RSA en memoria): confirma que durante una rotación (2 llaves en la
+lista) un token firmado con la vieja sigue validando, y que al retirar la vieja
+de la lista (rotación completa) sus tokens pasan a rechazarse.
+
+Política de contraseña/bloqueo/recuperación/baja documentada en
+`seguridad-desarrolladores.md` §13 — casi todo ya existía (contraseña, bloqueo
+temporal por rate limit, restablecimiento admin), pero **"baja de empleados" no
+tenía ningún endpoint real**: `Usuario.desactivar()`/`bloquear()`/`activar()`
+existían en el dominio desde antes de esta fase pero nunca estuvieron expuestos
+por HTTP (confirmado auditando `UsuarioController` — cero rutas). Se agregaron
+`POST /api/v1/usuarios/{id}/desactivar`, `/bloquear`, `/activar` (permiso único
+`USUARIOS_CAMBIAR_ESTADO`) — ambas transiciones (desactivar/bloquear) revocan
+sesiones activas de inmediato, igual que `revocarSesiones` ya hacía. De paso se
+encontró y corrigió un bug en `SecurityAuditPublisherImpl` (Fase 7): `entidadId`
+quedaba con el id del actor (el admin que ejecuta la acción) en vez del usuario
+objetivo — visible recién al probar con actor≠objetivo (bloquear a otro usuario),
+antes todos los casos probados tenían actor=objetivo por casualidad.
+
+Verificado: `mvn verify` (574 unitarios + 24 IT, `BUILD SUCCESS`, incluye 10 tests
+nuevos: 2 de rotación, 8 de las 3 transiciones de estado). En vivo contra
+backend+Postgres reales: creé un usuario de prueba, hizo login, lo bloqueé como
+admin, y el MISMO token (todavía sin expirar) pasó a devolver 401 de inmediato
+— confirma que `sver` invalida sin esperar el TTL. Reactivé y volvió a poder
+loguearse. `GET /api/v1/auditoria` mostró `USUARIO_BLOQUEADO`/`USUARIO_DESACTIVADO`
+con `actorId`/`entidadId` correctos tras el fix.
+
+**Pendiente, no resuelto en esta pasada:**
+- "Conservar o volver a solicitar la tienda activa de forma segura tras
+  restaurar" — es un comportamiento de los clientes (Flutter/backoffice), no del
+  backend; requiere probar en esos proyectos, fuera de alcance de esta pasada.
+- Rate limiter distribuido — confirmado que sigue sin aplicar hoy (instancia
+  única).
+- Protección contra que un admin se desactive/bloquee a sí mismo, o contra
+  quedarse sin ningún admin activo — documentado como límite conocido en
+  `seguridad-desarrolladores.md` §13, no implementado (bajo riesgo hoy, equipos
+  chicos).
+
 ### Tareas
 
 - [ ] Conservar o volver a solicitar la tienda activa de forma segura tras restaurar
-  (no verificado en esta pasada).
+  — comportamiento de cliente (Flutter/backoffice), fuera de alcance de esta pasada.
 - [x] Implementar cambio de contraseña y flujo administrativo de restablecimiento
   (2026-08-29 — ver detalle arriba; el bloqueo server-side por `debe_cambiar_password`
   ya no está pendiente, ver el hallazgo de `sver` justo arriba).
@@ -660,19 +714,23 @@ CSP antes de producción.
   revalidación por petición (versión de seguridad/`sver`) que
   seguridad-desarrolladores.md §5 documentaba como ya implementada y no lo estaba —
   resuelto 2026-08-29, ver detalle arriba.
-- [ ] Evaluar MFA para administradores y auditores.
+- [x] Evaluar MFA para administradores y auditores — solo evaluación/documentación,
+  ver `seguridad-desarrolladores.md` §14; no implementado (decisión del usuario).
 - [ ] Sustituir o complementar el rate limiter en memoria con un almacén compartido si
   habrá múltiples instancias (sigue pendiente; no aplica hoy — instancia única).
 - [x] Agregar expiración/limpieza a los buckets del rate limiter para evitar crecimiento
   indefinido (2026-08-29 — ver detalle arriba).
-- [ ] Retirar la llave privada de desarrollo del control de versiones y generar llaves
-  locales mediante script/documentación. Confirmado: `local-dev/certs/dev-private.pem`
-  y `src/test/resources/certs/test-private.pem` siguen commiteadas (la de producción,
-  `deploy/certs/prod-private.pem`, no está trackeada).
-- [ ] Probar rotación de llaves JWT manteniendo temporalmente validación de la anterior.
+- [x] Retirar la llave privada de desarrollo del control de versiones y generar llaves
+  locales mediante script/documentación — hecho para dev y test (2026-08-31, ver
+  detalle arriba); no se reescribió el historial de git (decisión del usuario, son
+  solo llaves de dev/test, riesgo bajo).
+- [x] Probar rotación de llaves JWT manteniendo temporalmente validación de la
+  anterior — 2026-08-31, `JwtRotacionTest`, ver detalle arriba.
 - [x] Revisar cabeceras CSP, `X-Content-Type-Options`, `Referrer-Policy` y permisos del
   navegador en Caddy/Nginx (2026-08-29 — ver detalle arriba).
-- [ ] Definir política de contraseña, bloqueo, recuperación y baja de empleados.
+- [x] Definir política de contraseña, bloqueo, recuperación y baja de empleados —
+  2026-08-31, `seguridad-desarrolladores.md` §13; "baja de empleados" además pasó
+  de dominio-sin-endpoint a 3 rutas HTTP reales, ver detalle arriba.
 
 ### Criterio de aceptación
 
@@ -1242,7 +1300,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
 | 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
 | 3 — Concurrencia | **Completa** | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 24 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular), venta (completar/anular) y usuario (asignarTienda/asignarGrupo, serializando la regla "no asignación mixta" entre las dos tablas usuario_tienda/usuario_grupo_tienda). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. `GlobalExceptionHandler` traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. |
-| 4 — Sesiones/seguridad | Rate limiter, cambio/restablecimiento de contraseña, `sver`/revocar sesiones y cabeceras de seguridad resueltos; resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 564 unitarios + 24 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`). `debe_cambiar_password` ahora sí bloquea el resto de la API vía claim + `DebeCambiarPasswordFilter`. `SecurityVersionValidator` revalida `sver` en toda petición autenticada; `POST /usuarios/{id}/sesiones/revocar` (`USUARIOS_REVOCAR_SESIONES`) revoca sesiones sin tocar contraseña/estado. Caddy + Nginx agregan CSP/HSTS/X-Content-Type-Options/Referrer-Policy/Permissions-Policy. Resto (tienda activa tras restaurar, MFA, rate limiter distribuido, retirar llave dev/test del repo, probar rotación de llaves JWT, política de contraseña/bloqueo/baja) sigue pendiente. |
+| 4 — Sesiones/seguridad | Completa salvo "tienda activa tras restaurar" (es de cliente, fuera de alcance) y rate limiter distribuido (no aplica hoy) | Sin commitear aún | `mvn verify`: 574 unitarios + 24 IT, `BUILD SUCCESS`. En vivo: bloqueo de usuario invalida su token ya emitido de inmediato (sin esperar TTL), confirmado con curl | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin (`POST /usuarios/{id}/password/restablecer`). `debe_cambiar_password` bloquea el resto de la API. `SecurityVersionValidator` revalida `sver`; `POST /usuarios/{id}/sesiones/revocar` revoca sesiones. Caddy + Nginx con cabeceras de seguridad. **2026-08-31**: llaves dev/test retiradas del tracking de git (script `generar-llaves.sh` + paso nuevo en CI); rotación de llaves JWT probada (`JwtRotacionTest`); MFA evaluado y documentado (no implementado, decisión del usuario); política de contraseña/bloqueo/recuperación/baja documentada (`seguridad-desarrolladores.md` §13-14); "baja de empleados" pasó de dominio-sin-endpoint a 3 rutas reales (`desactivar`/`bloquear`/`activar`, permiso `USUARIOS_CAMBIAR_ESTADO`) — de paso se corrigió un bug de Fase 7 (`entidadId` de auditoría con el id del actor en vez del usuario objetivo). |
 | 5 — CI/pruebas | "Pipeline mínimo" completo, "Cobertura prioritaria" pendiente | Sin commitear aún | Verificado local: `mvn verify` (24 IT, `BUILD SUCCESS`), `pnpm typecheck/test/build`, `flutter analyze/test/build web`, `docker build` de ambas imágenes. CI real en GitHub sin correr aún (primer push pendiente) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. E2E de negocio y tests nuevos de Flutter/Vue quedan pendientes (sección "Cobertura prioritaria"). |
 | 6 — Backups | Código completo y verificado local; falta que el usuario cree el bucket/SMTP/secrets reales | Sin commitear aún | Verificado contra Postgres descartable con `rclone` local: backup.sh (dump+bundle cifrado+checksum) y restore.sh (descarga+verifica+descifra+restaura) de punta a punta con datos/imágenes/certs/.env de prueba, más `check-freshness.sh`/`alert.sh` en sus 3 escenarios. `docker compose config` limpio | `deploy/backup/*.sh` (backup/restore/check-freshness/alert), `docker-compose.yml`, `.env.example`, `.github/workflows/backup-restore-drill.yml`, `deploy/README.md`. Falta: bucket/cuenta de servicio/SMTP reales, 3 secrets de GitHub, y el ensayo de recuperación con volumen Docker perdido contra un servidor real. |
 | 7 — Auditoría/observabilidad | Completa salvo dashboards (pospuestos, requieren Prometheus/Grafana) | Sin commitear aún | `mvn verify` (564 unitarios + 24 IT, `BUILD SUCCESS`); verificado en vivo contra backend local + Postgres real (`@Auditable` y `SecurityAuditPublisher` escribiendo en `audit_event`, `REFRESH_REUTILIZADO` reproducido, correlationId end-to-end, `/actuator/prometheus` con JWT) | Nuevo módulo `auditoria` (tabla append-only + AOP `@Auditable`), `docs/auditoria.md` reescrito, `CorrelationIdFilter`, `AlertaEmailService`, `micrometer-registry-prometheus`. 2 bugs encontrados y corregidos en la verificación local (actor "anonymousUser" en login, `/actuator/health` DOWN por mail health indicator). |

@@ -7,3 +7,9 @@
 # Mismo motivo: los scripts del contenedor de backup son POSIX sh, corren
 # dentro de Alpine/Linux — un CRLF cuela un "\r" en el shebang y rompe todo.
 deploy/backup/*.sh text eol=lf
+
+# Mismo motivo: los scripts que generan llaves de dev/test corren en CI
+# (ubuntu) y localmente vía Git Bash — deben quedar LF sin importar quién los
+# commitee (Fase 4, PLAN_MEJORAS.md).
+local-dev/certs/generar-llaves.sh text eol=lf
+src/test/resources/certs/generar-llaves.sh text eol=lf

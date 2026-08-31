@@ -268,6 +268,44 @@ public class UsuarioServiceImpl implements UsuarioService {
                 TipoEventoAuditoria.SESIONES_REVOCADAS, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
     }
 
+    @Override
+    @Transactional
+    public UsuarioResumen desactivar(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+        usuario.desactivar();
+        Usuario guardado = usuarioRepository.save(usuario);
+        refreshTokenRepository.revocarTodosDeUsuario(usuarioId);
+        auditPublisher.publicar(
+                TipoEventoAuditoria.USUARIO_DESACTIVADO, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
+        return toResumen(guardado);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResumen bloquear(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+        usuario.bloquear();
+        Usuario guardado = usuarioRepository.save(usuario);
+        refreshTokenRepository.revocarTodosDeUsuario(usuarioId);
+        auditPublisher.publicar(
+                TipoEventoAuditoria.USUARIO_BLOQUEADO, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
+        return toResumen(guardado);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResumen activar(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+        usuario.activar();
+        Usuario guardado = usuarioRepository.save(usuario);
+        auditPublisher.publicar(
+                TipoEventoAuditoria.USUARIO_ACTIVADO, UUID.randomUUID().toString(), "usuarioId=" + usuarioId);
+        return toResumen(guardado);
+    }
+
     private void exigirNoEscalaAlcanceGlobal(Rol rol) {
         if (rol.isAlcanceGlobal() && autorizacionTiendaService.tiendaIdsPermitidas().isPresent()) {
             throw new AccessDeniedException("No autorizado a asignar un rol de alcance global: " + rol.getNombre());

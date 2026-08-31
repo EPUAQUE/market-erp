@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fase 4 del plan (PLAN_MEJORAS.md), "baja de empleados": Usuario.desactivar()/
+         bloquear()/activar() existían en el dominio desde antes de esta fase pero
+         nunca estuvieron expuestos por HTTP — no había forma real de dar de baja a
+         alguien vía la API (confirmado: UsuarioController no tenía estos endpoints).
+         Un solo permiso para las 3 transiciones de estado (desactivar/bloquear/
+         activar) — son la misma clase de acción administrativa, no ameritan 3
+         permisos separados. -->
+    <changeSet id="seguridad-014-seed-permiso-cambiar-estado-usuario" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="USUARIOS_CAMBIAR_ESTADO"/>
+            <column name="descripcion" value="Desactivar, bloquear o reactivar la cuenta de otro usuario"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'USUARIOS_CAMBIAR_ESTADO')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

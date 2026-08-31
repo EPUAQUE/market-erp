@@ -15,6 +15,7 @@ import com.ais.marketbackend.seguridad.application.dtos.UsuarioResumen;
 import com.ais.marketbackend.seguridad.application.services.impl.UsuarioServiceImpl;
 import com.ais.marketbackend.seguridad.domain.exception.AsignacionMixtaNoPermitidaException;
 import com.ais.marketbackend.seguridad.domain.exception.UsuarioDuplicadoException;
+import com.ais.marketbackend.seguridad.domain.model.EstadoUsuario;
 import com.ais.marketbackend.seguridad.domain.model.Rol;
 import com.ais.marketbackend.seguridad.domain.model.Usuario;
 import com.ais.marketbackend.seguridad.domain.model.UsuarioGrupoTienda;
@@ -405,6 +406,64 @@ class UsuarioServiceImplTest {
         when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> usuarioService.revocarSesiones(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void desactivarMarcaInactivoSubeVersionYRevocaRefreshTokens() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UsuarioResumen resumen = usuarioService.desactivar(1L);
+
+        assertThat(usuario.getEstado()).isEqualTo(EstadoUsuario.INACTIVO);
+        assertThat(usuario.getVersionSeguridad()).isEqualTo(1L);
+        assertThat(resumen.estado()).isEqualTo(EstadoUsuario.INACTIVO);
+        verify(refreshTokenRepository).revocarTodosDeUsuario(1L);
+    }
+
+    @Test
+    void desactivarConUsuarioInexistenteLanzaNoEncontrado() {
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.desactivar(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void bloquearMarcaBloqueadoSubeVersionYRevocaRefreshTokens() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UsuarioResumen resumen = usuarioService.bloquear(1L);
+
+        assertThat(usuario.getEstado()).isEqualTo(EstadoUsuario.BLOQUEADO);
+        assertThat(usuario.getVersionSeguridad()).isEqualTo(1L);
+        assertThat(resumen.estado()).isEqualTo(EstadoUsuario.BLOQUEADO);
+        verify(refreshTokenRepository).revocarTodosDeUsuario(1L);
+    }
+
+    @Test
+    void activarVuelveAActivoSinRevocarRefreshTokens() {
+        Usuario usuario = Usuario.nuevo("ana", "hash");
+        usuario.bloquear();
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UsuarioResumen resumen = usuarioService.activar(1L);
+
+        assertThat(usuario.getEstado()).isEqualTo(EstadoUsuario.ACTIVO);
+        assertThat(resumen.estado()).isEqualTo(EstadoUsuario.ACTIVO);
+        verify(refreshTokenRepository, org.mockito.Mockito.never()).revocarTodosDeUsuario(any());
+    }
+
+    @Test
+    void activarConUsuarioInexistenteLanzaNoEncontrado() {
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.activar(99L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

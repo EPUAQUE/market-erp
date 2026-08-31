@@ -34,7 +34,8 @@ Future<LocalStore> crearLocalStore() async {
 /// escritura real a mitad de vuelo.
 Future<void> _aplicarMigracionSiHaceFalta(Isar isar) async {
   final metadato = await isar.metadatoLocalIsars.get(0);
-  if (metadato != null && metadato.esquemaVersion == esquemaLocalVersionActual) {
+  if (metadato != null &&
+      metadato.esquemaVersion == esquemaLocalVersionActual) {
     return;
   }
 

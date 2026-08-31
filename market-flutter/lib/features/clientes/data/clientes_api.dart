@@ -20,9 +20,9 @@ class ClientesApi {
     return _client.get<List<Cliente>>(
       '/api/v1/clientes',
       query: {'size': tamanoPaginaCompleta},
-      parser: (data) => contenidoDePagina(data)
-          .map((json) => Cliente.fromJson(json as Map<String, dynamic>))
-          .toList(),
+      parser: (data) => contenidoDePagina(
+        data,
+      ).map((json) => Cliente.fromJson(json as Map<String, dynamic>)).toList(),
     );
   }
 

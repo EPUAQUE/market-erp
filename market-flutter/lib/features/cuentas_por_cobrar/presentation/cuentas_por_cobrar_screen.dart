@@ -179,11 +179,7 @@ class _CuentaCard extends ConsumerWidget {
                 if (cuenta.vencida)
                   const Padding(
                     padding: EdgeInsets.only(top: 2),
-                    child: Icon(
-                      Icons.warning_amber,
-                      size: 16,
-                      color: _warning,
-                    ),
+                    child: Icon(Icons.warning_amber, size: 16, color: _warning),
                   ),
               ],
             ),

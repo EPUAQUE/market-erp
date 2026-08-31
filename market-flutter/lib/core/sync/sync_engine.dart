@@ -245,7 +245,10 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
     int ventaId,
   ) async {
     try {
-      final actual = await ventaApi.obtener(tiendaId: tiendaId, ventaId: ventaId);
+      final actual = await ventaApi.obtener(
+        tiendaId: tiendaId,
+        ventaId: ventaId,
+      );
       return actual.estado == 'COMPLETADA';
     } on ApiException {
       return false;

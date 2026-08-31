@@ -106,8 +106,8 @@ class WebLocalStore implements LocalStore {
   Future<ClientePendienteLocal?> obtenerClientePendiente(int id) async => null;
 
   @override
-  Future<List<ClientePendienteLocal>> listarClientesPendientesConError() async =>
-      const [];
+  Future<List<ClientePendienteLocal>>
+  listarClientesPendientesConError() async => const [];
 
   @override
   Future<void> reintentarClientePendiente(int id) async {}

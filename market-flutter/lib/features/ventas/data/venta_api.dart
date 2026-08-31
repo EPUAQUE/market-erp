@@ -50,7 +50,12 @@ class VentaApi {
   }) {
     final pagos = (pagosInmediatos ?? {}).entries
         .where((e) => e.value > Decimal.zero)
-        .map((e) => {'metodoPago': metodoPagoToJson(e.key), 'monto': e.value.toString()})
+        .map(
+          (e) => {
+            'metodoPago': metodoPagoToJson(e.key),
+            'monto': e.value.toString(),
+          },
+        )
         .toList();
     return _client.post<Venta>(
       '/api/v1/ventas/tiendas/$tiendaId/$ventaId/completar',

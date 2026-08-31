@@ -1132,26 +1132,59 @@ grande). Solo existe `test/widget_test.dart` (smoke test de login); no hay tests
 carrito, checkout, parsers, refresh de auth ni sincronización. No hay flavors
 (`dev`/`staging`/`prod`); el ambiente se maneja vía `--dart-define`.
 
+**2026-08-31**: primera pasada ("tests + dividir pos_screen", decisión del usuario)
+completa. Varias tareas quedan fuera de esta pasada por necesitar hardware real
+(impresión, cámara, tablets, integración en Android) o una decisión del usuario
+(firma/keystore, proveedor de telemetría) — ninguna de las dos es algo que se pueda
+resolver sin esos insumos.
+
 ### Tareas
 
-- [ ] Dividir `pos_screen.dart` (826 líneas) y pantallas grandes en
-  widgets/controladores pequeños.
-- [ ] Agregar tests unitarios para:
-  - carrito y redondeos;
-  - checkout por método de pago;
-  - serialización y parsers;
-  - autenticación y refresh;
-  - sincronización y clasificación de errores;
-  - caja y cuentas por cobrar.
-- [ ] Agregar pruebas de widgets para selector de tienda, cobro y pendientes (login ya
-  tiene una prueba básica).
-- [ ] Implementar pruebas de integración en Android.
-- [ ] Definir versión, firma, flavors (`dev`, `staging`, `prod`) y distribución del APK.
+- [x] Dividir `pos_screen.dart` (826 líneas) y pantallas grandes en
+  widgets/controladores pequeños. Nuevo directorio
+  `lib/features/ventas/presentation/pos/` (`pos_colors.dart`,
+  `pos_columna_accesos.dart`, `pos_columna_productos.dart`,
+  `pos_columna_carrito.dart`, `pos_body_telefono.dart`) — `pos_screen.dart` quedó en
+  ~130 líneas, solo el `Scaffold`/`AppBar` y la decisión tablet-vs-teléfono. Ningún
+  widget cambió de comportamiento, solo de archivo (privados `_Foo` pasaron a
+  públicos `Foo` para cruzar límites de librería en Dart).
+- [x] Agregar tests unitarios para (parcial — ver detalle): carrito y redondeos
+  (`carrito_test.dart`, `carrito_notifier_test.dart` — dominio puro +
+  wiring del `Notifier`); serialización y parsers (`venta_api_test.dart`:
+  `metodoPagoToJson/FromJson`, `Venta.fromJson`, `CuentaPorCobrar.fromJson/pendiente/
+  vencida`; `producto_catalogo_test.dart`: `vendible/coincideBusqueda/
+  coincideCodigoExacto`); clasificación de errores (`api_exception_test.dart`:
+  `ApiException.fromDioException`, red vs. respuesta del backend). **No cubierto**:
+  checkout por método de pago como test unitario puro (`CheckoutNotifier` depende de
+  `ApiClient.instance`, un singleton con Dio real y constructor privado — mockearlo
+  necesitaría una librería de mocking que este proyecto no tiene hoy, ej. `mocktail`;
+  se cubrió a nivel de widget en su lugar, ver abajo), autenticación/refresh
+  (mismo obstáculo — `ApiClient`), y el motor de sincronización en sí
+  (`SyncEngineNotifier`, acoplado a Isar/Riverpod, sin infraestructura de test
+  existente — mismo gap que ya documentaba `market-flutter/CLAUDE.md` antes de esta
+  pasada). Caja no tiene test unitario propio nuevo (su lógica de dominio es mínima,
+  el service la delega casi entera al backend).
+- [x] Agregar pruebas de widgets para selector de tienda, cobro y pendientes (login ya
+  tenía una prueba básica). `tienda_picker_screen_test.dart` (sin tiendas/varias
+  tiendas/habilitar Continuar), `cobro_sheet_test.dart` (Efectivo con cambio,
+  Tarjeta/Transferencia sin monto, Crédito exige cliente, Mixto exige que la suma
+  iguale el total exacto — sin tocar red, nunca se llega a tocar CONFIRMAR),
+  `pendientes_error_screen_test.dart` (lista vacía, tarjetas con mensaje de error,
+  confirmación de DESCARTAR). 62 tests en total (antes 1).
+- [ ] Agregar pruebas de integración en Android — necesita un dispositivo/emulador
+  real; `market-flutter/CLAUDE.md` ya documenta inestabilidad crónica del emulador en
+  esta máquina.
+- [ ] Definir versión, firma, flavors (`dev`, `staging`, `prod`) y distribución del
+  APK — la firma real necesita un keystore del usuario, no algo que se pueda generar
+  unilateralmente.
 - [ ] Validar impresión de ticket, reimpresión y selección de impresora en hardware
   real.
 - [ ] Probar cámara/lector, teclado físico y distintos tamaños de tablet.
 - [ ] Medir tiempos de arranque, catálogo grande y consumo de memoria.
-- [ ] Definir telemetría de errores respetuosa de datos personales.
+- [ ] Definir telemetría de errores respetuosa de datos personales — ya evaluado
+  informalmente (`market-flutter/CLAUDE.md`, sección Sentry vs. Crashlytics): decisión
+  pendiente del usuario, no tomada unilateralmente por implicar una cuenta externa y
+  una clave de API committeada.
 
 ### Criterio de aceptación
 
@@ -1324,6 +1357,6 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 6 — Backups | Código completo y verificado local; falta que el usuario cree el bucket/SMTP/secrets reales | Sin commitear aún | Verificado contra Postgres descartable con `rclone` local: backup.sh (dump+bundle cifrado+checksum) y restore.sh (descarga+verifica+descifra+restaura) de punta a punta con datos/imágenes/certs/.env de prueba, más `check-freshness.sh`/`alert.sh` en sus 3 escenarios. `docker compose config` limpio | `deploy/backup/*.sh` (backup/restore/check-freshness/alert), `docker-compose.yml`, `.env.example`, `.github/workflows/backup-restore-drill.yml`, `deploy/README.md`. Falta: bucket/cuenta de servicio/SMTP reales, 3 secrets de GitHub, y el ensayo de recuperación con volumen Docker perdido contra un servidor real. |
 | 7 — Auditoría/observabilidad | Completa salvo dashboards (pospuestos, requieren Prometheus/Grafana) | Sin commitear aún | `mvn verify` (564 unitarios + 24 IT, `BUILD SUCCESS`); verificado en vivo contra backend local + Postgres real (`@Auditable` y `SecurityAuditPublisher` escribiendo en `audit_event`, `REFRESH_REUTILIZADO` reproducido, correlationId end-to-end, `/actuator/prometheus` con JWT) | Nuevo módulo `auditoria` (tabla append-only + AOP `@Auditable`), `docs/auditoria.md` reescrito, `CorrelationIdFilter`, `AlertaEmailService`, `micrometer-registry-prometheus`. 2 bugs encontrados y corregidos en la verificación local (actor "anonymousUser" en login, `/actuator/health` DOWN por mail health indicator). |
 | 8 — Backoffice | "Base + quick wins" completa, resto pendiente | `8b8b7b9`, `e33afa6` | `pnpm typecheck`/`pnpm lint`/`pnpm test` (21 tests) limpios, `pnpm build` exitoso. Verificado en Chrome contra backend local real: login → recarga de página mantiene sesión (antes caía a `/login`); navegación rápida entre 6 módulos paginados sin errores de consola. **CI real en GitHub Actions confirmado verde** (run `33428154424`, los 5 jobs) | ESLint 9 (flat config) + Prettier en CI, `signal`/`AbortController` en `ApiClient` + 8 composables paginados server-side, refresh silencioso en `authGuard`. División de vistas grandes, componentes reutilizables, validación de formularios, accesibilidad y Playwright quedan para otra pasada. Un push necesitó una segunda corrección: `InventarioView.vue` no había convergido en una pasada de Prettier (interpolación al límite de `printWidth`) — CI lo detectó porque no reconfirmé `format:check` tras el `format --write` inicial. |
-| 9 — Flutter | Pendiente | | | |
+| 9 — Flutter | "Tests + dividir pos_screen" completa, resto pendiente (necesita hardware o decisiones del usuario) | Sin commitear aún | `flutter analyze` limpio, `flutter test`: 62 tests (antes 1), `dart format --set-exit-if-changed .` limpio, `flutter build web` exitoso | `pos_screen.dart` (826 líneas) dividido en `presentation/pos/*.dart`. Tests nuevos: dominio de carrito, wiring de `CarritoNotifier`, clasificación de `ApiException`, parsers de `Venta`/`CuentaPorCobrar`/`ProductoCatalogo`, widgets de `TiendaPickerScreen`/`CobroSheet`/`PendientesErrorScreen`. `CheckoutNotifier`/auth-refresh/`SyncEngineNotifier` quedan sin test unitario puro (acoplados a `ApiClient`/Isar, sin librería de mocking en el proyecto). |
 | 10 — Funciones comerciales | Pendiente | | | |
 | 11 — Rendimiento | Pendiente | | | |

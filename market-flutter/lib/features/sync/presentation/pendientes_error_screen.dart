@@ -74,10 +74,7 @@ class _ItemCard extends ConsumerWidget {
             const SizedBox(height: 2),
             Text(item.subtitulo, style: const TextStyle(color: Colors.black54)),
             const SizedBox(height: 6),
-            Text(
-              item.mensajeError,
-              style: const TextStyle(color: _danger),
-            ),
+            Text(item.mensajeError, style: const TextStyle(color: _danger)),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,

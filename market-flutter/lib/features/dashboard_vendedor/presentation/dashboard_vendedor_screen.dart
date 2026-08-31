@@ -92,7 +92,9 @@ class _Contenido extends ConsumerWidget {
                   DashboardPalette.accent.withValues(alpha: 0.04),
                 ],
               ),
-              border: Border.all(color: DashboardPalette.accent.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: DashboardPalette.accent.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

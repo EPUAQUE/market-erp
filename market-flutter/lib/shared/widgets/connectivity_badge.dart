@@ -44,10 +44,7 @@ class ConnectivityBadge extends ConsumerWidget {
               Container(
                 width: 10,
                 height: 10,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
               Text(
@@ -62,7 +59,9 @@ class ConnectivityBadge extends ConsumerWidget {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: conError > 0 ? const Color(0xFFDC6B6B) : Colors.white24,
+                    color: conError > 0
+                        ? const Color(0xFFDC6B6B)
+                        : Colors.white24,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(

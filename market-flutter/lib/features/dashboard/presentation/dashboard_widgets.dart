@@ -123,7 +123,10 @@ class DashboardStatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [color.withValues(alpha: 0.10), color.withValues(alpha: 0.02)],
+          colors: [
+            color.withValues(alpha: 0.10),
+            color.withValues(alpha: 0.02),
+          ],
         ),
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
@@ -229,7 +232,10 @@ class DashboardAgingRing extends StatelessWidget {
               children: [
                 const Text(
                   'Antigüedad de saldo',
-                  style: TextStyle(fontSize: 11, color: DashboardPalette.inkMuted),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: DashboardPalette.inkMuted,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -241,9 +247,21 @@ class DashboardAgingRing extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                _LeyendaAging(color: DashboardPalette.primary, etiqueta: '0-30d', valor: a0a30),
-                _LeyendaAging(color: DashboardPalette.warning, etiqueta: '31-60d', valor: a31a60),
-                _LeyendaAging(color: DashboardPalette.danger, etiqueta: '+60d', valor: aMas60),
+                _LeyendaAging(
+                  color: DashboardPalette.primary,
+                  etiqueta: '0-30d',
+                  valor: a0a30,
+                ),
+                _LeyendaAging(
+                  color: DashboardPalette.warning,
+                  etiqueta: '31-60d',
+                  valor: a31a60,
+                ),
+                _LeyendaAging(
+                  color: DashboardPalette.danger,
+                  etiqueta: '+60d',
+                  valor: aMas60,
+                ),
               ],
             ),
           ),
@@ -254,7 +272,11 @@ class DashboardAgingRing extends StatelessWidget {
 }
 
 class _LeyendaAging extends StatelessWidget {
-  const _LeyendaAging({required this.color, required this.etiqueta, required this.valor});
+  const _LeyendaAging({
+    required this.color,
+    required this.etiqueta,
+    required this.valor,
+  });
 
   final Color color;
   final String etiqueta;
@@ -272,11 +294,21 @@ class _LeyendaAging extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 5),
-          Text(etiqueta, style: const TextStyle(fontSize: 10.5, color: DashboardPalette.inkMuted)),
+          Text(
+            etiqueta,
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: DashboardPalette.inkMuted,
+            ),
+          ),
           const Spacer(),
           Text(
             'Q $valor',
-            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: DashboardPalette.ink),
+            style: const TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: DashboardPalette.ink,
+            ),
           ),
         ],
       ),
@@ -368,10 +400,16 @@ class DashboardComparisonBars extends StatelessWidget {
               ),
               if (cambio != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
-                    color: (cambio >= 0 ? DashboardPalette.primary : DashboardPalette.danger)
-                        .withValues(alpha: 0.12),
+                    color:
+                        (cambio >= 0
+                                ? DashboardPalette.primary
+                                : DashboardPalette.danger)
+                            .withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -379,7 +417,9 @@ class DashboardComparisonBars extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: cambio >= 0 ? DashboardPalette.primary : DashboardPalette.danger,
+                      color: cambio >= 0
+                          ? DashboardPalette.primary
+                          : DashboardPalette.danger,
                     ),
                   ),
                 ),
@@ -429,7 +469,13 @@ class _BarraComparativa extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(etiqueta, style: const TextStyle(fontSize: 11.5, color: DashboardPalette.inkMuted)),
+            Text(
+              etiqueta,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: DashboardPalette.inkMuted,
+              ),
+            ),
             Text(
               'Q $valor',
               style: TextStyle(
@@ -480,25 +526,38 @@ class DashboardAlertBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = criticas > 0 ? DashboardPalette.danger : DashboardPalette.warning;
+    final color = criticas > 0
+        ? DashboardPalette.danger
+        : DashboardPalette.warning;
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [color.withValues(alpha: 0.16), color.withValues(alpha: 0.05)],
+          colors: [
+            color.withValues(alpha: 0.16),
+            color.withValues(alpha: 0.05),
+          ],
         ),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          DashboardIconBadge(icon: Icons.warning_amber_rounded, color: color, size: 36),
+          DashboardIconBadge(
+            icon: Icons.warning_amber_rounded,
+            color: color,
+            size: 36,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               '$criticas alerta(s) crítica(s) · $preventivas preventiva(s) sin leer',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: DashboardPalette.ink),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5,
+                color: DashboardPalette.ink,
+              ),
             ),
           ),
         ],
@@ -537,15 +596,32 @@ class DashboardListRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(titulo, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: DashboardPalette.ink)),
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: DashboardPalette.ink,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitulo, style: const TextStyle(fontSize: 11.5, color: DashboardPalette.inkMuted)),
+                Text(
+                  subtitulo,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: DashboardPalette.inkMuted,
+                  ),
+                ),
               ],
             ),
           ),
           Text(
             trailing,
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: color),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12.5,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -571,7 +647,13 @@ class DashboardListCard extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const Divider(height: 1, indent: 14, endIndent: 14, color: Color(0xFFF1F5F9)),
+            if (i > 0)
+              const Divider(
+                height: 1,
+                indent: 14,
+                endIndent: 14,
+                color: Color(0xFFF1F5F9),
+              ),
             children[i],
           ],
         ],

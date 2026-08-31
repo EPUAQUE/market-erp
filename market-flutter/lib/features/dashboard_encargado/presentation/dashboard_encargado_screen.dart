@@ -243,7 +243,11 @@ class _Contenido extends ConsumerWidget {
             const SizedBox(height: 14),
             Text(
               'Top cobros pendientes',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: DashboardPalette.inkMuted),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: DashboardPalette.inkMuted,
+              ),
             ),
             const SizedBox(height: 8),
             DashboardListCard(
@@ -285,7 +289,11 @@ class _Contenido extends ConsumerWidget {
             const SizedBox(height: 14),
             Text(
               'Top pagos pendientes',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: DashboardPalette.inkMuted),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: DashboardPalette.inkMuted,
+              ),
             ),
             const SizedBox(height: 8),
             DashboardListCard(

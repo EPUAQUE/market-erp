@@ -75,6 +75,14 @@ watch([movimientosPagina, movimientosTamano], () => {
   }
 })
 
+// Abre el formulario siempre en blanco — sin esto, cancelar sin enviar dejaba
+// el producto/cantidad/tipo de la vez anterior visibles al reabrir (mismo bug
+// que UsuariosView, ver PLAN_MEJORAS.md).
+function abrirRegistrarMovimiento() {
+  form.value = { productoId: '', cantidad: '', costoUnitario: '', tipoMovimiento: 'COMPRA' }
+  showForm.value = true
+}
+
 async function onSubmit() {
   if (tiendaId.value === null) return
   const ok = await registrarMovimiento(tiendaId.value, {
@@ -121,7 +129,7 @@ onMounted(async () => {
         v-if="permissions.can('INVENTARIO_AJUSTAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm = !showForm"
+        @click="showForm ? (showForm = false) : abrirRegistrarMovimiento()"
       >
         {{ showForm ? 'Cancelar' : 'Registrar movimiento' }}
       </button>

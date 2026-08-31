@@ -123,6 +123,24 @@ const paged = computed(() => {
   return filtered.value.slice(start, start + pageSize.value)
 })
 
+function resetCreateForm() {
+  newUsername.value = ''
+  newPassword.value = ''
+  newNombre.value = ''
+  newTelefono.value = ''
+  newCorreo.value = ''
+  newTiendaId.value = ''
+  newRolId.value = ''
+}
+
+// Abre el formulario siempre en blanco — sin esto, cancelar sin enviar (o un
+// envío fallido) dejaba los campos de la vez anterior (p. ej. "ADMIN" tecleado
+// como usuario) visibles al reabrir, como si ya hubieran sido ingresados.
+function abrirCrear() {
+  resetCreateForm()
+  showCreateForm.value = true
+}
+
 async function onCrear() {
   const id = await crear(newUsername.value, newPassword.value, newNombre.value, newTelefono.value, newCorreo.value)
   if (!id) return
@@ -134,13 +152,7 @@ async function onCrear() {
     if (!asignado) return
   }
 
-  newUsername.value = ''
-  newPassword.value = ''
-  newNombre.value = ''
-  newTelefono.value = ''
-  newCorreo.value = ''
-  newTiendaId.value = ''
-  newRolId.value = ''
+  resetCreateForm()
   showCreateForm.value = false
 }
 
@@ -172,7 +184,7 @@ onMounted(async () => {
         v-if="permissions.can('USUARIOS_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showCreateForm = !showCreateForm"
+        @click="showCreateForm ? (showCreateForm = false) : abrirCrear()"
       >
         {{ showCreateForm ? 'Cancelar' : 'Nuevo usuario' }}
       </button>

@@ -147,7 +147,7 @@ onMounted(async () => {
     </div>
 
     <div v-if="cuentaEnDetalle" class="space-y-3">
-      <h2 class="text-sm font-medium">Cobros de la cuenta #{{ cuentaEnDetalle.id }}</h2>
+      <h2 class="text-sm font-medium">Cobros de la venta #{{ cuentaEnDetalle.ventaId }}</h2>
 
       <form
         v-if="cuentaEnDetalle.estado === 'PENDIENTE' && permissions.can('CUENTAS_POR_COBRAR_COBRAR')"

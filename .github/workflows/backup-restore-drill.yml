@@ -1,0 +1,107 @@
+name: Ensayo mensual de restauración de backup
+
+# Fase 6 (PLAN_MEJORAS.md): "ejecutar una restauración programada al menos
+# mensualmente" hecho automático en vez de un recordatorio de calendario
+# que alguien puede olvidar. Baja el bundle cifrado más reciente de GCS,
+# lo restaura contra un Postgres descartable de este mismo job, y corre un
+# sanity check — si algo falla, el job falla (GitHub ya notifica al equipo).
+#
+# Requiere 3 secrets en este repo que el usuario debe crear (no accesibles
+# desde acá): GCS_BUCKET, BACKUP_ENCRYPTION_PASSPHRASE, y
+# GCP_BACKUP_READONLY_SA_KEY (JSON de una cuenta de servicio de SOLO
+# LECTURA sobre ese bucket — distinta de la que usa la VM, alcance mínimo,
+# solo para que este workflow pueda leer). Ver deploy/README.md.
+
+on:
+  schedule:
+    # Día 1 de cada mes, 06:00 UTC.
+    - cron: "0 6 1 * *"
+  workflow_dispatch: {}
+
+jobs:
+  restore-drill:
+    name: Restaurar el backup más reciente contra un Postgres descartable
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: market
+          POSTGRES_USER: market
+          POSTGRES_PASSWORD: market
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U market -d market"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Instalar rclone/gnupg/cliente psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rclone gnupg postgresql-client
+
+      - name: Configurar acceso de solo lectura a GCS
+        env:
+          GCP_BACKUP_READONLY_SA_KEY: ${{ secrets.GCP_BACKUP_READONLY_SA_KEY }}
+        run: |
+          if [ -z "$GCP_BACKUP_READONLY_SA_KEY" ]; then
+            echo "Falta el secret GCP_BACKUP_READONLY_SA_KEY — ver deploy/README.md." >&2
+            exit 1
+          fi
+          mkdir -p ~/.config/rclone
+          echo "$GCP_BACKUP_READONLY_SA_KEY" > /tmp/sa-key.json
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [gcs]
+          type = google cloud storage
+          service_account_file = /tmp/sa-key.json
+          EOF
+
+      - name: Descargar el bundle más reciente
+        env:
+          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+        run: |
+          bundle=$(rclone lsf "gcs:${GCS_BUCKET}/backups/" --include "*.bundle.tar.gz.gpg" | sort | tail -n1)
+          if [ -z "$bundle" ]; then
+            echo "No hay ningún bundle en gcs:${GCS_BUCKET}/backups/ — nada que ensayar todavía." >&2
+            exit 1
+          fi
+          echo "bundle=$bundle" >> "$GITHUB_ENV"
+          rclone copyto "gcs:${GCS_BUCKET}/backups/${bundle}" "/tmp/${bundle}"
+          rclone copyto "gcs:${GCS_BUCKET}/backups/${bundle}.sha256" "/tmp/${bundle}.sha256"
+
+      - name: Verificar checksum
+        run: |
+          cd /tmp
+          expected=$(cat "${bundle}.sha256")
+          actual=$(sha256sum "${bundle}" | awk '{print $1}')
+          if [ "$expected" != "$actual" ]; then
+            echo "Checksum no coincide para ${bundle} — el bundle pudo corromperse." >&2
+            exit 1
+          fi
+
+      - name: Descifrar y extraer
+        env:
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          cd /tmp
+          gpg --batch --yes --decrypt --passphrase "$BACKUP_ENCRYPTION_PASSPHRASE" \
+              -o bundle.tar.gz "${bundle}"
+          mkdir -p extracted
+          tar -xzf bundle.tar.gz -C extracted
+
+      - name: Restaurar contra Postgres descartable
+        run: |
+          gunzip -c /tmp/extracted/dump.sql.gz | \
+            PGPASSWORD=market psql -h localhost -U market -d market
+
+      - name: Sanity check (conteo de filas en tablas clave)
+        run: |
+          usuarios=$(PGPASSWORD=market psql -h localhost -U market -d market -tAc "select count(*) from usuario")
+          productos=$(PGPASSWORD=market psql -h localhost -U market -d market -tAc "select count(*) from producto")
+          echo "usuario=${usuarios} producto=${productos}"
+          if [ "$usuarios" -lt 1 ]; then
+            echo "La tabla 'usuario' quedó vacía tras restaurar — el backup parece corrupto o incompleto." >&2
+            exit 1
+          fi

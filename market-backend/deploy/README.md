@@ -128,33 +128,192 @@ Si hace falta un segundo admin más adelante, repetir el mismo contenedor
 de un solo uso con `SEED_ADMIN_USERNAME` distinto — `AdminUserSeeder` no
 siembra si el username ya existe, así que es seguro repetir el comando.
 
+## RPO/RTO
+
+Acordado (Fase 6, `PLAN_MEJORAS.md`):
+
+- **RPO (pérdida máxima de datos aceptable): ≤24h** — cubierto por el
+  intervalo diario actual de `backup.sh` (`BACKUP_INTERVAL_SECONDS`,
+  default 86400). Si el negocio necesita menos pérdida más adelante, basta
+  con bajar ese intervalo — el resto del pipeline (cifrado, subida,
+  checksum, alertas) no cambia.
+- **RTO (tiempo máximo para reconstruir el ambiente): unas horas** — el
+  runbook de "Restauración automatizada" de abajo es lo que hay que seguir
+  para cumplirlo: provisionar una VM nueva, `docker compose up` vacío,
+  `restore.sh` con el bundle más reciente de GCS, verificar que el
+  backoffice/POS puedan loguearse contra los datos restaurados.
+
 ## Backups de Postgres
 
 Servicio `backup` (`deploy/backup/`, imagen `postgres:16-alpine` +
-`pg_dump`) corre junto a los demás. Automático: `pg_dump | gzip` al
-arrancar y cada `BACKUP_INTERVAL_SECONDS` (default 86400 = 24h, ver
-`.env.example`). Intervalo desde arranque, no hora fija — tolera
-reinicios del contenedor en cualquier momento.
+`pg_dump` + `rclone` + `gnupg` + `msmtp`) corre junto a los demás. Dos
+capas, la segunda es opcional pero muy recomendada antes de producción:
 
-Dumps quedan en `market-backend/deploy/backups/` en el HOST (bind mount,
-no volumen con nombre) como `<db>_<timestamp>.sql.gz` — sobreviven a
-`docker compose down -v` aunque se borre `pgdata`. Se borran solos los de
-más de `BACKUP_RETENTION_DAYS` días (default 14).
+**1. Dump local (sin cambios respecto a antes)**: `pg_dump | gzip` al
+arrancar y cada `BACKUP_INTERVAL_SECONDS` (default 86400 = 24h). Intervalo
+desde arranque, no hora fija — tolera reinicios del contenedor en
+cualquier momento. Queda en `market-backend/deploy/backups/` en el HOST
+(bind mount, no volumen con nombre) como `<db>_<timestamp>.sql.gz` —
+sobrevive a `docker compose down -v` aunque se borre `pgdata`. Se borran
+solos los de más de `BACKUP_RETENTION_DAYS` días (default 14).
+
+**2. Bundle cifrado a almacenamiento externo (GCS)**: si `GCS_BUCKET` y
+`BACKUP_ENCRYPTION_PASSPHRASE` están configurados (`.env.example` los
+documenta, vacíos por default — sin ellos el backup sigue funcionando
+solo-local, igual que antes), cada corrida arma un solo archivo
+`<db>_<timestamp>.bundle.tar.gz.gpg` con: el dump, un tar de
+`productos_imagenes`, un tar de `deploy/certs/*.pem`, y una copia del
+`.env` — cifrado simétrico AES256 (GPG) con la passphrase, más un
+`.sha256` al lado. Sube ambos a `gs://$GCS_BUCKET/backups/` con `rclone`
+(que ya verifica el hash después de subir — si algo se corrompe en
+tránsito, el job falla). Cualquier fallo en cualquier paso (dump, cifrado,
+subida) manda una alerta por correo (ver "Alertas" abajo) y termina en
+`exit 1`; además, al inicio de cada vuelta del loop, `check-freshness.sh`
+alerta si el dump local más reciente supera `BACKUP_MAX_AGE_HOURS`
+(default 30h) — para el caso "el contenedor sigue vivo pero viene
+fallando hace rato".
+
+**`rclone` nunca usa una llave JSON estática en el servidor** — toma
+credenciales de la cuenta de servicio adjunta a la VM vía el metadata
+server de GCE (`RCLONE_CONFIG_GCS_ENV_AUTH=true`, ya en
+`docker-compose.yml`). Configuración necesaria del lado de GCP, una sola
+vez:
+
+```bash
+# 1. Crear el bucket, con versioning (protege contra sobrescritura/borrado
+#    accidental de un backup — GCS guarda versiones anteriores del mismo
+#    nombre de objeto).
+gcloud storage buckets create gs://<nombre-del-bucket> \
+  --location=<región, ej. us-central1> \
+  --uniform-bucket-level-access
+
+gcloud storage buckets update gs://<nombre-del-bucket> --versioning
+
+# 2. (Opcional) Regla de ciclo de vida — borra versiones viejas después de
+#    90 días y cualquier objeto después de 365 días. Ver
+#    deploy/backup/gcs-lifecycle-example.json (ajustar antes de aplicar).
+gcloud storage buckets update gs://<nombre-del-bucket> \
+  --lifecycle-file=deploy/backup/gcs-lifecycle-example.json
+
+# 3. Cuenta de servicio de ESCRITURA, alcance mínimo (solo este bucket) —
+#    la que usará la VM en producción.
+gcloud iam service-accounts create market-backup-writer \
+  --display-name="Market ERP - backup writer"
+
+gcloud storage buckets add-iam-policy-binding gs://<nombre-del-bucket> \
+  --member="serviceAccount:market-backup-writer@<project-id>.iam.gserviceaccount.com" \
+  --role="roles/storage.objectAdmin"
+
+# 4. Adjuntar esa cuenta de servicio a la VM (requiere pararla una vez si
+#    ya está corriendo — no se puede cambiar en caliente).
+gcloud compute instances stop <nombre-vm> --zone=<zona>
+gcloud compute instances set-service-account <nombre-vm> --zone=<zona> \
+  --service-account=market-backup-writer@<project-id>.iam.gserviceaccount.com \
+  --scopes=https://www.googleapis.com/auth/devstorage.read_write
+gcloud compute instances start <nombre-vm> --zone=<zona>
+```
+
+Después, en el `.env` del servidor: `GCS_BUCKET=<nombre-del-bucket>` y una
+`BACKUP_ENCRYPTION_PASSPHRASE` real.
+
+> **Crítico**: `BACKUP_ENCRYPTION_PASSPHRASE` es la única llave que
+> descifra todo lo que hay en GCS. Guardala en un gestor de contraseñas o
+> vault **fuera** de este servidor (nunca solo en su `.env`) — si el
+> servidor se pierde y la passphrase se perdió con él, los backups en GCS
+> quedan inservibles para siempre, ni siquiera vos podés recuperarlos.
+
+### Alertas
+
+`ALERT_SMTP_HOST`/`PORT`/`USER`/`PASSWORD`/`ALERT_EMAIL_FROM`/
+`ALERT_EMAIL_TO` en `.env` (ver `.env.example`) — sirve con cualquier SMTP
+que ya tengas (Gmail con contraseña de aplicación, SMTP corporativo,
+etc.). Sin configurar, las alertas quedan solo en
+`docker compose logs backup`.
+
+### Comandos sueltos
 
 Backup manual on-demand:
 ```
 docker compose exec backup /backup.sh
 ```
 
-Listar/inspeccionar backups:
+Listar/inspeccionar backups locales:
 ```
 ls -lh deploy/backups/
 ```
 
-Restaurar un dump (reemplaza los datos actuales de `PGDATABASE`):
+Restaurar el dump local (reemplaza los datos actuales de `PGDATABASE`,
+sin tocar imágenes/certs/`.env` — para eso ver "Restauración automatizada"
+abajo):
 ```
 gunzip -c deploy/backups/<db>_<timestamp>.sql.gz | docker compose exec -T db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
 ```
+
+## Restauración automatizada
+
+`docker compose exec backup /restore.sh [nombre-del-bundle]` — sin
+argumento, toma el bundle más reciente de GCS. Verifica el `.sha256`,
+descifra con `BACKUP_ENCRYPTION_PASSPHRASE`, y restaura:
+
+- **Base de datos**: se aplica directo (`psql`), **sobreescribe**
+  `PGDATABASE` actual.
+- **Imágenes de producto**: se aplican directo sobre el volumen
+  `productos_imagenes` (bajo riesgo, son solo archivos).
+- **Certs y `.env` del bundle**: **no se sobreescriben solos** — quedan
+  guardados en `deploy/backups/certs-restaurados-<fecha>/` y
+  `deploy/backups/env-restaurado-<fecha>` para que una persona los revise
+  y copie a mano si hace falta. Son demasiado sensibles para aplicarlos
+  sin supervisión.
+
+Pensado para correr manual siempre — restaurar sobre producción no debe
+pasar solo por accidente (nunca se dispara desde `loop.sh`).
+
+### Ensayo mensual automatizado
+
+`.github/workflows/backup-restore-drill.yml` corre el día 1 de cada mes
+(y bajo demanda, `workflow_dispatch`): baja el bundle más reciente,
+verifica checksum, descifra, restaura contra un Postgres descartable del
+propio job, y corre un sanity check de conteo de filas. Si algo falla, el
+job falla — eso es la alerta, GitHub ya notifica fallos de workflow al
+equipo. Cumple "ejecutar una restauración programada al menos
+mensualmente" sin depender de que alguien se acuerde.
+
+Requiere 3 secrets nuevos en la configuración del repo de GitHub
+(**Settings → Secrets and variables → Actions**), que hay que crear a
+mano — no soy yo quien puede agregarlos:
+
+- `GCS_BUCKET`: mismo nombre que en el `.env` del servidor.
+- `BACKUP_ENCRYPTION_PASSPHRASE`: misma passphrase que en el `.env` del
+  servidor.
+- `GCP_BACKUP_READONLY_SA_KEY`: el JSON de una cuenta de servicio nueva,
+  de **solo lectura** sobre el bucket (distinta de la que usa la VM,
+  alcance mínimo — este es el único lugar de todo el sistema donde sí
+  hace falta una llave JSON estática, porque un runner de GitHub Actions
+  no tiene metadata server de GCE):
+  ```bash
+  gcloud iam service-accounts create market-backup-ci-reader \
+    --display-name="Market ERP - backup CI reader (solo lectura)"
+
+  gcloud storage buckets add-iam-policy-binding gs://<nombre-del-bucket> \
+    --member="serviceAccount:market-backup-ci-reader@<project-id>.iam.gserviceaccount.com" \
+    --role="roles/storage.objectViewer"
+
+  gcloud iam service-accounts keys create ci-reader-key.json \
+    --iam-account=market-backup-ci-reader@<project-id>.iam.gserviceaccount.com
+  # Pegar el contenido de ci-reader-key.json como el secret
+  # GCP_BACKUP_READONLY_SA_KEY, y después borrar el archivo local.
+  ```
+
+### Pendiente (requiere ejecución manual, no automatizable desde acá)
+
+- **Probar recuperación cuando el volumen Docker completo se pierde**:
+  simular `docker compose down -v` (o perder el disco) contra una copia de
+  prueba del servidor, no contra producción — demasiado destructivo para
+  automatizarlo sin supervisión directa. El pipeline de
+  `backup.sh`/`restore.sh` en sí ya se probó de punta a punta (dump →
+  cifrado → subida → descarga → descifrado → restauración, con datos,
+  imágenes, certs y `.env` de prueba) contra un Postgres descartable antes
+  de cerrar esta fase — lo que falta es el ensayo contra el disco/VM real.
 
 ## Rollback
 

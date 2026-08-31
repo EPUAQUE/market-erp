@@ -9,6 +9,7 @@
 set -eu
 
 while true; do
+    /check-freshness.sh || echo "[$(date -Iseconds)] check-freshness.sh falló (no crítico), se continúa" >&2
     /backup.sh || echo "[$(date -Iseconds)] intento de backup falló, se reintenta en el próximo ciclo" >&2
     sleep "${BACKUP_INTERVAL_SECONDS:-86400}"
 done

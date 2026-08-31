@@ -787,22 +787,87 @@ gzip con retención por días), pero sin cifrado, sin subida a almacenamiento ex
 checksum y sin alertas reales (solo `echo` a stdout). La restauración está documentada
 en `deploy/README.md`, pero no automatizada ni ensayada. Toda la fase sigue pendiente.
 
+**Resuelto (2026-08-30):** decisiones acordadas con el usuario — storage externo
+Google Cloud Storage (el bucket todavía no existe, quedan los comandos `gcloud`
+exactos documentados para crearlo), alertas por correo (SMTP genérico, sin
+proveedor específico todavía), RPO ≤24h/RTO "unas horas" (el intervalo diario
+actual ya alcanza). `deploy/backup/backup.sh` reescrito: el dump local a
+`/backups` sigue igual que antes (retención por `BACKUP_RETENTION_DAYS`); si
+`GCS_BUCKET`/`BACKUP_ENCRYPTION_PASSPHRASE` están configurados (vacíos por
+default, sin ellos sigue funcionando solo-local), arma un bundle con el dump +
+imágenes de producto (`productos_imagenes`, mount nuevo `:ro`) + certs
+(`deploy/certs/*.pem`, mount nuevo `:ro`) + `.env` (mount nuevo `:ro`), lo cifra
+simétrico AES256 (`gpg`) con la passphrase, genera un `.sha256`, y sube ambos a
+GCS con `rclone` (paquete Alpine nuevo — preferido sobre hablar la REST API de
+GCS a mano porque ya verifica el hash después de subir). `rclone` toma
+credenciales de la cuenta de servicio adjunta a la VM vía el metadata server de
+GCE (`RCLONE_CONFIG_GCS_ENV_AUTH=true`) — nunca una llave JSON estática en el
+servidor. Cualquier fallo en cualquier paso dispara una alerta por correo
+(`alert.sh`, vía `msmtp`, con fallback a solo-log si no hay SMTP configurado) y
+`exit 1`. Nuevo `check-freshness.sh` (corrido al inicio de cada vuelta de
+`loop.sh`) alerta si el dump local más reciente supera `BACKUP_MAX_AGE_HOURS`
+(default 30h). Nuevo `restore.sh`: descarga el bundle más reciente (o uno por
+nombre), verifica checksum, descifra, y restaura — la base de datos y las
+imágenes de producto se aplican directo; certs y `.env` del bundle NO se
+sobreescriben solos, quedan guardados en `deploy/backups/` para revisión manual
+(demasiado sensibles para aplicar sin supervisión). Nuevo
+`.github/workflows/backup-restore-drill.yml` (cron mensual +
+`workflow_dispatch`) automatiza el ensayo de restauración contra un Postgres
+descartable con sanity check de conteo de filas — requiere 3 secrets nuevos en
+GitHub que el usuario debe crear (documentados en `deploy/README.md`, incluidos
+los comandos `gcloud` para la cuenta de servicio de solo lectura que usa ese
+workflow). `deploy/README.md` documenta RPO/RTO, los comandos `gcloud` exactos
+para crear el bucket (con versioning + lifecycle de ejemplo) y la cuenta de
+servicio de escritura de la VM, y el flujo completo de restauración.
+
+Verificado de punta a punta contra un Postgres descartable (usando el backend
+`local` de `rclone` como reemplazo de GCS real, sin necesitar credenciales de
+nube): `backup.sh` armó el bundle cifrado con dump+imágenes+certs+`.env` de
+prueba y lo "subió" verificado; `restore.sh` lo descargó, verificó checksum,
+descifró, y restauró — los datos, imágenes, certs y `.env` de prueba volvieron
+exactamente iguales. `check-freshness.sh` y `alert.sh` probados en sus 3
+escenarios (sin backups, backup fresco, backup viejo) — sin SMTP configurado,
+caen correctamente a solo-log. `docker compose config` valida limpio con los
+mounts/env nuevos.
+
+**Pendiente, requiere que el usuario actúe de su lado (no accesible desde
+acá):** crear el bucket GCS + cuenta de servicio real + adjuntarla a la VM
+(comandos ya listos); conseguir credenciales SMTP reales; llenar el `.env` real
+del servidor con `GCS_BUCKET`/`BACKUP_ENCRYPTION_PASSPHRASE`/`ALERT_SMTP_*`
+(y guardar la passphrase en un vault fuera del servidor — crítico, sin eso los
+backups en GCS quedan inservibles si se pierde el servidor); agregar los 3
+secrets del workflow mensual en GitHub. También pendiente, no ejecutado por mí:
+probar recuperación con el volumen Docker completo perdido contra una copia de
+prueba real del servidor (el pipeline en sí ya se verificó de punta a punta,
+falta el ensayo contra disco/VM real).
+
 ### Tareas
 
-- [ ] Mantener el dump PostgreSQL actual, pero copiarlo cifrado a almacenamiento
-  externo y versionado.
-- [ ] Respaldar también:
-  - imágenes de productos;
-  - configuración necesaria para reconstruir el entorno;
-  - certificados y secretos mediante su mecanismo seguro, no dentro del dump;
-  - volúmenes relevantes de Caddy cuando corresponda.
-- [ ] Generar checksum por backup y verificarlo después de subirlo.
-- [ ] Alertar cuando falle un backup o no exista uno reciente.
-- [ ] Definir RPO y RTO del negocio.
-- [ ] Documentar y automatizar restauración en un ambiente aislado.
-- [ ] Ejecutar una restauración programada al menos mensualmente.
-- [ ] Probar recuperación cuando el volumen Docker completo se pierde.
-- [ ] Definir rollback de aplicación y compatibilidad de migraciones.
+- [x] Mantener el dump PostgreSQL actual, pero copiarlo cifrado a almacenamiento
+  externo y versionado (bucket con `--versioning`, comandos documentados).
+- [x] Respaldar también:
+  - [x] imágenes de productos;
+  - [x] configuración necesaria para reconstruir el entorno (`.env`);
+  - [x] certificados mediante su mecanismo seguro (cifrado dentro del mismo
+    bundle GPG, no en texto plano);
+  - [ ] volúmenes relevantes de Caddy — no incluido (`caddy_data` solo tiene el
+    certificado TLS de Let's Encrypt, se re-emite solo al desplegar de nuevo;
+    no es pérdida de datos de negocio, se dejó fuera de alcance).
+- [x] Generar checksum por backup y verificarlo después de subirlo (`.sha256`
+  + verificación propia de `rclone copyto`).
+- [x] Alertar cuando falle un backup o no exista uno reciente (`alert.sh` +
+  `check-freshness.sh`).
+- [x] Definir RPO y RTO del negocio (RPO ≤24h, RTO unas horas — ver
+  `deploy/README.md`).
+- [x] Documentar y automatizar restauración en un ambiente aislado (`restore.sh`).
+- [x] Ejecutar una restauración programada al menos mensualmente — automatizado
+  vía GitHub Actions (`backup-restore-drill.yml`), no solo un recordatorio de
+  calendario; falta que el usuario agregue los 3 secrets para que corra en real.
+- [ ] Probar recuperación cuando el volumen Docker completo se pierde — pendiente
+  contra un servidor/VM real, no automatizable desde acá sin supervisión.
+- [x] Definir rollback de aplicación y compatibilidad de migraciones — ya
+  cubierto en la sección "Rollback" existente de `deploy/README.md`, solo
+  revisado, no reescrito.
 
 ### Criterio de aceptación
 
@@ -1099,7 +1164,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 3 — Concurrencia | **Completa** | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 24 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular), venta (completar/anular) y usuario (asignarTienda/asignarGrupo, serializando la regla "no asignación mixta" entre las dos tablas usuario_tienda/usuario_grupo_tienda). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. `GlobalExceptionHandler` traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. |
 | 4 — Sesiones/seguridad | Rate limiter, cambio/restablecimiento de contraseña, `sver`/revocar sesiones y cabeceras de seguridad resueltos; resto pendiente | Sin commitear aún | `mvn verify` (con Docker): 564 unitarios + 24 IT, `BUILD SUCCESS` | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin con contraseña temporal (`POST /usuarios/{id}/password/restablecer`, permiso `USUARIOS_RESTABLECER_PASSWORD`). `debe_cambiar_password` ahora sí bloquea el resto de la API vía claim + `DebeCambiarPasswordFilter`. `SecurityVersionValidator` revalida `sver` en toda petición autenticada; `POST /usuarios/{id}/sesiones/revocar` (`USUARIOS_REVOCAR_SESIONES`) revoca sesiones sin tocar contraseña/estado. Caddy + Nginx agregan CSP/HSTS/X-Content-Type-Options/Referrer-Policy/Permissions-Policy. Resto (tienda activa tras restaurar, MFA, rate limiter distribuido, retirar llave dev/test del repo, probar rotación de llaves JWT, política de contraseña/bloqueo/baja) sigue pendiente. |
 | 5 — CI/pruebas | "Pipeline mínimo" completo, "Cobertura prioritaria" pendiente | Sin commitear aún | Verificado local: `mvn verify` (24 IT, `BUILD SUCCESS`), `pnpm typecheck/test/build`, `flutter analyze/test/build web`, `docker build` de ambas imágenes. CI real en GitHub sin correr aún (primer push pendiente) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. E2E de negocio y tests nuevos de Flutter/Vue quedan pendientes (sección "Cobertura prioritaria"). |
-| 6 — Backups | Pendiente | | | |
+| 6 — Backups | Código completo y verificado local; falta que el usuario cree el bucket/SMTP/secrets reales | Sin commitear aún | Verificado contra Postgres descartable con `rclone` local: backup.sh (dump+bundle cifrado+checksum) y restore.sh (descarga+verifica+descifra+restaura) de punta a punta con datos/imágenes/certs/.env de prueba, más `check-freshness.sh`/`alert.sh` en sus 3 escenarios. `docker compose config` limpio | `deploy/backup/*.sh` (backup/restore/check-freshness/alert), `docker-compose.yml`, `.env.example`, `.github/workflows/backup-restore-drill.yml`, `deploy/README.md`. Falta: bucket/cuenta de servicio/SMTP reales, 3 secrets de GitHub, y el ensayo de recuperación con volumen Docker perdido contra un servidor real. |
 | 7 — Auditoría/observabilidad | Pendiente | | | |
 | 8 — Backoffice | Pendiente | | | |
 | 9 — Flutter | Pendiente | | | |

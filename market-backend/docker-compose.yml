@@ -124,12 +124,36 @@ services:
       PGDATABASE: ${POSTGRES_DB}
       BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_MAX_AGE_HOURS: ${BACKUP_MAX_AGE_HOURS:-30}
+      # Copia externa cifrada (Fase 6, PLAN_MEJORAS.md): si se dejan vacíos,
+      # el backup local sigue funcionando exactamente igual que antes, solo
+      # se omite la subida a GCS — ver deploy/README.md, sección "Backups".
+      GCS_BUCKET: ${GCS_BUCKET:-}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-}
+      # rclone toma credenciales de la cuenta de servicio adjunta a esta VM
+      # (metadata server de GCE) — nunca una llave JSON estática en el
+      # servidor. Ver deploy/README.md para el comando que la adjunta.
+      RCLONE_CONFIG_GCS_TYPE: "google cloud storage"
+      RCLONE_CONFIG_GCS_ENV_AUTH: "true"
+      # Alertas por correo cuando falla un backup o queda desactualizado.
+      # Sin esto, las alertas solo quedan en "docker compose logs backup".
+      ALERT_SMTP_HOST: ${ALERT_SMTP_HOST:-}
+      ALERT_SMTP_PORT: ${ALERT_SMTP_PORT:-587}
+      ALERT_SMTP_USER: ${ALERT_SMTP_USER:-}
+      ALERT_SMTP_PASSWORD: ${ALERT_SMTP_PASSWORD:-}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM:-}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
     volumes:
       # Bind mount a una carpeta del host (no un volumen con nombre) a
       # propósito: el respaldo debe sobrevivir aunque se borre el volumen
       # pgdata (ej. "docker compose down -v" por error), no depender de la
       # misma capa de almacenamiento que intenta proteger.
       - ./deploy/backups:/backups
+      # Solo lectura: el bundle cifrado de Fase 6 empaqueta también estos
+      # tres, no solo el dump — ver deploy/README.md.
+      - ./deploy/certs:/certs:ro
+      - productos_imagenes:/productos-imagenes:ro
+      - ./.env:/env-backup/.env:ro
 
 volumes:
   pgdata:

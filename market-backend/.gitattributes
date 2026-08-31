@@ -3,3 +3,7 @@
 # (runners de CI) con "bad interpreter". El .cmd es su contraparte Windows.
 /mvnw text eol=lf
 /mvnw.cmd text eol=crlf
+
+# Mismo motivo: los scripts del contenedor de backup son POSIX sh, corren
+# dentro de Alpine/Linux — un CRLF cuela un "\r" en el shebang y rompe todo.
+deploy/backup/*.sh text eol=lf

@@ -557,9 +557,13 @@ confirmando que ambas responden 409 con el código consistente.
 - [x] Dos aperturas simultáneas: exactamente una tiene éxito (`CajaConcurrenciaIT`,
   2026-08-28).
 - [x] Diez movimientos paralelos: saldo final exacto (`CajaConcurrenciaIT`, 2026-08-28).
-- [ ] Cierre concurrente con venta: resultado serializable y auditable (el lock ya
-  serializa `cerrar` contra `registrarMovimiento`/`registrarMovimientoSiHayAbierta`
-  sobre la misma sesión; falta un test específico que ejercite esta combinación).
+- [x] Cierre concurrente con venta: resultado serializable y auditable — resuelto
+  (2026-08-31), mismo test que cierra el ítem equivalente de Fase 2:
+  `CajaConcurrenciaIT.cierreConcurrenteConRegistroDeMovimientoProduceUnResultadoConsistente`
+  cierra la caja y registra un movimiento de ingreso en dos hilos reales al mismo
+  tiempo y confirma que el resultado es consistente en ambos órdenes posibles (el
+  lock ya serializaba `cerrar` contra `registrarMovimiento`/`registrarMovimientoSiHayAbierta`
+  sobre la misma sesión; faltaba solo el test que lo ejerciera).
 - [x] Dos cobros/pagos sobre el último saldo: nunca hay saldo negativo
   (`CuentaPorCobrarConcurrenciaIT`/`CuentaPorPagarConcurrenciaIT`, 2026-08-28).
 - [x] Dos ventas de crédito cercanas al límite: nunca se supera el límite

@@ -18,12 +18,14 @@ final cuentaPorCobrarApiProvider = Provider<CuentaPorCobrarApi>(
   (ref) => CuentaPorCobrarApi(ApiClient.instance),
 );
 
-/// Cliente "Consumidor Final" seedeado por el backend (`clientes/001-cliente.xml`)
-/// — su id es estable en cualquier instalación fresca porque es el primer
-/// registro insertado. Se usa como último recurso offline, donde no hay forma
-/// de resolverlo por nombre contra la lista de clientes (esa lista también
-/// requiere red). Ver CLAUDE.md.
-const _clienteConsumidorFinalIdFallback = 1;
+/// Fallback SOLO para la cola offline (`NuevaVentaPendiente.clienteId`), donde
+/// no hay forma de golpear `GET /clientes/consumidor-final` (requiere red) ni
+/// de esperar a que resuelva. Ya no se asume que sea el id `1` — se cachea acá
+/// en cuanto `_clienteConsumidorFinal()` lo resuelve una vez online en la
+/// misma sesión de la app; si nunca se resolvió online, `1` sigue siendo la
+/// mejor apuesta razonable (primer registro insertado en instalación fresca),
+/// no una garantía. Ver CLAUDE.md.
+int _clienteConsumidorFinalIdCacheado = 1;
 
 /// UUID v4 criptográficamente aleatorio para toda venta, online u offline —
 /// antes solo la cola offline generaba uno (con
@@ -184,7 +186,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
         // que SyncEngineNotifier resuelva el id real — nunca cae en
         // Consumidor Final solo porque clienteId venga nulo en ese caso.
         clienteId: clientePendienteLocalId == null
-            ? (clienteId ?? _clienteConsumidorFinalIdFallback)
+            ? (clienteId ?? _clienteConsumidorFinalIdCacheado)
             : null,
         clientePendienteLocalId: clientePendienteLocalId,
         lineas: carrito.lineas,
@@ -196,14 +198,9 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   }
 
   Future<int> _clienteConsumidorFinal() async {
-    final clientes = await ref.read(clientesProvider.future);
-    for (final cliente in clientes) {
-      if (cliente.nombre == 'Consumidor Final') return cliente.id;
-    }
-    throw ApiException(
-      message:
-          'No se encontró el cliente Consumidor Final. Selecciona un cliente.',
-    );
+    final cliente = await ref.read(clientesApiProvider).obtenerConsumidorFinal();
+    _clienteConsumidorFinalIdCacheado = cliente.id;
+    return cliente.id;
   }
 
   void reset() => state = const CheckoutState();

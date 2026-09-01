@@ -96,6 +96,17 @@ class ClienteControllerTest {
     }
 
     @Test
+    void obtenerConsumidorFinalDevuelveElClienteResuelto() throws Exception {
+        when(clienteService.obtenerConsumidorFinal()).thenReturn(
+                new ClienteResumen(2L, null, "Consumidor Final", null, null, null, EstadoCliente.ACTIVO, null));
+
+        mockMvc.perform(get("/api/v1/clientes/consumidor-final"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.nombre").value("Consumidor Final"));
+    }
+
+    @Test
     void actualizarDelegaAlServicio() throws Exception {
         when(clienteService.actualizar(1L, "Nuevo nombre", null, null, null, null))
                 .thenReturn(new ClienteResumen(

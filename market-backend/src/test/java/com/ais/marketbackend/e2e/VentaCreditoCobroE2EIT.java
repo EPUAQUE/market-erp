@@ -72,7 +72,7 @@ class VentaCreditoCobroE2EIT {
                         "clienteId", clienteId, "lineas",
                         List.of(Map.of("productoId", productoId, "cantidad", new BigDecimal("2"), "precioUnitario",
                                 new BigDecimal("20.00"))),
-                        "metodoPago", "CREDITO"),
+                        "metodoPago", "CREDITO", "correlationId", java.util.UUID.randomUUID().toString()),
                 token));
 
         apoyo.doPost("/api/v1/ventas/tiendas/" + tiendaId + "/" + ventaId + "/completar", null, token)

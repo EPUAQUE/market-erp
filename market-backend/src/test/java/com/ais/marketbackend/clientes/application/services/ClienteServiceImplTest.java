@@ -176,4 +176,22 @@ class ClienteServiceImplTest {
         assertThat(resultado.contenido()).hasSize(1);
         assertThat(resultado.contenido().get(0).nit()).isEqualTo("12345678-9");
     }
+
+    @Test
+    void obtenerConsumidorFinalResuelvePorNombreNoPorId() {
+        Cliente consumidorFinal = Cliente.nuevo(null, "Consumidor Final", null, null, null, null);
+        when(clienteRepository.findByNombre("Consumidor Final")).thenReturn(Optional.of(consumidorFinal));
+
+        var resultado = clienteService.obtenerConsumidorFinal();
+
+        assertThat(resultado.nombre()).isEqualTo("Consumidor Final");
+    }
+
+    @Test
+    void obtenerConsumidorFinalSinSembrarLanzaNoEncontrado() {
+        when(clienteRepository.findByNombre("Consumidor Final")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clienteService.obtenerConsumidorFinal())
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

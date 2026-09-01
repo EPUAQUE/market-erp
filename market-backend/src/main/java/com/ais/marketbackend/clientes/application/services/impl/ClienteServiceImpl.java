@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ClienteServiceImpl implements ClienteService {
 
+    /** Debe coincidir exactamente con el `nombre` sembrado en {@code clientes/001-cliente.xml}. */
+    private static final String NOMBRE_CONSUMIDOR_FINAL = "Consumidor Final";
+
     private final ClienteRepository clienteRepository;
 
     public ClienteServiceImpl(ClienteRepository clienteRepository) {
@@ -139,6 +142,13 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public ClienteResumen obtener(Long id) {
         return toResumen(obtenerORequerido(id));
+    }
+
+    @Override
+    public ClienteResumen obtenerConsumidorFinal() {
+        return toResumen(clienteRepository.findByNombre(NOMBRE_CONSUMIDOR_FINAL)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró el cliente \"" + NOMBRE_CONSUMIDOR_FINAL + "\".")));
     }
 
     @Override

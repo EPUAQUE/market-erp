@@ -25,5 +25,15 @@ public interface ClienteRepository {
 
     Optional<Cliente> findByCorrelationId(String correlationId);
 
+    /**
+     * Resuelve el cliente "Consumidor Final" sembrado por Liquibase
+     * ({@code clientes/001-cliente.xml}) por nombre exacto, no por su id de fila
+     * (Fase 2, PLAN_MEJORAS.md: antes los clientes HTTP —
+     * {@code market-flutter}— asumían el id fijo {@code 1}, correcto solo por
+     * ser la primera fila insertada en una BD nueva, no un contrato real).
+     * Mismo patrón que {@code RolRepository.findByNombre} para roles sembrados.
+     */
+    Optional<Cliente> findByNombre(String nombre);
+
     Pagina<Cliente> findAll(int pagina, int tamano);
 }

@@ -17,8 +17,19 @@ class VentasService {
     })
   }
 
-  crear(tiendaId: number, clienteId: number, lineas: DatosLineaVenta[], metodoPago: MetodoPago) {
-    return apiClient.post<Venta>(API_ENDPOINTS.ventas.porTienda(tiendaId), { clienteId, lineas, metodoPago })
+  crear(
+    tiendaId: number,
+    clienteId: number,
+    lineas: DatosLineaVenta[],
+    metodoPago: MetodoPago,
+    correlationId: string,
+  ) {
+    return apiClient.post<Venta>(API_ENDPOINTS.ventas.porTienda(tiendaId), {
+      clienteId,
+      lineas,
+      metodoPago,
+      correlationId,
+    })
   }
 
   completar(tiendaId: number, id: number) {

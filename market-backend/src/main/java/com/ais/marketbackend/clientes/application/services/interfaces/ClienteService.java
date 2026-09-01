@@ -30,6 +30,13 @@ public interface ClienteService {
     ClienteResumen obtener(Long id);
 
     /**
+     * Resuelve el cliente "Consumidor Final" sembrado por Liquibase por nombre,
+     * nunca por su id de fila (Fase 2, PLAN_MEJORAS.md) — ver
+     * {@code ClienteRepository.findByNombre}.
+     */
+    ClienteResumen obtenerConsumidorFinal();
+
+    /**
      * Igual que {@link #obtener}, pero bloquea la fila del cliente con
      * {@code PESSIMISTIC_WRITE} dentro de la transacción del llamador — usado
      * exclusivamente por {@code VentaServiceImpl.completar()} al validar el

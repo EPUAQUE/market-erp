@@ -79,9 +79,19 @@ class VentaControllerTest {
                         .principal(authentication)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"clienteId\":2,\"lineas\":[{\"productoId\":10,\"cantidad\":10,\"precioUnitario\":8.00}],"
-                                + "\"metodoPago\":\"EFECTIVO\"}"))
+                                + "\"metodoPago\":\"EFECTIVO\",\"correlationId\":\"corr-201\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.estado").value("BORRADOR"));
+    }
+
+    @Test
+    void crearSinCorrelationIdDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/v1/ventas/tiendas/1")
+                        .principal(authentication)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"clienteId\":2,\"lineas\":[{\"productoId\":10,\"cantidad\":10,\"precioUnitario\":8.00}],"
+                                + "\"metodoPago\":\"EFECTIVO\"}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

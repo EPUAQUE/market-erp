@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.ais.marketbackend.caja.application.dtos.CajaSesionResumen;
 import com.ais.marketbackend.caja.application.services.interfaces.CajaService;
 import com.ais.marketbackend.caja.domain.exception.CajaSesionAbiertaException;
+import com.ais.marketbackend.caja.domain.model.EstadoCajaSesion;
 import com.ais.marketbackend.caja.domain.model.TipoMovimientoCaja;
 import com.ais.marketbackend.grupostienda.application.dtos.GrupoTiendaResumen;
 import com.ais.marketbackend.grupostienda.application.services.interfaces.GrupoTiendaService;
@@ -12,6 +13,7 @@ import com.ais.marketbackend.tiendas.application.dtos.TiendaResumen;
 import com.ais.marketbackend.tiendas.application.services.interfaces.TiendaService;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -118,6 +120,49 @@ class CajaConcurrenciaIT {
         CajaSesionResumen sesion = cajaService.obtenerAbierta(tiendaId);
         assertThat(sesion.movimientos()).hasSize(10);
         assertThat(sesion.saldoEsperado()).isEqualByComparingTo(new BigDecimal("200.00"));
+    }
+
+    /**
+     * Fase 3 del plan (PLAN_MEJORAS.md), test pendiente cerrado en Fase 11/12:
+     * {@code cerrar}/{@code registrarMovimientoSiHayAbierta} (el que usa
+     * {@code VentaServiceImpl.completar} para reflejar el ingreso de una venta en
+     * efectivo) ya comparten el mismo lock {@code PESSIMISTIC_WRITE} sobre la sesión
+     * — esta prueba confirma que la carrera entre ambos produce exactamente uno de
+     * dos resultados consistentes, nunca un estado a medias: si el movimiento gana
+     * la carrera, queda reflejado en el saldo de la sesión ya cerrada; si el cierre
+     * gana, el movimiento se descarta en silencio (mismo diseño ya existente de
+     * "solo si hay abierta" — la sesión ya no calza {@code findAbiertaByTiendaIdConBloqueo}
+     * una vez cerrada), sin lanzar error ni perder el monto contado del cierre.
+     */
+    @Test
+    void cierreConcurrenteConRegistroDeMovimientoProduceUnResultadoConsistente() throws Exception {
+        Long tiendaId = crearTienda("C");
+        cajaService.abrir(tiendaId, new BigDecimal("100.00"));
+
+        Callable<CajaSesionResumen> tareaCerrar = () -> cajaService.cerrar(tiendaId, new BigDecimal("100.00"));
+        Callable<Optional<CajaSesionResumen>> tareaMovimiento = () -> cajaService.registrarMovimientoSiHayAbierta(
+                tiendaId, TipoMovimientoCaja.INGRESO, "Venta concurrente", new BigDecimal("25.00"));
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<CajaSesionResumen> futuroCerrar;
+        Future<Optional<CajaSesionResumen>> futuroMovimiento;
+        try {
+            futuroCerrar = executor.submit(tareaCerrar);
+            futuroMovimiento = executor.submit(tareaMovimiento);
+        } finally {
+            executor.shutdown();
+        }
+        CajaSesionResumen cerrada = obtenerResultado(futuroCerrar);
+        Optional<CajaSesionResumen> resultadoMovimiento = obtenerResultado(futuroMovimiento);
+
+        assertThat(cerrada.estado()).isEqualTo(EstadoCajaSesion.CERRADA);
+        if (resultadoMovimiento.isPresent()) {
+            assertThat(cerrada.movimientos()).hasSize(1);
+            assertThat(cerrada.saldoEsperado()).isEqualByComparingTo(new BigDecimal("125.00"));
+        } else {
+            assertThat(cerrada.movimientos()).isEmpty();
+            assertThat(cerrada.saldoEsperado()).isEqualByComparingTo(new BigDecimal("100.00"));
+        }
     }
 
     private boolean abrirSiEsPosible(Long tiendaId) {

@@ -14,6 +14,8 @@ public interface ClienteJpaRepository extends JpaRepository<ClienteEntity, Long>
 
     Optional<ClienteEntity> findByCorrelationId(String correlationId);
 
+    Optional<ClienteEntity> findByNombre(String nombre);
+
     /**
      * {@code @Query} explícito (no {@code @Lock} sobre {@code findById}
      * heredado) — mismo motivo que {@code InventarioJpaRepository}: Spring

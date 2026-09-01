@@ -59,7 +59,9 @@ export function useVentas() {
     saveLoading.value = true
     saveError.value = null
     try {
-      await ventasService.crear(tiendaId, clienteId, lineas, metodoPago)
+      // Fase 2 (PLAN_MEJORAS.md): obligatorio para todo cliente HTTP — una clave nueva
+      // por intento evita que un reintento manual tras un error de red duplique la venta.
+      await ventasService.crear(tiendaId, clienteId, lineas, metodoPago, crypto.randomUUID())
       await recargar()
       return true
     } catch (error) {

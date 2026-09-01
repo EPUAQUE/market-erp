@@ -26,6 +26,17 @@ class ClientesApi {
     );
   }
 
+  /// Resuelve "Consumidor Final" por nombre en el servidor (Fase 2,
+  /// PLAN_MEJORAS.md) — ya no se asume que su id de fila sea `1`, un accidente
+  /// de orden de migración, no un contrato. Ver `checkout_notifier.dart` para
+  /// el fallback offline (sin red, sin forma de golpear este endpoint).
+  Future<Cliente> obtenerConsumidorFinal() {
+    return _client.get<Cliente>(
+      '/api/v1/clientes/consumidor-final',
+      parser: (data) => Cliente.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
   Future<Cliente> crear({
     required String nombre,
     String? telefono,

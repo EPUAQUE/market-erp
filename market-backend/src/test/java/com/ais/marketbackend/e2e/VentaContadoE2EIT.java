@@ -80,7 +80,7 @@ class VentaContadoE2EIT {
                         "clienteId", clienteId, "lineas",
                         List.of(Map.of("productoId", productoId, "cantidad", new BigDecimal("3"), "precioUnitario",
                                 new BigDecimal("10.00"))),
-                        "metodoPago", "EFECTIVO"),
+                        "metodoPago", "EFECTIVO", "correlationId", java.util.UUID.randomUUID().toString()),
                 token));
 
         apoyo.doPost("/api/v1/ventas/tiendas/" + tiendaId + "/" + ventaId + "/completar", null, token)

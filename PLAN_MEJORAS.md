@@ -197,9 +197,16 @@ adicional sería redundante ahí. `correlationId` sigue opcional en los tres flu
 se hizo obligatorio en venta online porque el POS Flutter (parte B, aún no tocada)
 todavía no lo envía en ese flujo — obligarlo ahora habría roto la venta online real.
 
-- [ ] Convertir la idempotencia de venta en requisito para todos los clientes, no solo
-  para sincronización offline — bloqueado hasta que Flutter (parte B) genere y envíe
-  `correlationId` también en la venta online.
+- [x] Convertir la idempotencia de venta en requisito para todos los clientes, no solo
+  para sincronización offline — resuelto (2026-08-31). El texto original de este ítem
+  quedó desactualizado: Flutter ya enviaba `correlationId` en toda venta online desde
+  la parte B de esta fase (2026-08-28); el bloqueador real era que
+  `market-backoffice/src/services/ventas.service.ts` nunca lo mandaba. Cerrado:
+  `CrearVentaRequest.correlationId` ahora es `@NotBlank` (obligatorio en el límite
+  HTTP), `ventas.service.ts`/`useVentas.ts` generan uno con `crypto.randomUUID()` por
+  intento de creación, y `VentaControllerTest`/los IT de `e2e/*E2EIT.java` que crean
+  ventas se actualizaron para enviarlo. Sigue opcional/nulo para llamadores internos
+  directos del service layer (tests, seeders) que nunca pasan por el controller.
 - [x] Agregar idempotencia a movimientos de caja (y apertura/cierre).
 - [x] Agregar idempotencia a creación de clientes (`correlationId`, cubre clientes sin
   NIT).
@@ -285,8 +292,16 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
   existente clientes→ventas). Sin verificar en dispositivo real (requiere
   `LocalStore.disponible == true`, no probable en Chrome — ver
   `market-flutter/CLAUDE.md`, "Dependencias de cola offline").
-- [ ] Evitar el ID fijo `1` para “Consumidor Final”; resolverlo por código estable
-  expuesto por la API o configuración de tienda.
+- [x] Evitar el ID fijo `1` para “Consumidor Final”; resolverlo por código estable
+  expuesto por la API o configuración de tienda — resuelto (2026-08-31).
+  `ClienteRepository.findByNombre` (mismo patrón ya usado por `RolRepository.findByNombre`)
+  + `ClienteService.obtenerConsumidorFinal()` + `GET /api/v1/clientes/consumidor-final`
+  resuelven por nombre, no por PK. `ClientesApi.obtenerConsumidorFinal()` (Flutter)
+  consume el endpoint nuevo; `CheckoutNotifier._clienteConsumidorFinal()` ya no hace
+  una búsqueda O(n) sobre la lista completa de clientes. El id `1` sigue existiendo
+  solo como `_clienteConsumidorFinalIdCacheado` — el fallback de la cola offline
+  (sin red, no puede golpear el endpoint), que ahora se actualiza en cuanto se
+  resuelve una vez online en la sesión, en vez de ser un valor fijo para siempre.
 - [x] Impedir o advertir logout/desinstalación cuando existan operaciones pendientes —
   resuelto (2026-08-28, parte C) para logout: **decisión del usuario, bloqueo duro sin
   bypass**. Antes advertía con opción de "cerrar sesión de todos modos"; ahora, con
@@ -332,9 +347,12 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
 - [ ] Dos dispositivos generan operaciones simultáneamente.
 - [x] Movimiento de caja procesado con respuesta perdida no se duplica — cubierto con
   tests unitarios (`CajaServiceImplTest`, incluida la colisión de creación
-  concurrente simulada); falta un test de concurrencia real contra Postgres como
-  `FelCorrelativoConcurrenciaIT` (Fase 1) — no se hizo aquí por alcance, agregar
-  cuando se retome esta fase.
+  concurrente simulada) y, desde 2026-08-31, un test de concurrencia real contra
+  Postgres: `CajaConcurrenciaIT.cierreConcurrenteConRegistroDeMovimientoProduceUnResultadoConsistente`
+  cierra la caja y registra un movimiento de ingreso al mismo tiempo (dos hilos
+  reales) y confirma que el resultado es consistente en ambos órdenes posibles
+  (movimiento aplicado antes del cierre, o rechazado porque ya cerró) — nunca un
+  estado parcial o un saldo esperado que no cuadra.
 - [ ] Actualización de app conserva y migra pendientes existentes.
 - [ ] Pruebas en tablet Android real con modo avión y red inestable.
 
@@ -1445,13 +1463,14 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 2026-08-30 | `VentasView.vue` (backoffice) autocompleta precio unitario y agrega método de pago obligatorio a "Nueva venta" | Bug preexistente reportado por el cliente: el precio unitario nunca se autocompletaba al elegir un producto (backend siempre lo devolvió bien; la vista solo cargaba el catálogo genérico sin precio, nunca `GET /productos/tiendas/{tiendaId}`); además `crear()` nunca mandaba `metodoPago`, que el backend ya exige `@NotNull` desde Fase 2 — bloqueaba toda venta con "Datos de entrada inválidos". Ya desplegado en producción | `market-backoffice` (`VentasView.vue`, `productos.service.ts`, `ventas.service.ts`, `useVentas.ts`, `endpoints.ts`, `types/venta.ts`) | Resuelto |
 | 2026-08-30 | `CuentasPorPagarView.vue`/`CuentasPorCobrarView.vue` (backoffice) muestran `compraId`/`ventaId` en el detalle de pagos/cobros, no el id propio de la cuenta | Bug preexistente reportado por el cliente: el título del detalle usaba `cuentaEnDetalle.id` (PK de `CuentaPorPagar`/`CuentaPorCobrar`) mientras la fila de la tabla mostraba `compraId`/`ventaId` — ambos contadores divergen porque no toda compra/venta genera una cuenta en el mismo orden (solo las que quedan a crédito, y no siempre reciben/completan en orden de creación). El usuario veía un número de compra distinto al que realmente seleccionó. Ya desplegado en producción | `market-backoffice` (`CuentasPorPagarView.vue`, `CuentasPorCobrarView.vue`) | Resuelto |
 | 2026-08-30 | `UsuariosView.vue`/`InventarioView.vue` (backoffice) limpian el formulario de alta al abrirlo, no solo tras crear con éxito | Bug preexistente reportado por el cliente: "Nuevo usuario"/"Registrar movimiento" solo alternaban la visibilidad del formulario sin limpiar sus campos — cancelar sin enviar dejaba los valores de la vez anterior visibles al reabrir (el cliente vio literalmente "ADMIN" pre-escrito en el campo Usuario al crear una cuenta nueva). Auditados los 22 módulos del backoffice: solo estos dos tenían el patrón, el resto ya usaba `abrirCrear()`/`abrirEditar()` correctamente. Ya desplegado en producción | `market-backoffice` (`UsuariosView.vue`, `InventarioView.vue`) | Resuelto |
+| 2026-08-31 | El texto del ítem "correlationId obligatorio" en Fase 2 culpaba a Flutter (parte B) del bloqueo | Estaba desactualizado: Flutter ya enviaba `correlationId` en toda venta online desde 2026-08-28; el bloqueador real, encontrado al revisar `ventas.service.ts`, era que el backoffice Vue nunca lo mandaba | `market-backend` (`CrearVentaRequest`), `market-backoffice` (`ventas.service.ts`, `useVentas.ts`) | Resuelto |
 
 ## 9. Registro de avance
 
 | Fase | Estado | PR/commit | Resultado de pruebas | Observaciones |
 | --- | --- | --- | --- | --- |
 | 1 — FEL | Parte A resuelta, parte B pendiente | Sin commitear aún | `mvn verify` (con Docker): 533 unitarios + 8 IT, `BUILD SUCCESS` | Blindaje del simulado + correlativo con lock. Adaptador real necesita proveedor/credenciales. |
-| 2 — Idempotencia POS | Completa (partes A, B y C) | Sin commitear aún | Backend: `mvn verify` (533+8, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). |
+| 2 — Idempotencia POS | **Completa** (partes A, B y C, incluidos los 2 ítems que quedaban abiertos) | Sin commitear aún | Backend: `mvn verify` (583 unitarios + 30 IT, `BUILD SUCCESS`). Flutter: `flutter analyze`/`flutter test` limpios; parte B verificada en Chrome contra backend/Postgres reales; parte C solo revisada por código, sin dispositivo real. Backoffice: `pnpm typecheck`/`lint`/`format:check`/`test`(53)/`build` limpios | Backend (caja/clientes/consulta ventas) + Flutter (UUID real, correlationId en venta online, conectividad real, cliente offline usable en la misma sesión, versionado de esquema Isar, minimización de PII local, logout bloqueado con pendientes) listos. Desinstalación marcada como no implementable vía app. De paso se encontraron y arreglaron dos bugs preexistentes: `AdminUserSeeder` y `ClientesApi.listar()` (pagination). **2026-08-31**: cerrados los 2 ítems que quedaban — `correlationId` obligatorio (`@NotBlank`) en toda venta HTTP (el bloqueador real era `market-backoffice`, no Flutter, que ya lo enviaba desde 2026-08-28) y "Consumidor Final" resuelto por nombre (`GET /clientes/consumidor-final`) en vez del id fijo `1`, más el test de concurrencia real de caja (`CajaConcurrenciaIT`) que quedaba pendiente. |
 | 3 — Concurrencia | **Completa** | Sin commitear aún | `mvn verify` (con Docker): 552 unitarios + 24 IT, `BUILD SUCCESS` | `PESSIMISTIC_WRITE` (`findByIdConBloqueo`/`findAbiertaByTiendaIdConBloqueo`) en cliente (límite de crédito), caja (abrir/registrar movimiento/cerrar), CxC/CxP (cobro/pago/anular), gasto programado (generarPago), compra (recibir/anular), traslado (completar/anular), FEL (reintentar/anular), venta (completar/anular) y usuario (asignarTienda/asignarGrupo, serializando la regla "no asignación mixta" entre las dos tablas usuario_tienda/usuario_grupo_tienda). Caja además tiene índice único parcial para una sola sesión ABIERTA por tienda. `CHECK` de BD en los 10 módulos monetarios/de cantidad tocados, verificados con `CheckConstraintsIT`. `GlobalExceptionHandler` traduce `ConcurrencyFailureException` (deadlock/lock no adquirido) a 409 `CONFLICTO_CONCURRENCIA` en vez de 500 genérico. |
 | 4 — Sesiones/seguridad | **Completa** salvo "tienda activa tras restaurar" (es de cliente, fuera de alcance) y rate limiter distribuido (no aplica hoy) | `b988a8a`, `110c3d0` | `mvn verify`: 574 unitarios + 24 IT, `BUILD SUCCESS`. En vivo: bloqueo de usuario invalida su token ya emitido de inmediato (sin esperar TTL), confirmado con curl. **CI real en GitHub Actions confirmado verde** (run `33423714537`, los 5 jobs) | `InMemoryLoginRateLimiter.limpiarBucketsLlenos()` purga buckets llenos. Autoservicio (`POST /auth/password`) y restablecimiento admin (`POST /usuarios/{id}/password/restablecer`). `debe_cambiar_password` bloquea el resto de la API. `SecurityVersionValidator` revalida `sver`; `POST /usuarios/{id}/sesiones/revocar` revoca sesiones. Caddy + Nginx con cabeceras de seguridad. **2026-08-31**: llaves dev/test retiradas del tracking de git (script `generar-llaves.sh` + paso nuevo en CI); rotación de llaves JWT probada (`JwtRotacionTest`); MFA evaluado y documentado (no implementado, decisión del usuario); política de contraseña/bloqueo/recuperación/baja documentada (`seguridad-desarrolladores.md` §13-14); "baja de empleados" pasó de dominio-sin-endpoint a 3 rutas reales (`desactivar`/`bloquear`/`activar`, permiso `USUARIOS_CAMBIAR_ESTADO`) — de paso se corrigió un bug de Fase 7 (`entidadId` de auditoría con el id del actor en vez del usuario objetivo). Bug de CI encontrado y corregido tras el push (`110c3d0`): `ProfileStartupIT` arranca perfil `local` real y lee `./local-dev/certs/dev-public.pem`, pero el workflow solo generaba llaves de test — faltaba el paso equivalente para `local-dev/certs`. |
 | 5 — CI/pruebas | "Pipeline mínimo" completo; "Cobertura prioritaria" completa salvo Flutter (bloqueado, ver Fase 9) y pruebas contractuales de DTOs (pendiente, necesita elegir herramienta) | `effa111` | `mvn verify`: 579 unitarios + 29 IT (24 previos + 5 nuevos de flujo E2E), `BUILD SUCCESS`. `pnpm typecheck`/`lint`/`format:check`/`test`/`build` backoffice limpios (21→53 tests). **CI real en GitHub Actions confirmado verde** (run `33449805070`, los 5 jobs, incluido Flutter y `docker-build`) | `.github/workflows/ci.yml` (5 jobs) + `.github/dependabot.yml` + Maven Wrapper + `packageManager` pnpm + `.fvmrc`. **2026-08-31**: 5 IT de flujo de negocio E2E nuevos (`e2e/*E2EIT.java` + helper `ApoyoE2E`, primer uso de login real + JWT real vía HTTP en este proyecto) + tests Vue de guards/refresh/permisos/composables (`guards.spec.ts`, `auth.store.spec.ts`, `permissions.store.spec.ts`, `useVentas.spec.ts`, `useCaja.spec.ts`). De paso se encontró que Spring Boot 4 separó `@AutoConfigureMockMvc` y Jackson 3 a paquetes nuevos — nueva dependencia `spring-boot-starter-webmvc-test` agregada. |

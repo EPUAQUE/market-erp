@@ -53,6 +53,11 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
     }
 
     @Override
+    public Optional<Cliente> findByNombre(String nombre) {
+        return jpaRepository.findByNombre(nombre).map(mapper::toDomain);
+    }
+
+    @Override
     public Pagina<Cliente> findAll(int pagina, int tamano) {
         return PaginaMapper.desde(jpaRepository.findAll(PageRequest.of(pagina, tamano)).map(mapper::toDomain));
     }

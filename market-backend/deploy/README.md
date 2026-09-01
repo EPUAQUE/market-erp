@@ -176,8 +176,11 @@ fallando hace rato".
 **`rclone` nunca usa una llave JSON estática en el servidor** — toma
 credenciales de la cuenta de servicio adjunta a la VM vía el metadata
 server de GCE (`RCLONE_CONFIG_GCS_ENV_AUTH=true`, ya en
-`docker-compose.yml`). Configuración necesaria del lado de GCP, una sola
-vez:
+`docker-compose.yml`, junto con `RCLONE_CONFIG_GCS_BUCKET_POLICY_ONLY=true`
+— sin esto, subir falla con "Cannot insert legacy ACL for an object when
+uniform bucket-level access is enabled" contra un bucket creado con
+`--uniform-bucket-level-access` como el del paso 1 de abajo). Configuración
+necesaria del lado de GCP, una sola vez:
 
 ```bash
 # 1. Crear el bucket, con versioning (protege contra sobrescritura/borrado

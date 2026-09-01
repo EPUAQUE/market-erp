@@ -144,6 +144,11 @@ services:
       # servidor. Ver deploy/README.md para el comando que la adjunta.
       RCLONE_CONFIG_GCS_TYPE: "google cloud storage"
       RCLONE_CONFIG_GCS_ENV_AUTH: "true"
+      # El bucket se crea con --uniform-bucket-level-access (deploy/README.md) —
+      # sin esto rclone intenta poner una ACL legacy por objeto al subir y falla
+      # con "Cannot insert legacy ACL for an object when uniform bucket-level
+      # access is enabled".
+      RCLONE_CONFIG_GCS_BUCKET_POLICY_ONLY: "true"
       # Alertas por correo cuando falla un backup o queda desactualizado.
       # Sin esto, las alertas solo quedan en "docker compose logs backup".
       ALERT_SMTP_HOST: ${ALERT_SMTP_HOST:-}

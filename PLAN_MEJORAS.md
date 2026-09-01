@@ -956,16 +956,33 @@ escenarios (sin backups, backup fresco, backup viejo) — sin SMTP configurado,
 caen correctamente a solo-log. `docker compose config` valida limpio con los
 mounts/env nuevos.
 
+**2026-09-01 — bucket/service accounts/secrets reales creados por el usuario,
+bug real encontrado y corregido al primer intento contra GCS real:** el
+usuario creó el bucket `inven365-backups` (`--uniform-bucket-level-access`),
+las dos cuentas de servicio (`market-backup-writer` adjunta a la VM,
+`market-backup-ci-reader` con su llave para el workflow), y cargó los 3
+secrets de GitHub. El primer `docker compose exec backup /backup.sh` real
+contra GCS falló al subir: `googleapi: Error 400: Cannot insert legacy ACL
+for an object when uniform bucket-level access is enabled` — la verificación
+de esta fase (arriba) había usado el backend `local` de `rclone` como
+reemplazo de GCS real, que no tiene esta restricción, así que el gap nunca se
+había ejercitado. Causa: `rclone` intenta poner una ACL legacy por objeto al
+subir a menos que se le diga explícitamente que el bucket usa políticas
+uniformes. Corregido: `RCLONE_CONFIG_GCS_BUCKET_POLICY_ONLY: "true"` agregado
+al servicio `backup` en `docker-compose.yml`, y `bucket_policy_only = true`
+agregado al `rclone.conf` que genera `backup-restore-drill.yml` en CI (mismo
+riesgo, aunque ahí solo lee). Falta: el usuario haga `git pull` +
+`docker compose up -d backup` en el servidor con el fix, reintente
+`/backup.sh`, y se vuelva a disparar el `workflow_dispatch` para confirmar el
+ensayo completo de punta a punta contra GCS real.
+
 **Pendiente, requiere que el usuario actúe de su lado (no accesible desde
-acá):** crear el bucket GCS + cuenta de servicio real + adjuntarla a la VM
-(comandos ya listos); conseguir credenciales SMTP reales; llenar el `.env` real
-del servidor con `GCS_BUCKET`/`BACKUP_ENCRYPTION_PASSPHRASE`/`ALERT_SMTP_*`
-(y guardar la passphrase en un vault fuera del servidor — crítico, sin eso los
-backups en GCS quedan inservibles si se pierde el servidor); agregar los 3
-secrets del workflow mensual en GitHub. También pendiente, no ejecutado por mí:
-probar recuperación con el volumen Docker completo perdido contra una copia de
-prueba real del servidor (el pipeline en sí ya se verificó de punta a punta,
-falta el ensayo contra disco/VM real).
+acá):** conseguir credenciales SMTP reales para las alertas por correo
+(`ALERT_SMTP_*` en el `.env`, hoy vacías — las alertas caen a solo-log).
+También pendiente, no ejecutado por mí: probar recuperación con el volumen
+Docker completo perdido contra una copia de prueba real del servidor (el
+pipeline en sí ya se verificó de punta a punta, falta el ensayo contra
+disco/VM real).
 
 ### Tareas
 
@@ -1468,6 +1485,7 @@ Mantener esta tabla durante la ejecución para evitar decisiones implícitas:
 | 2026-08-30 | `CuentasPorPagarView.vue`/`CuentasPorCobrarView.vue` (backoffice) muestran `compraId`/`ventaId` en el detalle de pagos/cobros, no el id propio de la cuenta | Bug preexistente reportado por el cliente: el título del detalle usaba `cuentaEnDetalle.id` (PK de `CuentaPorPagar`/`CuentaPorCobrar`) mientras la fila de la tabla mostraba `compraId`/`ventaId` — ambos contadores divergen porque no toda compra/venta genera una cuenta en el mismo orden (solo las que quedan a crédito, y no siempre reciben/completan en orden de creación). El usuario veía un número de compra distinto al que realmente seleccionó. Ya desplegado en producción | `market-backoffice` (`CuentasPorPagarView.vue`, `CuentasPorCobrarView.vue`) | Resuelto |
 | 2026-08-30 | `UsuariosView.vue`/`InventarioView.vue` (backoffice) limpian el formulario de alta al abrirlo, no solo tras crear con éxito | Bug preexistente reportado por el cliente: "Nuevo usuario"/"Registrar movimiento" solo alternaban la visibilidad del formulario sin limpiar sus campos — cancelar sin enviar dejaba los valores de la vez anterior visibles al reabrir (el cliente vio literalmente "ADMIN" pre-escrito en el campo Usuario al crear una cuenta nueva). Auditados los 22 módulos del backoffice: solo estos dos tenían el patrón, el resto ya usaba `abrirCrear()`/`abrirEditar()` correctamente. Ya desplegado en producción | `market-backoffice` (`UsuariosView.vue`, `InventarioView.vue`) | Resuelto |
 | 2026-08-31 | El texto del ítem "correlationId obligatorio" en Fase 2 culpaba a Flutter (parte B) del bloqueo | Estaba desactualizado: Flutter ya enviaba `correlationId` en toda venta online desde 2026-08-28; el bloqueador real, encontrado al revisar `ventas.service.ts`, era que el backoffice Vue nunca lo mandaba | `market-backend` (`CrearVentaRequest`), `market-backoffice` (`ventas.service.ts`, `useVentas.ts`) | Resuelto |
+| 2026-09-01 | `docker-compose.yml`/`backup-restore-drill.yml` agregan `RCLONE_CONFIG_GCS_BUCKET_POLICY_ONLY`/`bucket_policy_only` para `rclone` | Bug real encontrado al subir el primer backup contra el bucket GCS real del usuario (`inven365-backups`, creado con `--uniform-bucket-level-access`): `rclone` intentaba poner una ACL legacy por objeto y GCS lo rechazaba con `Error 400`. La verificación previa de Fase 6 solo había usado el backend `local` de `rclone`, que no tiene esta restricción — nunca se había ejercitado contra GCS real hasta hoy | `market-backend/docker-compose.yml`, `.github/workflows/backup-restore-drill.yml`, `deploy/README.md` | Resuelto |
 
 ## 9. Registro de avance
 

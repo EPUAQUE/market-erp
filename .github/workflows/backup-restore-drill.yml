@@ -56,6 +56,7 @@ jobs:
           [gcs]
           type = google cloud storage
           service_account_file = /tmp/sa-key.json
+          bucket_policy_only = true
           EOF
 
       - name: Descargar el bundle más reciente

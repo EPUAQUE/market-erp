@@ -1,0 +1,18 @@
+{
+  "id": 1,
+  "clienteId": 2,
+  "tiendaId": 3,
+  "vendedorId": 4,
+  "fecha": "2026-01-01T00:00:00Z",
+  "estado": "COMPLETADA",
+  "lineas": [
+    {
+      "id": 10,
+      "productoId": 20,
+      "cantidad": "2.000",
+      "precioUnitario": "8.00"
+    }
+  ],
+  "total": "16.00",
+  "metodoPago": "EFECTIVO"
+}

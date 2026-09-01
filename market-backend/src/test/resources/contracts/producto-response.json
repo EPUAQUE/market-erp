@@ -1,0 +1,12 @@
+{
+  "id": 1,
+  "codigoInterno": "PROD-001",
+  "codigoBarras": "7501234567890",
+  "nombre": "Coca Cola 600ml",
+  "descripcion": "Refresco",
+  "categoriaId": 2,
+  "marcaId": 3,
+  "unidadMedidaId": 4,
+  "imagenUrl": "https://example.com/img.jpg",
+  "activo": true
+}

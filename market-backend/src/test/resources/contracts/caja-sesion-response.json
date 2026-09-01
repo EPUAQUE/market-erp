@@ -1,0 +1,19 @@
+{
+  "id": 1,
+  "tiendaId": 2,
+  "fechaApertura": "2026-01-01T08:00:00Z",
+  "fechaCierre": "2026-01-01T18:00:00Z",
+  "montoInicial": "100.00",
+  "montoFinalContado": "545.00",
+  "saldoEsperado": "550.00",
+  "estado": "CERRADA",
+  "movimientos": [
+    {
+      "id": 10,
+      "fecha": "2026-01-01T10:00:00Z",
+      "tipo": "INGRESO",
+      "concepto": "Venta",
+      "monto": "50.00"
+    }
+  ]
+}

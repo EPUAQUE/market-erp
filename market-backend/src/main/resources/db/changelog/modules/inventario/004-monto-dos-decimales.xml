@@ -5,6 +5,25 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
+    <!-- Confirmado en producción (2026-09-02): 2 filas de movimiento_inventario con
+         costo_unitario a 4 decimales reales (7.7833) — no es un error de captura, es
+         el costo promedio ponderado que VentaServiceImpl graba en el kardex de cada
+         movimiento VENTA (ver su javadoc: "el costo registrado... es el costo
+         [promedio] en el momento"), calculado con precisión de 4 decimales antes de
+         esta fase. Redondear un valor calculado es seguro (a diferencia de truncar un
+         precio que alguien tecleó); se hace en un changeset aparte, antes de fijar la
+         escala de la columna, para que quede explícito en el historial por qué se tocó
+         un dato existente. costo_promedio_actual se redondea por la misma razón
+         aunque hoy no se haya visto un caso real — se deriva de costo_unitario. -->
+    <changeSet id="inventario-004a-redondear-costos-existentes" author="market-backend">
+        <sql>
+            UPDATE movimiento_inventario SET costo_unitario = ROUND(costo_unitario, 2)
+                WHERE costo_unitario != ROUND(costo_unitario, 2);
+            UPDATE inventario SET costo_promedio_actual = ROUND(costo_promedio_actual, 2)
+                WHERE costo_promedio_actual != ROUND(costo_promedio_actual, 2);
+        </sql>
+    </changeSet>
+
     <!-- Ver ventas/009-monto-dos-decimales.xml: mismo cambio, misma razón (dinero
          físico a 2 decimales). costo_promedio_actual es el promedio ponderado
          calculado a partir de costo_unitario, así que se ajusta junto con él. -->

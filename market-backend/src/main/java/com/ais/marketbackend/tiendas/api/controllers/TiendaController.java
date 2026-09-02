@@ -27,8 +27,17 @@ public class TiendaController {
     private final TiendaService tiendaService;
     private final TiendaApiMapper mapper;
 
+    /**
+     * Sin {@code @RequiresPermission} a propósito: cualquier usuario autenticado la
+     * necesita para poblar el selector de tienda de pantallas operativas (Ventas,
+     * Caja, Inventario, Traslados) — no solo quien tiene {@code TIENDAS_VER} (el
+     * permiso del catálogo administrativo de tiendas, que sigue protegiendo
+     * crear/actualizar/activar/desactivar). {@code TiendaServiceImpl.listar()} ya
+     * filtra por {@code AutorizacionTiendaService.tiendaIdsPermitidas()} — un
+     * usuario sin alcance global solo ve sus propias tiendas, nunca el catálogo
+     * completo.
+     */
     @GetMapping
-    @RequiresPermission("TIENDAS_VER")
     public ResponseEntity<List<TiendaResponse>> listar() {
         return ResponseEntity.ok(tiendaService.listar().stream().map(mapper::toResponse).toList());
     }

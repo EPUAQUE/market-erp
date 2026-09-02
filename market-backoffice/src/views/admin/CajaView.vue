@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useCaja } from '@/composables/useCaja'
 import { useTiendas } from '@/composables/useTiendas'
 import { usePermissionsStore } from '@/stores/permissions.store'
@@ -29,6 +29,12 @@ const permissions = usePermissionsStore()
 
 const tiendaId = ref<number | null>(null)
 const showHistorial = ref(false)
+
+// Ver VentasView.vue: sin alcance global, solo mostrar/preseleccionar las tiendas
+// asignadas al usuario, nunca el catálogo completo.
+const tiendasPermitidas = computed(() =>
+  permissions.alcanceGlobal ? tiendas.value : tiendas.value.filter((t) => permissions.tiendaIds.has(t.id)),
+)
 
 const montoInicial = ref('')
 const movimiento = ref({ tipo: 'INGRESO' as TipoMovimientoCaja, concepto: '', monto: '' })
@@ -76,7 +82,7 @@ watch([historialPagina, historialTamano], () => {
 
 onMounted(async () => {
   await cargarTiendas()
-  if (tiendas.value.length > 0) tiendaId.value = tiendas.value[0].id
+  if (tiendasPermitidas.value.length > 0) tiendaId.value = tiendasPermitidas.value[0].id
 })
 </script>
 
@@ -89,11 +95,18 @@ onMounted(async () => {
 
     <div class="flex items-center justify-between gap-3">
       <select
+        v-if="tiendasPermitidas.length > 1"
         v-model="tiendaId"
         class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
       >
-        <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
+        <option v-for="tienda in tiendasPermitidas" :key="tienda.id" :value="tienda.id">
+          {{ tienda.nombre }}
+        </option>
       </select>
+      <p v-else-if="tiendasPermitidas.length === 1" class="text-sm font-medium">
+        {{ tiendasPermitidas[0].nombre }}
+      </p>
+      <p v-else class="text-sm text-mk-danger">No tenés ninguna tienda asignada.</p>
       <button type="button" class="text-sm text-mk-primary hover:underline" @click="onToggleHistorial">
         {{ showHistorial ? 'Ocultar historial' : 'Ver historial' }}
       </button>

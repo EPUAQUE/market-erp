@@ -54,6 +54,14 @@ const permissions = usePermissionsStore()
 
 const tiendaId = ref<number | null>(null)
 const showForm = ref(false)
+
+// GET /tiendas devuelve el catálogo completo sin filtrar por el caller — un usuario
+// sin alcance global solo debe ver (y quedar preseleccionado en) las tiendas a las que
+// está asignado, nunca las de otra sucursal. Con alcance global (administrador) se ve
+// el catálogo completo, igual que antes.
+const tiendasPermitidas = computed(() =>
+  permissions.alcanceGlobal ? tiendas.value : tiendas.value.filter((t) => permissions.tiendaIds.has(t.id)),
+)
 const detalleAbiertoId = ref<number | null>(null)
 
 const form = ref({
@@ -160,7 +168,7 @@ const ventaEnDetalle = computed(() => items.value.find((v) => v.id === detalleAb
 onMounted(async () => {
   await cargarTiendas()
   await Promise.all([cargarClientes(), cargarProductos()])
-  if (tiendas.value.length > 0) tiendaId.value = tiendas.value[0].id
+  if (tiendasPermitidas.value.length > 0) tiendaId.value = tiendasPermitidas.value[0].id
 })
 </script>
 
@@ -175,11 +183,18 @@ onMounted(async () => {
 
     <div class="flex items-center justify-between gap-3">
       <select
+        v-if="tiendasPermitidas.length > 1"
         v-model="tiendaId"
         class="mk-input rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
       >
-        <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
+        <option v-for="tienda in tiendasPermitidas" :key="tienda.id" :value="tienda.id">
+          {{ tienda.nombre }}
+        </option>
       </select>
+      <p v-else-if="tiendasPermitidas.length === 1" class="text-sm font-medium">
+        {{ tiendasPermitidas[0].nombre }}
+      </p>
+      <p v-else class="text-sm text-mk-danger">No tenés ninguna tienda asignada.</p>
       <button
         v-if="permissions.can('VENTAS_CREAR')"
         type="button"

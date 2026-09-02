@@ -96,5 +96,16 @@ class AislamientoTiendaE2EIT {
         // servicio, sin importar que el rol sí tenga CAJA_VER en general.
         apoyo.doGet("/api/v1/caja/tiendas/" + tiendaBId + "/abierta", tokenEncargado)
                 .andExpect(status().isForbidden());
+
+        // GET /tiendas no exige TIENDAS_VER (ver TiendaController) — el mismo usuario,
+        // sin ese permiso, sí puede listar tiendas para poblar el selector de
+        // Ventas/Caja/Inventario, pero el servicio lo limita a la suya (A), nunca ve B.
+        String tiendasJson = apoyo.doGet("/api/v1/tiendas", tokenEncargado)
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        List<Number> idsVisibles = JsonPath.read(tiendasJson, "$[*].id");
+        assertThat(idsVisibles).contains(tiendaAId.intValue()).doesNotContain(tiendaBId.intValue());
     }
 }

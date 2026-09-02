@@ -115,8 +115,14 @@ function onSearchBlur() {
 }
 
 async function onLogout() {
-  await authStore.logout()
-  router.push({ name: 'login' })
+  // authStore.logout() relanza si el POST a /auth/logout falla (ver
+  // auth.store.spec.ts) — el estado local ya quedó limpio en ese caso, así que
+  // igual hay que redirigir a /login en vez de dejar al usuario varado.
+  try {
+    await authStore.logout()
+  } finally {
+    router.push({ name: 'login' })
+  }
 }
 </script>
 

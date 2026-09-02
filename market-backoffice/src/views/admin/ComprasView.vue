@@ -47,12 +47,40 @@ const detalleAbiertoId = ref<number | null>(null)
 
 const form = ref({
   proveedorId: '',
-  lineas: [{ productoId: '', cantidad: '', costoUnitario: '' }],
+  lineas: [{ productoId: '', cantidad: '', costoUnitario: '', subtotal: '' }],
 })
 
 const totalFormulario = computed(() =>
   form.value.lineas.reduce((acc, l) => acc + calcularSubtotal(l.cantidad, l.costoUnitario), 0),
 )
+
+type LineaCompraForm = (typeof form.value.lineas)[number]
+
+// Cantidad/costo unitario y subtotal son dos formas de capturar lo mismo — el
+// costo unitario es el único que se manda al backend (LineaCompraRequest no tiene
+// subtotal, lo recalcula server-side), así que editar el subtotal solo sirve para
+// despejar el costo unitario a partir de él, nunca al revés en simultáneo.
+function onCantidadOCostoUnitarioInput(linea: LineaCompraForm) {
+  if (linea.cantidad === '' || linea.costoUnitario === '') return
+  linea.subtotal = calcularSubtotal(linea.cantidad, linea.costoUnitario).toFixed(2)
+}
+
+// Solo recalcula costoUnitario mientras se escribe — nunca reescribe linea.subtotal
+// acá (es el mismo campo donde el usuario está tecleando; sobreescribirlo en cada
+// tecla pelea con la escritura, ej. tipear "10" queda cortado en "1" a medio camino).
+function onSubtotalInput(linea: LineaCompraForm) {
+  const cantidad = Number(linea.cantidad)
+  if (linea.cantidad === '' || cantidad <= 0 || linea.subtotal === '') return
+  linea.costoUnitario = (Number(linea.subtotal) / cantidad).toFixed(2)
+}
+
+// Al salir del campo Subtotal, lo redondea a lo que realmente va a resultar de
+// cantidad × costoUnitario (ya redondeado a 2 decimales) — para que lo que se ve
+// coincida siempre con lo que el backend calcula, sin pelear con la escritura.
+function onSubtotalBlur(linea: LineaCompraForm) {
+  if (linea.cantidad === '' || linea.costoUnitario === '') return
+  linea.subtotal = calcularSubtotal(linea.cantidad, linea.costoUnitario).toFixed(2)
+}
 
 function nombreProveedor(proveedorId: number): string {
   return proveedores.value.find((p) => p.id === proveedorId)?.nombre ?? `#${proveedorId}`
@@ -63,7 +91,7 @@ function nombreProducto(productoId: number): string {
 }
 
 function agregarLinea() {
-  form.value.lineas.push({ productoId: '', cantidad: '', costoUnitario: '' })
+  form.value.lineas.push({ productoId: '', cantidad: '', costoUnitario: '', subtotal: '' })
 }
 
 function quitarLinea(index: number) {
@@ -71,7 +99,10 @@ function quitarLinea(index: number) {
 }
 
 function abrirCrear() {
-  form.value = { proveedorId: '', lineas: [{ productoId: '', cantidad: '', costoUnitario: '' }] }
+  form.value = {
+    proveedorId: '',
+    lineas: [{ productoId: '', cantidad: '', costoUnitario: '', subtotal: '' }],
+  }
   showForm.value = true
 }
 
@@ -184,6 +215,7 @@ onMounted(async () => {
             required
             placeholder="Cantidad"
             class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            @input="onCantidadOCostoUnitarioInput(linea)"
           />
           <div class="flex gap-2">
             <input
@@ -194,6 +226,7 @@ onMounted(async () => {
               required
               placeholder="Costo unitario"
               class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+              @input="onCantidadOCostoUnitarioInput(linea)"
             />
             <button
               type="button"
@@ -204,9 +237,19 @@ onMounted(async () => {
               Quitar
             </button>
           </div>
-          <p class="mk-num text-sm text-mk-text/70 sm:col-start-4">
-            Subtotal: {{ formatCurrency(calcularSubtotal(linea.cantidad, linea.costoUnitario)) }}
-          </p>
+          <div class="flex items-center gap-2 sm:col-start-4">
+            <label class="text-sm text-mk-text/70">Subtotal</label>
+            <input
+              v-model="linea.subtotal"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Subtotal"
+              class="mk-input mk-num w-full rounded border border-mk-border bg-transparent px-3 py-2"
+              @input="onSubtotalInput(linea)"
+              @blur="onSubtotalBlur(linea)"
+            />
+          </div>
         </div>
         <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
           + Agregar línea

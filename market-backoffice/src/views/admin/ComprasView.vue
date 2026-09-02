@@ -5,6 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useProveedores } from '@/composables/useProveedores'
 import { useProductos } from '@/composables/useProductos'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Compra } from '@/types/compra'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
@@ -184,7 +185,7 @@ onMounted(async () => {
             <input
               v-model="linea.costoUnitario"
               type="number"
-              step="0.0001"
+              step="0.01"
               min="0"
               required
               placeholder="Costo unitario"
@@ -242,7 +243,7 @@ onMounted(async () => {
             <td class="px-4 py-2">
               <EstadoBadge :variant="ESTADO_VARIANT[compra.estado]" :label="ESTADO_LABEL[compra.estado]" />
             </td>
-            <td class="mk-num px-4 py-2">{{ compra.total }}</td>
+            <td class="mk-num px-4 py-2">{{ formatCurrency(compra.total) }}</td>
             <td class="px-4 py-2">
               <button
                 type="button"
@@ -315,7 +316,7 @@ onMounted(async () => {
             >
               <td class="px-4 py-2">{{ nombreProducto(linea.productoId) }}</td>
               <td class="mk-num px-4 py-2">{{ linea.cantidad }}</td>
-              <td class="mk-num px-4 py-2">{{ linea.costoUnitario }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(linea.costoUnitario) }}</td>
             </tr>
           </tbody>
         </table>

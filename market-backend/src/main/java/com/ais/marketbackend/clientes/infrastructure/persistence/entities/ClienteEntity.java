@@ -47,7 +47,7 @@ public class ClienteEntity {
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoCliente estado;
 
-    @Column(name = "limite_credito", precision = 14, scale = 4)
+    @Column(name = "limite_credito", precision = 14, scale = 2)
     private BigDecimal limiteCredito;
 
     @Column(name = "correlation_id", unique = true, length = 100)

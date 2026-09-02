@@ -46,10 +46,10 @@ public class CajaSesionEntity {
     @Column(name = "fecha_cierre")
     private Instant fechaCierre;
 
-    @Column(name = "monto_inicial", nullable = false, precision = 12, scale = 4)
+    @Column(name = "monto_inicial", nullable = false, precision = 12, scale = 2)
     private BigDecimal montoInicial;
 
-    @Column(name = "monto_final_contado", precision = 12, scale = 4)
+    @Column(name = "monto_final_contado", precision = 12, scale = 2)
     private BigDecimal montoFinalContado;
 
     @Enumerated(EnumType.STRING)

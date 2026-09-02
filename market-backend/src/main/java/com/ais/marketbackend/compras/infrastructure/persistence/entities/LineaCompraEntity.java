@@ -36,7 +36,7 @@ public class LineaCompraEntity {
     @Column(name = "cantidad", nullable = false, precision = 12, scale = 0)
     private BigDecimal cantidad;
 
-    @Column(name = "costo_unitario", nullable = false, precision = 12, scale = 4)
+    @Column(name = "costo_unitario", nullable = false, precision = 12, scale = 2)
     private BigDecimal costoUnitario;
 
     public LineaCompraEntity(Long id, CompraEntity compra, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario) {

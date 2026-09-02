@@ -16,5 +16,6 @@ public record LineaCompraRequest(
 
         @NotNull(message = "El costo unitario es obligatorio")
         @DecimalMin(value = "0", message = "El costo unitario no puede ser negativo")
+        @Digits(integer = 10, fraction = 2, message = "El costo unitario no puede tener más de 2 decimales")
         BigDecimal costoUnitario) {
 }

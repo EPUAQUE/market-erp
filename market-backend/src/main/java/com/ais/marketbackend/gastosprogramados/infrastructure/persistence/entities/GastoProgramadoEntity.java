@@ -43,7 +43,7 @@ public class GastoProgramadoEntity {
     @Column(name = "concepto", nullable = false, length = 150)
     private String concepto;
 
-    @Column(name = "monto", nullable = false, precision = 12, scale = 4)
+    @Column(name = "monto", nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
 
     @Enumerated(EnumType.STRING)

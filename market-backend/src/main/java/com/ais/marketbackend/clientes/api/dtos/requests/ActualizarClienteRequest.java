@@ -1,6 +1,7 @@
 package com.ais.marketbackend.clientes.api.dtos.requests;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -23,5 +24,6 @@ public record ActualizarClienteRequest(
 
         /** Opcional — {@code null} significa que todavía no se le define un límite de crédito. */
         @DecimalMin(value = "0", message = "El límite de crédito no puede ser negativo")
+        @Digits(integer = 12, fraction = 2, message = "El límite de crédito no puede tener más de 2 decimales")
         BigDecimal limiteCredito) {
 }

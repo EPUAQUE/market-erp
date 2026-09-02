@@ -54,7 +54,7 @@ public class Compra {
 
     public BigDecimal total() {
         BigDecimal total = lineas.stream().map(LineaCompra::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return total.setScale(4, RoundingMode.HALF_UP);
+        return total.setScale(2, RoundingMode.HALF_UP);
     }
 
     private void exigirBorrador() {

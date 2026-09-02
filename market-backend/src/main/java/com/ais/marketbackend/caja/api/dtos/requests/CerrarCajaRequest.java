@@ -1,6 +1,7 @@
 package com.ais.marketbackend.caja.api.dtos.requests;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -8,6 +9,7 @@ import java.math.BigDecimal;
 public record CerrarCajaRequest(
         @NotNull(message = "El monto contado es obligatorio")
         @DecimalMin(value = "0", message = "El monto contado no puede ser negativo")
+        @Digits(integer = 10, fraction = 2, message = "El monto contado no puede tener más de 2 decimales")
         BigDecimal montoFinalContado,
 
         /** Opcional — clave de idempotencia para reintentos seguros. */

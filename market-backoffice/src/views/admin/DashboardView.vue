@@ -7,6 +7,7 @@ import { useDashboardGrupo } from '@/composables/useDashboardGrupo'
 import { useTiendas } from '@/composables/useTiendas'
 import { useGruposTienda } from '@/composables/useGruposTienda'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
@@ -203,17 +204,23 @@ function tipoVencimientoLabel(tipo: string): string {
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ventas de hoy</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.ventasHoyTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumenGrupo.ventasHoyTotal) }}
+            </p>
             <p class="text-sm text-mk-text-muted">{{ resumenGrupo.ventasHoyCantidad }} venta(s)</p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ventas del mes</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.ventasMesTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumenGrupo.ventasMesTotal) }}
+            </p>
             <p class="text-sm text-mk-text-muted">{{ resumenGrupo.ventasMesCantidad }} venta(s)</p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ticket promedio</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.ticketPromedioMes }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumenGrupo.ticketPromedioMes) }}
+            </p>
             <p class="text-sm text-mk-text-muted">
               {{ resumenGrupo.facturasEmitidasMes }} factura(s),
               {{ resumenGrupo.facturasFelCertificadasMes }} certificada(s) FEL
@@ -221,7 +228,9 @@ function tipoVencimientoLabel(tipo: string): string {
           </div>
           <div v-if="resumenGrupo.utilidadMesTotal !== null" class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Utilidad del mes</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumenGrupo.utilidadMesTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumenGrupo.utilidadMesTotal) }}
+            </p>
             <p class="text-sm text-mk-text-muted">
               Margen: {{ resumenGrupo.margenPromedioMes ?? '—'
               }}<span v-if="resumenGrupo.margenPromedioMes">%</span>
@@ -233,7 +242,7 @@ function tipoVencimientoLabel(tipo: string): string {
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Inventario valorizado</p>
             <p class="mk-num text-2xl font-semibold text-mk-text">
-              {{ resumenGrupo.inventarioValorizadoTotal }}
+              {{ formatCurrency(resumenGrupo.inventarioValorizadoTotal) }}
             </p>
           </div>
           <div class="mk-card space-y-1 p-4">
@@ -269,16 +278,20 @@ function tipoVencimientoLabel(tipo: string): string {
               {{ resumenGrupo.tiendasConCajaAbierta }} / {{ resumenGrupo.totalTiendas }} abierta(s)
             </p>
             <p class="mk-num text-sm text-mk-text-muted">
-              Saldo esperado: {{ resumenGrupo.cajaSaldoEsperadoTotal }}
+              Saldo esperado: {{ formatCurrency(resumenGrupo.cajaSaldoEsperadoTotal) }}
             </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ingresos de hoy</p>
-            <p class="mk-num text-2xl font-semibold text-mk-success">{{ resumenGrupo.ingresosHoy }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-success">
+              {{ formatCurrency(resumenGrupo.ingresosHoy) }}
+            </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Egresos de hoy</p>
-            <p class="mk-num text-2xl font-semibold text-mk-danger">{{ resumenGrupo.egresosHoy }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-danger">
+              {{ formatCurrency(resumenGrupo.egresosHoy) }}
+            </p>
           </div>
           <div class="mk-card space-y-2 p-4">
             <p class="text-sm text-mk-text-muted">Alertas activas</p>
@@ -293,7 +306,7 @@ function tipoVencimientoLabel(tipo: string): string {
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Saldo pendiente por cobrar</p>
             <p class="mk-num text-2xl font-semibold text-mk-text">
-              {{ resumenGrupo.saldoPendienteCuentasPorCobrar }}
+              {{ formatCurrency(resumenGrupo.saldoPendienteCuentasPorCobrar) }}
             </p>
             <p
               class="text-sm"
@@ -305,7 +318,7 @@ function tipoVencimientoLabel(tipo: string): string {
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Saldo pendiente por pagar</p>
             <p class="mk-num text-2xl font-semibold text-mk-text">
-              {{ resumenGrupo.saldoPendienteCuentasPorPagar }}
+              {{ formatCurrency(resumenGrupo.saldoPendienteCuentasPorPagar) }}
             </p>
             <p
               class="text-sm"
@@ -327,13 +340,17 @@ function tipoVencimientoLabel(tipo: string): string {
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ventas de hoy</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ventasHoyTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumen.ventasHoyTotal) }}
+            </p>
             <p class="text-sm text-mk-text-muted">{{ resumen.ventasHoyCantidad }} venta(s)</p>
           </div>
 
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ventas del mes</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ventasMesTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumen.ventasMesTotal) }}
+            </p>
             <p
               v-if="comparativoVentasPct !== null"
               class="text-sm"
@@ -346,7 +363,9 @@ function tipoVencimientoLabel(tipo: string): string {
 
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ticket promedio</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.ticketPromedioMes }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumen.ticketPromedioMes) }}
+            </p>
             <p class="text-sm text-mk-text-muted">
               {{ resumen.facturasEmitidasMes }} factura(s),
               {{ resumen.facturasFelCertificadasMes }} certificada(s) FEL
@@ -355,7 +374,9 @@ function tipoVencimientoLabel(tipo: string): string {
 
           <div v-if="resumen.utilidadMesTotal !== null" class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Utilidad del mes</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.utilidadMesTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumen.utilidadMesTotal) }}
+            </p>
             <p class="text-sm text-mk-text-muted">
               Margen: {{ resumen.margenPromedioMes ?? '—' }}<span v-if="resumen.margenPromedioMes">%</span>
             </p>
@@ -366,7 +387,9 @@ function tipoVencimientoLabel(tipo: string): string {
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Inventario valorizado</p>
-            <p class="mk-num text-2xl font-semibold text-mk-text">{{ resumen.inventarioValorizadoTotal }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ formatCurrency(resumen.inventarioValorizadoTotal) }}
+            </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Productos agotados</p>
@@ -400,16 +423,20 @@ function tipoVencimientoLabel(tipo: string): string {
               {{ resumen.cajaAbierta ? 'Abierta' : 'Cerrada' }}
             </p>
             <p v-if="resumen.cajaAbierta" class="mk-num text-sm text-mk-text-muted">
-              Saldo esperado: {{ resumen.cajaSaldoEsperado }}
+              Saldo esperado: {{ formatCurrency(resumen.cajaSaldoEsperado) }}
             </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ingresos de hoy</p>
-            <p class="mk-num text-2xl font-semibold text-mk-success">{{ resumen.ingresosHoy }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-success">
+              {{ formatCurrency(resumen.ingresosHoy) }}
+            </p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Egresos de hoy</p>
-            <p class="mk-num text-2xl font-semibold text-mk-danger">{{ resumen.egresosHoy }}</p>
+            <p class="mk-num text-2xl font-semibold text-mk-danger">
+              {{ formatCurrency(resumen.egresosHoy) }}
+            </p>
           </div>
           <div class="mk-card space-y-2 p-4">
             <p class="text-sm text-mk-text-muted">Alertas activas</p>
@@ -437,7 +464,7 @@ function tipoVencimientoLabel(tipo: string): string {
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Saldo pendiente por cobrar</p>
             <p class="mk-num text-2xl font-semibold text-mk-text">
-              {{ resumen.saldoPendienteCuentasPorCobrar }}
+              {{ formatCurrency(resumen.saldoPendienteCuentasPorCobrar) }}
             </p>
             <p
               class="text-sm"
@@ -449,7 +476,7 @@ function tipoVencimientoLabel(tipo: string): string {
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Saldo pendiente por pagar</p>
             <p class="mk-num text-2xl font-semibold text-mk-text">
-              {{ resumen.saldoPendienteCuentasPorPagar }}
+              {{ formatCurrency(resumen.saldoPendienteCuentasPorPagar) }}
             </p>
             <p
               class="text-sm"
@@ -475,7 +502,7 @@ function tipoVencimientoLabel(tipo: string): string {
                   class="border-t border-mk-border"
                 >
                   <td class="py-2 pr-2">{{ tipoVencimientoLabel(v.tipo) }} #{{ v.referenciaId }}</td>
-                  <td class="mk-num py-2 pr-2">{{ v.monto }}</td>
+                  <td class="mk-num py-2 pr-2">{{ formatCurrency(v.monto) }}</td>
                   <td class="py-2 text-mk-text-muted">{{ formatFecha(v.fechaVencimiento) }}</td>
                 </tr>
               </tbody>
@@ -495,7 +522,7 @@ function tipoVencimientoLabel(tipo: string): string {
                   class="border-t border-mk-border"
                 >
                   <td class="py-2 pr-2">{{ r.concepto }}</td>
-                  <td class="mk-num py-2 pr-2">{{ r.monto }}</td>
+                  <td class="mk-num py-2 pr-2">{{ formatCurrency(r.monto) }}</td>
                   <td class="py-2 text-mk-text-muted">{{ formatFecha(r.proximaFecha) }}</td>
                 </tr>
               </tbody>
@@ -511,7 +538,7 @@ function tipoVencimientoLabel(tipo: string): string {
               <tbody>
                 <tr v-for="c in resumen.topCobrosPendientes" :key="c.id" class="border-t border-mk-border">
                   <td class="py-2 pr-2">Cliente #{{ c.contraparteId }}</td>
-                  <td class="mk-num py-2 pr-2">{{ c.monto }}</td>
+                  <td class="mk-num py-2 pr-2">{{ formatCurrency(c.monto) }}</td>
                   <td class="py-2 text-mk-text-muted">{{ formatFecha(c.fechaVencimiento) }}</td>
                 </tr>
               </tbody>
@@ -527,7 +554,7 @@ function tipoVencimientoLabel(tipo: string): string {
               <tbody>
                 <tr v-for="c in resumen.topPagosPendientes" :key="c.id" class="border-t border-mk-border">
                   <td class="py-2 pr-2">Proveedor #{{ c.contraparteId }}</td>
-                  <td class="mk-num py-2 pr-2">{{ c.monto }}</td>
+                  <td class="mk-num py-2 pr-2">{{ formatCurrency(c.monto) }}</td>
                   <td class="py-2 text-mk-text-muted">{{ formatFecha(c.fechaVencimiento) }}</td>
                 </tr>
               </tbody>

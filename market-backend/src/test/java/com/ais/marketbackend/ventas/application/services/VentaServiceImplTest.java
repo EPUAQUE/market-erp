@@ -245,7 +245,7 @@ class VentaServiceImplTest {
 
         verify(cuentaPorCobrarService, never()).crear(any(), any(), any(), any());
         verify(cajaService).registrarMovimientoSiHayAbierta(
-                eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("16.0000")));
+                eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("16.00")));
     }
 
     @Test
@@ -260,7 +260,7 @@ class VentaServiceImplTest {
 
         verify(cuentaPorCobrarService, never()).crear(any(), any(), any(), any());
         verify(cajaService).registrarMovimientoSiHayAbierta(
-                eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("16.0000")));
+                eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("16.00")));
     }
 
     @Test
@@ -275,7 +275,7 @@ class VentaServiceImplTest {
         ventaService.completar(1L, 5L);
 
         verify(cajaService, never()).registrarMovimientoSiHayAbierta(any(), any(), any(), any());
-        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("16.0000"));
+        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("16.00"));
     }
 
     @Test
@@ -295,7 +295,7 @@ class VentaServiceImplTest {
                 eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("5.00")));
         verify(cajaService).registrarMovimientoSiHayAbierta(
                 eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("3.00")));
-        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("0.5000"));
+        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("0.50"));
     }
 
     @Test
@@ -358,7 +358,7 @@ class VentaServiceImplTest {
         ventaService.completar(1L, 5L, List.of(new PagoInmediato(MetodoPago.TARJETA, new BigDecimal("1.00"))));
 
         verify(cajaService).registrarMovimientoSiHayAbierta(
-                eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("8.5000")));
+                eq(1L), eq(TipoMovimientoCaja.INGRESO), any(), eq(new BigDecimal("8.50")));
         verify(cuentaPorCobrarService, never()).crear(any(), any(), any(), any());
     }
 
@@ -441,7 +441,7 @@ class VentaServiceImplTest {
         VentaResumen resumen = ventaService.completar(1L, 5L);
 
         assertThat(resumen.estado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.COMPLETADA);
-        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("10.0000"));
+        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("10.00"));
     }
 
     @Test
@@ -499,7 +499,7 @@ class VentaServiceImplTest {
                 1L, 5L, List.of(new PagoInmediato(MetodoPago.EFECTIVO, new BigDecimal("4"))));
 
         assertThat(resumen.estado()).isEqualTo(com.ais.marketbackend.ventas.domain.model.EstadoVenta.COMPLETADA);
-        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("6.0000"));
+        verify(cuentaPorCobrarService).crear(5L, 2L, 1L, new BigDecimal("6.00"));
     }
 
     @Test

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useReportes } from '@/composables/useReportes'
 import { useTiendas } from '@/composables/useTiendas'
+import { formatCurrency } from '@/utils/money'
 
 const { reporteVentas, reporteCompras, loading, error, generarReporteVentas, generarReporteCompras } =
   useReportes()
@@ -143,7 +144,7 @@ onMounted(async () => {
       <div class="flex items-center justify-between">
         <p class="text-sm text-mk-text/70">
           {{ reporteVentas.cantidadVentas }} venta(s) — total
-          <span class="mk-num font-semibold">{{ reporteVentas.totalVentas }}</span>
+          <span class="mk-num font-semibold">{{ formatCurrency(reporteVentas.totalVentas) }}</span>
         </p>
         <button type="button" class="text-sm text-mk-primary hover:underline" @click="onExportarCsv">
           Exportar CSV
@@ -171,7 +172,7 @@ onMounted(async () => {
               <td class="px-4 py-2">#{{ linea.ventaId }}</td>
               <td class="px-4 py-2">#{{ linea.clienteId }}</td>
               <td class="px-4 py-2">{{ new Date(linea.fecha).toLocaleString() }}</td>
-              <td class="mk-num px-4 py-2">{{ linea.total }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(linea.total) }}</td>
             </tr>
           </tbody>
         </table>
@@ -182,7 +183,7 @@ onMounted(async () => {
       <div class="flex items-center justify-between">
         <p class="text-sm text-mk-text/70">
           {{ reporteCompras.cantidadCompras }} compra(s) — total
-          <span class="mk-num font-semibold">{{ reporteCompras.totalCompras }}</span>
+          <span class="mk-num font-semibold">{{ formatCurrency(reporteCompras.totalCompras) }}</span>
         </p>
         <button type="button" class="text-sm text-mk-primary hover:underline" @click="onExportarCsv">
           Exportar CSV
@@ -210,7 +211,7 @@ onMounted(async () => {
               <td class="px-4 py-2">#{{ linea.compraId }}</td>
               <td class="px-4 py-2">#{{ linea.proveedorId }}</td>
               <td class="px-4 py-2">{{ new Date(linea.fecha).toLocaleString() }}</td>
-              <td class="mk-num px-4 py-2">{{ linea.total }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(linea.total) }}</td>
             </tr>
           </tbody>
         </table>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Ver ventas/009-monto-dos-decimales.xml: mismo cambio, misma razón.
+         limite_credito es nullable (sin límite definido) — la comparación
+         "!= ROUND(...)" ya excluye los NULL del conteo por semántica SQL normal,
+         no hace falta manejarlos aparte. -->
+    <changeSet id="clientes-004-monto-dos-decimales" author="market-backend">
+        <preConditions onFail="HALT">
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM cliente WHERE limite_credito != ROUND(limite_credito, 2)
+            </sqlCheck>
+        </preConditions>
+        <sql>ALTER TABLE cliente ALTER COLUMN limite_credito TYPE NUMERIC(14,2);</sql>
+        <rollback>
+            <sql>ALTER TABLE cliente ALTER COLUMN limite_credito TYPE NUMERIC(14,4);</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

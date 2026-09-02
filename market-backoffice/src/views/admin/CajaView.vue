@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useCaja } from '@/composables/useCaja'
 import { useTiendas } from '@/composables/useTiendas'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { TipoMovimientoCaja } from '@/types/caja'
 
@@ -123,7 +124,7 @@ onMounted(async () => {
           <input
             v-model="montoInicial"
             type="number"
-            step="0.0001"
+            step="0.01"
             min="0"
             required
             class="mk-input w-40 rounded border border-mk-border bg-transparent px-3 py-2"
@@ -149,11 +150,11 @@ onMounted(async () => {
           </div>
           <div>
             <dt class="text-mk-text/60">Monto inicial</dt>
-            <dd class="mk-num">{{ sesionAbierta.montoInicial }}</dd>
+            <dd class="mk-num">{{ formatCurrency(sesionAbierta.montoInicial) }}</dd>
           </div>
           <div>
             <dt class="text-mk-text/60">Saldo esperado</dt>
-            <dd class="mk-num font-medium">{{ sesionAbierta.saldoEsperado }}</dd>
+            <dd class="mk-num font-medium">{{ formatCurrency(sesionAbierta.saldoEsperado) }}</dd>
           </div>
         </dl>
       </div>
@@ -180,7 +181,7 @@ onMounted(async () => {
               <td class="px-4 py-2">{{ new Date(mov.fecha).toLocaleString() }}</td>
               <td class="px-4 py-2">{{ mov.tipo }}</td>
               <td class="px-4 py-2">{{ mov.concepto }}</td>
-              <td class="mk-num px-4 py-2">{{ mov.monto }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(mov.monto) }}</td>
             </tr>
           </tbody>
         </table>
@@ -208,7 +209,7 @@ onMounted(async () => {
         <input
           v-model="movimiento.monto"
           type="number"
-          step="0.0001"
+          step="0.01"
           min="0"
           required
           placeholder="Monto"
@@ -233,7 +234,7 @@ onMounted(async () => {
           <input
             v-model="montoFinalContado"
             type="number"
-            step="0.0001"
+            step="0.01"
             min="0"
             required
             class="mk-input w-40 rounded border border-mk-border bg-transparent px-3 py-2"
@@ -277,9 +278,9 @@ onMounted(async () => {
               <td class="px-4 py-2">
                 {{ sesion.fechaCierre ? new Date(sesion.fechaCierre).toLocaleString() : '—' }}
               </td>
-              <td class="mk-num px-4 py-2">{{ sesion.montoInicial }}</td>
-              <td class="mk-num px-4 py-2">{{ sesion.saldoEsperado }}</td>
-              <td class="mk-num px-4 py-2">{{ sesion.montoFinalContado ?? '—' }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(sesion.montoInicial) }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(sesion.saldoEsperado) }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(sesion.montoFinalContado) }}</td>
               <td class="px-4 py-2">
                 <EstadoBadge
                   :variant="sesion.estado === 'ABIERTA' ? 'success' : 'neutral'"

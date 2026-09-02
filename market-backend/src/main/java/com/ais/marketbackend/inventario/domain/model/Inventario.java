@@ -53,7 +53,7 @@ public class Inventario {
         BigDecimal valorActual = existenciaActual.multiply(costoPromedioActual);
         BigDecimal valorEntrante = cantidad.multiply(costoUnitario);
         BigDecimal nuevaExistencia = existenciaActual.add(cantidad);
-        this.costoPromedioActual = valorActual.add(valorEntrante).divide(nuevaExistencia, 4, RoundingMode.HALF_UP);
+        this.costoPromedioActual = valorActual.add(valorEntrante).divide(nuevaExistencia, 2, RoundingMode.HALF_UP);
         this.existenciaActual = nuevaExistencia;
     }
 

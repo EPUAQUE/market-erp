@@ -34,7 +34,7 @@ public class PagoEntity {
     @Column(name = "fecha", nullable = false)
     private Instant fecha;
 
-    @Column(name = "monto", nullable = false, precision = 12, scale = 4)
+    @Column(name = "monto", nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
 
     public PagoEntity(Long id, CuentaPorPagarEntity cuenta, Instant fecha, BigDecimal monto) {

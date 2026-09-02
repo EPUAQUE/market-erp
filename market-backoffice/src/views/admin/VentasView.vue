@@ -6,6 +6,7 @@ import { useClientes } from '@/composables/useClientes'
 import { useProductos } from '@/composables/useProductos'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { resolverImagenUrl } from '@/utils/imagenUrl'
+import { formatCurrency, calcularSubtotal } from '@/utils/money'
 import { productosService } from '@/services/productos.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { MetodoPago, Venta } from '@/types/venta'
@@ -69,6 +70,10 @@ const form = ref({
   metodoPago: '' as MetodoPago | '',
   lineas: [{ productoId: '', cantidad: '', precioUnitario: '' }],
 })
+
+const totalFormulario = computed(() =>
+  form.value.lineas.reduce((acc, l) => acc + calcularSubtotal(l.cantidad, l.precioUnitario), 0),
+)
 
 // Precios del producto en la tienda seleccionada (ProductoTienda.precioVenta),
 // para autocompletar "Precio unitario" al elegir un producto en la línea —
@@ -269,7 +274,7 @@ onMounted(async () => {
             <input
               v-model="linea.precioUnitario"
               type="number"
-              step="0.0001"
+              step="0.01"
               min="0"
               required
               placeholder="Precio unitario"
@@ -284,10 +289,14 @@ onMounted(async () => {
               Quitar
             </button>
           </div>
+          <p class="mk-num text-sm text-mk-text/70 sm:col-start-4">
+            Subtotal: {{ formatCurrency(calcularSubtotal(linea.cantidad, linea.precioUnitario)) }}
+          </p>
         </div>
         <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
           + Agregar línea
         </button>
+        <p class="mk-num text-sm font-semibold">Total: {{ formatCurrency(totalFormulario) }}</p>
       </div>
 
       <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
@@ -329,7 +338,7 @@ onMounted(async () => {
             <td class="px-4 py-2">
               <EstadoBadge :variant="ESTADO_VARIANT[venta.estado]" :label="ESTADO_LABEL[venta.estado]" />
             </td>
-            <td class="mk-num px-4 py-2">{{ venta.total }}</td>
+            <td class="mk-num px-4 py-2">{{ formatCurrency(venta.total) }}</td>
             <td class="px-4 py-2">
               <button
                 type="button"
@@ -393,6 +402,7 @@ onMounted(async () => {
               <th class="px-4 py-2 font-medium">Producto</th>
               <th class="mk-num px-4 py-2 font-medium">Cantidad</th>
               <th class="mk-num px-4 py-2 font-medium">Precio unitario</th>
+              <th class="mk-num px-4 py-2 font-medium">Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -411,7 +421,10 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-2">{{ nombreProducto(linea.productoId) }}</td>
               <td class="mk-num px-4 py-2">{{ linea.cantidad }}</td>
-              <td class="mk-num px-4 py-2">{{ linea.precioUnitario }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(linea.precioUnitario) }}</td>
+              <td class="mk-num px-4 py-2">
+                {{ formatCurrency(calcularSubtotal(linea.cantidad, linea.precioUnitario)) }}
+              </td>
             </tr>
           </tbody>
         </table>

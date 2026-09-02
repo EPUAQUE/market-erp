@@ -41,7 +41,7 @@ public class MovimientoInventarioEntity {
     @Column(name = "cantidad", nullable = false, precision = 12, scale = 0)
     private BigDecimal cantidad;
 
-    @Column(name = "costo_unitario", nullable = false, precision = 12, scale = 4)
+    @Column(name = "costo_unitario", nullable = false, precision = 12, scale = 2)
     private BigDecimal costoUnitario;
 
     @Enumerated(EnumType.STRING)

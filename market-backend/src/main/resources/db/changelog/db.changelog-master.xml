@@ -26,6 +26,7 @@
     <include file="db/changelog/modules/inventario/001-inventario.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/inventario/002-check-montos.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/inventario/003-cantidad-entera.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/inventario/004-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/proveedores/001-proveedor.xml" relativeToChangelogFile="false"/>
 
@@ -33,13 +34,16 @@
     <include file="db/changelog/modules/compras/002-indices.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/compras/003-check-montos.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/compras/004-cantidad-entera.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/compras/005-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/cuentasporpagar/001-cuenta-por-pagar.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/cuentasporpagar/002-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/cuentasporpagar/003-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/clientes/001-cliente.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/clientes/002-limite-credito.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/clientes/003-correlation-id.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/clientes/004-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/ventas/001-venta.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/ventas/002-venta-vendedor.xml" relativeToChangelogFile="false"/>
@@ -49,17 +53,20 @@
     <include file="db/changelog/modules/ventas/006-correlation-id-compuesto.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/ventas/007-check-montos.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/ventas/008-cantidad-entera.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/ventas/009-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/cuentasporcobrar/001-cuenta-por-cobrar.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/cuentasporcobrar/002-metodo-pago-cobro.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/cuentasporcobrar/003-indices.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/cuentasporcobrar/004-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/cuentasporcobrar/005-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/caja/001-caja.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/caja/002-indices.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/caja/003-idempotencia.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/caja/004-una-abierta-por-tienda.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/caja/005-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/caja/006-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/traslados/001-traslado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/traslados/002-indices.xml" relativeToChangelogFile="false"/>
@@ -68,6 +75,7 @@
 
     <include file="db/changelog/modules/gastosprogramados/001-gasto-programado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/gastosprogramados/002-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/gastosprogramados/003-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/notificaciones/001-notificacion.xml" relativeToChangelogFile="false"/>
 

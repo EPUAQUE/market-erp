@@ -76,7 +76,7 @@ class CompraServiceImplTest {
 
         compraService.recibir(1L, 5L);
 
-        verify(cuentaPorPagarService).crear(5L, 2L, 1L, new BigDecimal("50.0000"));
+        verify(cuentaPorPagarService).crear(5L, 2L, 1L, new BigDecimal("50.00"));
     }
 
     @Test

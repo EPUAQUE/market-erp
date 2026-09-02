@@ -38,6 +38,6 @@ public class InventarioEntity {
     @Column(name = "existencia_actual", nullable = false, precision = 12, scale = 0)
     private BigDecimal existenciaActual;
 
-    @Column(name = "costo_promedio_actual", nullable = false, precision = 12, scale = 4)
+    @Column(name = "costo_promedio_actual", nullable = false, precision = 12, scale = 2)
     private BigDecimal costoPromedioActual;
 }

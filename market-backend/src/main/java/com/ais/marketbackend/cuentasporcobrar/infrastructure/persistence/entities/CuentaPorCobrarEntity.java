@@ -52,10 +52,10 @@ public class CuentaPorCobrarEntity {
     @Column(name = "fecha_vencimiento", nullable = false)
     private Instant fechaVencimiento;
 
-    @Column(name = "monto_original", nullable = false, precision = 12, scale = 4)
+    @Column(name = "monto_original", nullable = false, precision = 12, scale = 2)
     private BigDecimal montoOriginal;
 
-    @Column(name = "saldo_pendiente", nullable = false, precision = 12, scale = 4)
+    @Column(name = "saldo_pendiente", nullable = false, precision = 12, scale = 2)
     private BigDecimal saldoPendiente;
 
     @Enumerated(EnumType.STRING)

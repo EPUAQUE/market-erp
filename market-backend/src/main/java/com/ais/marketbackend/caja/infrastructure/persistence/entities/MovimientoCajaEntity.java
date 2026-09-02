@@ -44,7 +44,7 @@ public class MovimientoCajaEntity {
     @Column(name = "concepto", nullable = false, length = 255)
     private String concepto;
 
-    @Column(name = "monto", nullable = false, precision = 12, scale = 4)
+    @Column(name = "monto", nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
 
     @Column(name = "correlation_id", length = 100)

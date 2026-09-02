@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Ver ventas/009-monto-dos-decimales.xml: mismo cambio, misma razón (dinero
+         físico a 2 decimales). costo_promedio_actual es el promedio ponderado
+         calculado a partir de costo_unitario, así que se ajusta junto con él. -->
+    <changeSet id="inventario-004-monto-dos-decimales" author="market-backend">
+        <preConditions onFail="HALT">
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM movimiento_inventario WHERE costo_unitario != ROUND(costo_unitario, 2)
+            </sqlCheck>
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM inventario WHERE costo_promedio_actual != ROUND(costo_promedio_actual, 2)
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            ALTER TABLE movimiento_inventario ALTER COLUMN costo_unitario TYPE NUMERIC(12,2);
+            ALTER TABLE inventario ALTER COLUMN costo_promedio_actual TYPE NUMERIC(12,2);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE movimiento_inventario ALTER COLUMN costo_unitario TYPE NUMERIC(12,4);
+                ALTER TABLE inventario ALTER COLUMN costo_promedio_actual TYPE NUMERIC(12,4);
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

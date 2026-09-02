@@ -4,6 +4,7 @@ import { useInventario } from '@/composables/useInventario'
 import { useTiendas } from '@/composables/useTiendas'
 import { useProductos } from '@/composables/useProductos'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { formatCurrency } from '@/utils/money'
 import type { TipoMovimiento } from '@/types/inventario'
 
 const {
@@ -197,7 +198,7 @@ onMounted(async () => {
           <input
             v-model="form.costoUnitario"
             type="number"
-            step="0.0001"
+            step="0.01"
             min="0"
             required
             class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
@@ -237,7 +238,7 @@ onMounted(async () => {
           <tr v-for="inv in items" :key="inv.productoId" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ nombreProducto(inv.productoId) }}</td>
             <td class="mk-num px-4 py-2">{{ inv.existenciaActual }}</td>
-            <td class="mk-num px-4 py-2">{{ inv.costoPromedioActual }}</td>
+            <td class="mk-num px-4 py-2">{{ formatCurrency(inv.costoPromedioActual) }}</td>
             <td class="px-4 py-2">
               <button
                 type="button"
@@ -301,7 +302,7 @@ onMounted(async () => {
               <td class="px-4 py-2">{{ new Date(mov.fecha).toLocaleString() }}</td>
               <td class="px-4 py-2">{{ mov.tipoMovimiento }}</td>
               <td class="mk-num px-4 py-2">{{ mov.cantidad }}</td>
-              <td class="mk-num px-4 py-2">{{ mov.costoUnitario }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(mov.costoUnitario) }}</td>
             </tr>
           </tbody>
         </table>

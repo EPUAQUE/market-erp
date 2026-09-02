@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Ver ventas/009-monto-dos-decimales.xml: mismo cambio, misma razón. -->
+    <changeSet id="compras-005-monto-dos-decimales" author="market-backend">
+        <preConditions onFail="HALT">
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM linea_compra WHERE costo_unitario != ROUND(costo_unitario, 2)
+            </sqlCheck>
+        </preConditions>
+        <sql>ALTER TABLE linea_compra ALTER COLUMN costo_unitario TYPE NUMERIC(12,2);</sql>
+        <rollback>
+            <sql>ALTER TABLE linea_compra ALTER COLUMN costo_unitario TYPE NUMERIC(12,4);</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

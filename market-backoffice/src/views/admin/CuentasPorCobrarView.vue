@@ -4,6 +4,7 @@ import { useCuentasPorCobrar } from '@/composables/useCuentasPorCobrar'
 import { useTiendas } from '@/composables/useTiendas'
 import { useClientes } from '@/composables/useClientes'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { CuentaPorCobrar } from '@/types/cuentaPorCobrar'
 
@@ -118,8 +119,8 @@ onMounted(async () => {
             <td class="px-4 py-2">#{{ cuenta.ventaId }}</td>
             <td class="px-4 py-2">{{ nombreCliente(cuenta.clienteId) }}</td>
             <td class="px-4 py-2">{{ new Date(cuenta.fechaVencimiento).toLocaleDateString() }}</td>
-            <td class="mk-num px-4 py-2">{{ cuenta.montoOriginal }}</td>
-            <td class="mk-num px-4 py-2">{{ cuenta.saldoPendiente }}</td>
+            <td class="mk-num px-4 py-2">{{ formatCurrency(cuenta.montoOriginal) }}</td>
+            <td class="mk-num px-4 py-2">{{ formatCurrency(cuenta.saldoPendiente) }}</td>
             <td class="px-4 py-2">
               <EstadoBadge :variant="estadoVisual(cuenta).variant" :label="estadoVisual(cuenta).label" />
             </td>
@@ -185,7 +186,7 @@ onMounted(async () => {
           <input
             v-model="montoCobro"
             type="number"
-            step="0.0001"
+            step="0.01"
             min="0"
             required
             class="mk-input w-40 rounded border border-mk-border bg-transparent px-3 py-2"
@@ -217,7 +218,7 @@ onMounted(async () => {
               class="border-b border-mk-border last:border-0"
             >
               <td class="px-4 py-2">{{ new Date(cobro.fecha).toLocaleString() }}</td>
-              <td class="mk-num px-4 py-2">{{ cobro.monto }}</td>
+              <td class="mk-num px-4 py-2">{{ formatCurrency(cobro.monto) }}</td>
             </tr>
           </tbody>
         </table>

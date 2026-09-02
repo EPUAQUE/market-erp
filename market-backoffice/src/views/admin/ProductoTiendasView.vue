@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useProductoTiendas } from '@/composables/useProductoTiendas'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { tiendasService } from '@/services/tiendas.service'
+import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { ProductoTienda } from '@/types/producto'
 import type { Tienda } from '@/types/tienda'
@@ -191,7 +192,7 @@ onMounted(async () => {
           </tr>
           <tr v-for="pt in items" :key="pt.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ nombreTienda(pt.tiendaId) }}</td>
-            <td class="px-4 py-2 fc-num">{{ pt.precioVenta }}</td>
+            <td class="px-4 py-2 fc-num">{{ formatCurrency(pt.precioVenta) }}</td>
             <td class="px-4 py-2 fc-num">{{ pt.stockMinimo }} / {{ pt.stockMaximo }}</td>
             <td class="px-4 py-2">{{ pt.permitirVenta ? 'Sí' : 'No' }}</td>
             <td class="px-4 py-2">{{ pt.permitirIngreso ? 'Sí' : 'No' }}</td>

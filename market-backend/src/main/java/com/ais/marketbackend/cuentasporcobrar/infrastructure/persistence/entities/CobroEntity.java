@@ -37,7 +37,7 @@ public class CobroEntity {
     @Column(name = "fecha", nullable = false)
     private Instant fecha;
 
-    @Column(name = "monto", nullable = false, precision = 12, scale = 4)
+    @Column(name = "monto", nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
 
     @Enumerated(EnumType.STRING)

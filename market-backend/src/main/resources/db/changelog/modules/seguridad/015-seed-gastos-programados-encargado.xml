@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- GASTOS_PROGRAMADOS_* solo estaba seedeado para ADMIN
+         (gastosprogramados/001-gasto-programado.xml) y GASTOS_PROGRAMADOS_VER
+         para AUDITOR (seguridad/010-seed-auditor-permisos.xml) — el módulo
+         nunca pasó por el catch-up de roles operativos que sí recibieron
+         Ventas/Caja/Inventario/Traslados en seguridad-006. El cliente reportó
+         que no podía registrar un gasto programado: sin este permiso el botón
+         "Nuevo gasto" ni aparece para ENCARGADO_TIENDA. Decisión del cliente:
+         ENCARGADO_TIENDA gana el set completo (ver/crear/editar/generar pago),
+         igual alcance que ya tiene en Caja/Inventario/Traslados. -->
+    <changeSet id="seguridad-015-encargado-gastos-programados" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_EDITAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_GENERAR_PAGO')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

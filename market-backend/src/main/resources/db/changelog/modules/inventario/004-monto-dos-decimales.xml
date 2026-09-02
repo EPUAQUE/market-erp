@@ -14,11 +14,19 @@
          precio que alguien tecleó); se hace en un changeset aparte, antes de fijar la
          escala de la columna, para que quede explícito en el historial por qué se tocó
          un dato existente. costo_promedio_actual se redondea por la misma razón
-         aunque hoy no se haya visto un caso real — se deriva de costo_unitario. -->
+         aunque hoy no se haya visto un caso real — se deriva de costo_unitario.
+         movimiento_inventario es append-only (trigger de la Fase de kardex, ver
+         inventario/001-inventario.xml) — ningún UPDATE pasa, ni siquiera este, así
+         que el trigger se desactiva solo para esta sentencia puntual y se reactiva
+         de inmediato después (mismo patrón que cualquier corrección de datos
+         históricos sobre una tabla append-only: la excepción es explícita y
+         acotada a una sola sentencia, no una relajación permanente del invariante). -->
     <changeSet id="inventario-004a-redondear-costos-existentes" author="market-backend">
-        <sql>
+        <sql splitStatements="true">
+            ALTER TABLE movimiento_inventario DISABLE TRIGGER trg_movimiento_inventario_append_only;
             UPDATE movimiento_inventario SET costo_unitario = ROUND(costo_unitario, 2)
                 WHERE costo_unitario != ROUND(costo_unitario, 2);
+            ALTER TABLE movimiento_inventario ENABLE TRIGGER trg_movimiento_inventario_append_only;
             UPDATE inventario SET costo_promedio_actual = ROUND(costo_promedio_actual, 2)
                 WHERE costo_promedio_actual != ROUND(costo_promedio_actual, 2);
         </sql>

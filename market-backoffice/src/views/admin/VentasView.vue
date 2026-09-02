@@ -68,12 +68,40 @@ const detalleAbiertoId = ref<number | null>(null)
 const form = ref({
   clienteId: '',
   metodoPago: '' as MetodoPago | '',
-  lineas: [{ productoId: '', cantidad: '', precioUnitario: '' }],
+  lineas: [{ productoId: '', cantidad: '', precioUnitario: '', subtotal: '' }],
 })
 
 const totalFormulario = computed(() =>
   form.value.lineas.reduce((acc, l) => acc + calcularSubtotal(l.cantidad, l.precioUnitario), 0),
 )
+
+type LineaVentaForm = (typeof form.value.lineas)[number]
+
+// Cantidad/precio unitario y subtotal son dos formas de capturar lo mismo — el
+// precio unitario es el único que se manda al backend (LineaVentaRequest no tiene
+// subtotal, lo recalcula server-side), así que editar el subtotal solo sirve para
+// despejar el precio unitario a partir de él, nunca al revés en simultáneo.
+function onCantidadOPrecioUnitarioInput(linea: LineaVentaForm) {
+  if (linea.cantidad === '' || linea.precioUnitario === '') return
+  linea.subtotal = calcularSubtotal(linea.cantidad, linea.precioUnitario).toFixed(2)
+}
+
+// Solo recalcula precioUnitario mientras se escribe — nunca reescribe linea.subtotal
+// acá (es el mismo campo donde el usuario está tecleando; sobreescribirlo en cada
+// tecla pelea con la escritura).
+function onSubtotalInput(linea: LineaVentaForm) {
+  const cantidad = Number(linea.cantidad)
+  if (linea.cantidad === '' || cantidad <= 0 || linea.subtotal === '') return
+  linea.precioUnitario = (Number(linea.subtotal) / cantidad).toFixed(2)
+}
+
+// Al salir del campo Subtotal, lo redondea a lo que realmente va a resultar de
+// cantidad × precioUnitario (ya redondeado a 2 decimales) — para que lo que se ve
+// coincida siempre con lo que el backend calcula.
+function onSubtotalBlur(linea: LineaVentaForm) {
+  if (linea.cantidad === '' || linea.precioUnitario === '') return
+  linea.subtotal = calcularSubtotal(linea.cantidad, linea.precioUnitario).toFixed(2)
+}
 
 // Precios del producto en la tienda seleccionada (ProductoTienda.precioVenta),
 // para autocompletar "Precio unitario" al elegir un producto en la línea —
@@ -92,7 +120,10 @@ function precioDeProducto(productoId: number): string | undefined {
 function onSeleccionarProducto(index: number) {
   const productoId = Number(form.value.lineas[index].productoId)
   const precio = precioDeProducto(productoId)
-  if (precio !== undefined) form.value.lineas[index].precioUnitario = precio
+  if (precio !== undefined) {
+    form.value.lineas[index].precioUnitario = precio
+    onCantidadOPrecioUnitarioInput(form.value.lineas[index])
+  }
 }
 
 function nombreCliente(clienteId: number): string {
@@ -108,7 +139,7 @@ function imagenProducto(productoId: number): string | undefined {
 }
 
 function agregarLinea() {
-  form.value.lineas.push({ productoId: '', cantidad: '', precioUnitario: '' })
+  form.value.lineas.push({ productoId: '', cantidad: '', precioUnitario: '', subtotal: '' })
 }
 
 function quitarLinea(index: number) {
@@ -120,7 +151,7 @@ function abrirCrear() {
   form.value = {
     clienteId: consumidorFinal ? String(consumidorFinal.id) : '',
     metodoPago: '',
-    lineas: [{ productoId: '', cantidad: '', precioUnitario: '' }],
+    lineas: [{ productoId: '', cantidad: '', precioUnitario: '', subtotal: '' }],
   }
   showForm.value = true
 }
@@ -241,8 +272,12 @@ onMounted(async () => {
 
       <div class="space-y-2">
         <label class="text-sm font-medium">Líneas</label>
-        <div v-for="(linea, index) in form.lineas" :key="index" class="grid gap-3 sm:grid-cols-4">
-          <div class="flex items-center gap-2 sm:col-span-2">
+        <div
+          v-for="(linea, index) in form.lineas"
+          :key="index"
+          class="grid items-center gap-3 sm:grid-cols-12"
+        >
+          <div class="flex items-center gap-2 sm:col-span-4">
             <img
               v-if="linea.productoId && imagenProducto(Number(linea.productoId))"
               :src="imagenProducto(Number(linea.productoId))"
@@ -268,30 +303,37 @@ onMounted(async () => {
             min="1"
             required
             placeholder="Cantidad"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+            @input="onCantidadOPrecioUnitarioInput(linea)"
           />
-          <div class="flex gap-2">
-            <input
-              v-model="linea.precioUnitario"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-              placeholder="Precio unitario"
-              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-            />
-            <button
-              type="button"
-              class="text-mk-danger disabled:opacity-40"
-              :disabled="form.lineas.length <= 1"
-              @click="quitarLinea(index)"
-            >
-              Quitar
-            </button>
-          </div>
-          <p class="mk-num text-sm text-mk-text/70 sm:col-start-4">
-            Subtotal: {{ formatCurrency(calcularSubtotal(linea.cantidad, linea.precioUnitario)) }}
-          </p>
+          <input
+            v-model="linea.precioUnitario"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            placeholder="Precio unitario"
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+            @input="onCantidadOPrecioUnitarioInput(linea)"
+          />
+          <input
+            v-model="linea.subtotal"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Subtotal"
+            class="mk-input mk-num w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+            @input="onSubtotalInput(linea)"
+            @blur="onSubtotalBlur(linea)"
+          />
+          <button
+            type="button"
+            class="text-mk-danger disabled:opacity-40 sm:col-span-2"
+            :disabled="form.lineas.length <= 1"
+            @click="quitarLinea(index)"
+          >
+            Quitar
+          </button>
         </div>
         <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
           + Agregar línea

@@ -65,6 +65,12 @@ services:
       SEED_ENABLED: ${SEED_ENABLED:-false}
       SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      # Bandera temporal (Fase 1, docs/plan-mejoras.md): default true (exige
+      # CertificadorFelPort real, FelProdSafetyGuard rechaza el arranque si no hay
+      # uno). Poner FEL_REQUERIDO_REAL=false en el .env SOLO mientras el cliente siga
+      # en fase de pruebas sin facturación real — certifica con UUID simulado, nunca
+      # produce un DTE fiscalmente válido.
+      FEL_REQUERIDO_REAL: ${FEL_REQUERIDO_REAL:-true}
       BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Guatemala}
       # Alertas por correo (Fase 7, PLAN_MEJORAS.md) — mismo canal/env vars que ya
       # usa el servicio "backup" (Fase 6) para no duplicar configuración. Todas

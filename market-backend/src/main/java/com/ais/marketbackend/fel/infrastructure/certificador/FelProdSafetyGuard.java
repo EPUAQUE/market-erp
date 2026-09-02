@@ -1,6 +1,8 @@
 package com.ais.marketbackend.fel.infrastructure.certificador;
 
 import com.ais.marketbackend.fel.application.ports.CertificadorFelPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -11,9 +13,13 @@ import org.springframework.stereotype.Component;
 
 /**
  * Rechaza el arranque en el perfil {@code prod} si no hay ningún
- * {@link CertificadorFelPort} real configurado. {@link DevCertificadorFelAdapter}
- * está restringido a {@code @Profile("!prod")}, así que en producción solo hay una
- * definición de bean para ese puerto si se implementó y registró un adaptador real.
+ * {@link CertificadorFelPort} real configurado, salvo que
+ * {@code app.fel.requerido-real=false} (bandera temporal — cliente aún en fase de
+ * pruebas, sin proveedor FEL contratado; ver {@link FelSimuladoEnProdCondition} y
+ * docs/plan-mejoras.md Fase 1). Con la bandera en false, {@link DevCertificadorFelAdapter}
+ * sí se registra en {@code prod}, así que en producción solo hay una definición de
+ * bean para ese puerto si se implementó y registró un adaptador real, o si se aceptó
+ * explícitamente usar el simulado vía la bandera.
  *
  * <p>Implementado como {@link BeanFactoryPostProcessor} (no como una validación en el
  * constructor, como {@code ProdSafetyGuard} en el módulo de seguridad) a propósito:
@@ -36,6 +42,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class FelProdSafetyGuard implements BeanFactoryPostProcessor, EnvironmentAware {
 
+    private static final Logger log = LoggerFactory.getLogger(FelProdSafetyGuard.class);
+
     private Environment environment;
 
     @Override
@@ -49,12 +57,19 @@ public class FelProdSafetyGuard implements BeanFactoryPostProcessor, Environment
             return;
         }
         String[] certificadores = beanFactory.getBeanNamesForType(CertificadorFelPort.class, true, false);
-        if (certificadores.length == 0) {
-            throw new IllegalStateException(
-                    "Arranque en perfil 'prod' rechazado por configuración insegura: no hay ningún "
-                            + "CertificadorFelPort real configurado (DevCertificadorFelAdapter está deshabilitado "
-                            + "en 'prod' a propósito; implemente y registre un adaptador real antes de operar en "
-                            + "producción).");
+        if (certificadores.length > 0) {
+            return;
         }
+        if (!environment.getProperty("app.fel.requerido-real", Boolean.class, true)) {
+            log.warn("Arranque en 'prod' con app.fel.requerido-real=false: se certificarán documentos FEL con el "
+                    + "adaptador SIMULADO (UUID aleatorio, NUNCA un DTE fiscalmente válido). Aceptable solo "
+                    + "mientras no se facture de verdad — ver docs/plan-mejoras.md Fase 1.");
+            return;
+        }
+        throw new IllegalStateException(
+                "Arranque en perfil 'prod' rechazado por configuración insegura: no hay ningún "
+                        + "CertificadorFelPort real configurado (implemente y registre un adaptador real antes de "
+                        + "emitir facturas reales, o ponga app.fel.requerido-real=false/FEL_REQUERIDO_REAL=false "
+                        + "mientras el cliente siga en fase de pruebas).");
     }
 }

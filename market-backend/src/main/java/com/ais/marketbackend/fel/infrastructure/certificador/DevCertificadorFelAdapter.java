@@ -5,23 +5,25 @@ import com.ais.marketbackend.fel.application.ports.ResultadoCertificacionFel;
 import com.ais.marketbackend.fel.application.ports.SolicitudCertificacionFel;
 import java.time.Instant;
 import java.util.UUID;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
  * Adaptador de desarrollo/pruebas: certifica localmente generando un UUID
  * aleatorio en vez de llamar a un proveedor certificador real autorizado por
  * la SAT. Reemplazar por un adaptador que integre con Infile/Digifact/G4S (u
- * otro proveedor) antes de operar en producción — este adaptador nunca
+ * otro proveedor) antes de emitir facturas reales — este adaptador nunca
  * produce un DTE fiscalmente válido.
  *
- * <p>Restringido a {@code @Profile("!prod")}: en producción este bean no se
- * registra, así que solo puede existir un {@link CertificadorFelPort} activo si
- * se implementó y configuró uno real. {@link FelProdSafetyGuard} además rechaza
- * el arranque en {@code prod} si ese puerto no está disponible.
+ * <p>Activo fuera de {@code prod} siempre, y dentro de {@code prod} solo si
+ * {@code app.fel.requerido-real=false} (bandera temporal — ver
+ * {@link FelSimuladoEnProdCondition} — mientras el cliente esté en fase de
+ * pruebas sin facturación real, sin proveedor FEL contratado todavía).
+ * {@link FelProdSafetyGuard} rechaza el arranque en {@code prod} si ese
+ * puerto no está disponible ni la bandera lo permite.
  */
 @Component
-@Profile("!prod")
+@Conditional(FelSimuladoEnProdCondition.class)
 public class DevCertificadorFelAdapter implements CertificadorFelPort {
 
     @Override

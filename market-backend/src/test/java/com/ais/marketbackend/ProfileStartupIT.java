@@ -104,6 +104,23 @@ class ProfileStartupIT {
                 .hasStackTraceContaining("CertificadorFelPort");
     }
 
+    @Test
+    void perfilProdConFelRequeridoRealEnFalseArrancaConAdaptadorSimulado() {
+        // Bandera temporal (Fase 1, docs/plan-mejoras.md): con
+        // FEL_REQUERIDO_REAL=false, DevCertificadorFelAdapter sí se registra en
+        // 'prod' y FelProdSafetyGuard no rechaza el arranque.
+        SpringApplicationBuilder builder = builder("prod")
+                .properties(propiedadesDeBaseDeDatos())
+                .properties(propiedadesJwtValidas())
+                .properties("SEED_ENABLED=false", "FEL_REQUERIDO_REAL=false");
+
+        contexto = builder.run();
+
+        assertThat(contexto.getBeansOfType(
+                        com.ais.marketbackend.fel.application.ports.CertificadorFelPort.class))
+                .hasSize(1);
+    }
+
     private SpringApplicationBuilder builder(String perfil) {
         // SERVLET, no NONE: RequiresPermissionStartupValidator depende de que exista
         // infraestructura de Spring MVC (RequestMappingHandlerMapping) — con NONE ese

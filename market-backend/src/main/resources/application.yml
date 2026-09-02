@@ -118,6 +118,14 @@ app:
     # Sin perfil activo (o en prod) NUNCA se siembra un admin por accidente — solo
     # application-local.yml / application-test.yml lo activan explícitamente.
     enabled: ${SEED_ENABLED:false}
+  fel:
+    # Bandera temporal (Fase 1, docs/plan-mejoras.md): en 'prod', FelProdSafetyGuard
+    # exige un CertificadorFelPort real salvo que esto sea false — entonces se
+    # permite el adaptador simulado (DevCertificadorFelAdapter) también en prod.
+    # Default true (exigir real) a propósito: poner false requiere decisión explícita
+    # por env var, nunca queda así "por accidente". Solo aceptable mientras el
+    # cliente esté en fase de pruebas sin facturación real.
+    requerido-real: ${FEL_REQUERIDO_REAL:true}
   negocio:
     # Zona horaria usada para calcular cortes de "hoy"/"mes" en el dashboard.
     zona-horaria: ${BUSINESS_TIMEZONE:America/Guatemala}

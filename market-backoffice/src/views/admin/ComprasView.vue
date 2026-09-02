@@ -5,7 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useProveedores } from '@/composables/useProveedores'
 import { useProductos } from '@/composables/useProductos'
 import { usePermissionsStore } from '@/stores/permissions.store'
-import { formatCurrency } from '@/utils/money'
+import { formatCurrency, calcularSubtotal } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Compra } from '@/types/compra'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
@@ -49,6 +49,10 @@ const form = ref({
   proveedorId: '',
   lineas: [{ productoId: '', cantidad: '', costoUnitario: '' }],
 })
+
+const totalFormulario = computed(() =>
+  form.value.lineas.reduce((acc, l) => acc + calcularSubtotal(l.cantidad, l.costoUnitario), 0),
+)
 
 function nombreProveedor(proveedorId: number): string {
   return proveedores.value.find((p) => p.id === proveedorId)?.nombre ?? `#${proveedorId}`
@@ -200,10 +204,14 @@ onMounted(async () => {
               Quitar
             </button>
           </div>
+          <p class="mk-num text-sm text-mk-text/70 sm:col-start-4">
+            Subtotal: {{ formatCurrency(calcularSubtotal(linea.cantidad, linea.costoUnitario)) }}
+          </p>
         </div>
         <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
           + Agregar línea
         </button>
+        <p class="mk-num text-sm font-semibold">Total: {{ formatCurrency(totalFormulario) }}</p>
       </div>
 
       <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
@@ -306,6 +314,7 @@ onMounted(async () => {
               <th class="px-4 py-2 font-medium">Producto</th>
               <th class="mk-num px-4 py-2 font-medium">Cantidad</th>
               <th class="mk-num px-4 py-2 font-medium">Costo unitario</th>
+              <th class="mk-num px-4 py-2 font-medium">Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -317,6 +326,9 @@ onMounted(async () => {
               <td class="px-4 py-2">{{ nombreProducto(linea.productoId) }}</td>
               <td class="mk-num px-4 py-2">{{ linea.cantidad }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(linea.costoUnitario) }}</td>
+              <td class="mk-num px-4 py-2">
+                {{ formatCurrency(calcularSubtotal(linea.cantidad, linea.costoUnitario)) }}
+              </td>
             </tr>
           </tbody>
         </table>

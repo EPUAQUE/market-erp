@@ -6,10 +6,13 @@ import com.ais.marketbackend.seguridad.infrastructure.persistence.mappers.Usuari
 import com.ais.marketbackend.seguridad.infrastructure.persistence.repositories.UsuarioJpaRepository;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UsuarioRepositoryAdapter implements UsuarioRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "id");
 
     private final UsuarioJpaRepository jpaRepository;
     private final UsuarioEntityMapper mapper;
@@ -46,6 +49,6 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
 
     @Override
     public List<Usuario> findAll() {
-        return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+        return jpaRepository.findAll(MAS_RECIENTE_PRIMERO).stream().map(mapper::toDomain).toList();
     }
 }

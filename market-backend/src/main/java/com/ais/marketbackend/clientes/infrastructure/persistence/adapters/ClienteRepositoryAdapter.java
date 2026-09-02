@@ -10,10 +10,13 @@ import com.ais.marketbackend.shared.infrastructure.persistence.PaginaMapper;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ClienteRepositoryAdapter implements ClienteRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "id");
 
     private final ClienteJpaRepository jpaRepository;
     private final ClienteEntityMapper mapper;
@@ -59,6 +62,7 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
 
     @Override
     public Pagina<Cliente> findAll(int pagina, int tamano) {
-        return PaginaMapper.desde(jpaRepository.findAll(PageRequest.of(pagina, tamano)).map(mapper::toDomain));
+        return PaginaMapper.desde(
+                jpaRepository.findAll(PageRequest.of(pagina, tamano, MAS_RECIENTE_PRIMERO)).map(mapper::toDomain));
     }
 }

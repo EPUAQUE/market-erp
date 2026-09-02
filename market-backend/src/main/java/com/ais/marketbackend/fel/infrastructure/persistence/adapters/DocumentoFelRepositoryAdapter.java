@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -20,6 +21,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
 public class DocumentoFelRepositoryAdapter implements DocumentoFelRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "fechaEmision");
 
     private final DocumentoFelJpaRepository jpaRepository;
     private final FelCorrelativoJpaRepository correlativoJpaRepository;
@@ -67,8 +70,9 @@ public class DocumentoFelRepositoryAdapter implements DocumentoFelRepository {
 
     @Override
     public Pagina<DocumentoFel> findByTiendaId(Long tiendaId, int pagina, int tamano) {
-        return PaginaMapper.desde(
-                jpaRepository.findByTiendaId(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
+        return PaginaMapper.desde(jpaRepository
+                .findByTiendaId(tiendaId, PageRequest.of(pagina, tamano, MAS_RECIENTE_PRIMERO))
+                .map(mapper::toDomain));
     }
 
     /**

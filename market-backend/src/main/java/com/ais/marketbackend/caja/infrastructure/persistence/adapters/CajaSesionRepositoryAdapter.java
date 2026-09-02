@@ -12,10 +12,13 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CajaSesionRepositoryAdapter implements CajaSesionRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "fechaApertura");
 
     private final CajaSesionJpaRepository jpaRepository;
     private final CajaSesionEntityMapper mapper;
@@ -69,7 +72,8 @@ public class CajaSesionRepositoryAdapter implements CajaSesionRepository {
 
     @Override
     public Pagina<CajaSesion> findByTiendaId(Long tiendaId, int pagina, int tamano) {
-        return PaginaMapper.desde(
-                jpaRepository.findByTiendaId(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
+        return PaginaMapper.desde(jpaRepository
+                .findByTiendaId(tiendaId, PageRequest.of(pagina, tamano, MAS_RECIENTE_PRIMERO))
+                .map(mapper::toDomain));
     }
 }

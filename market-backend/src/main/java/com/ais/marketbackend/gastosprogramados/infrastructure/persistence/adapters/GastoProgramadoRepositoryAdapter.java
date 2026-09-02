@@ -8,10 +8,13 @@ import com.ais.marketbackend.gastosprogramados.infrastructure.persistence.reposi
 import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
 public class GastoProgramadoRepositoryAdapter implements GastoProgramadoRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "id");
 
     private final GastoProgramadoJpaRepository jpaRepository;
     private final GastoProgramadoEntityMapper mapper;
@@ -43,6 +46,8 @@ public class GastoProgramadoRepositoryAdapter implements GastoProgramadoReposito
 
     @Override
     public List<GastoProgramado> findByTiendaId(Long tiendaId) {
-        return jpaRepository.findByTiendaId(tiendaId).stream().map(mapper::toDomain).toList();
+        return jpaRepository.findByTiendaId(tiendaId, MAS_RECIENTE_PRIMERO).stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }

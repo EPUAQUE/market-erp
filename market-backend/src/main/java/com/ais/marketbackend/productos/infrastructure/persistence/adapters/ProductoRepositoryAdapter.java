@@ -11,10 +11,13 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ProductoRepositoryAdapter implements ProductoRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "id");
 
     private final ProductoJpaRepository jpaRepository;
     private final ProductoEntityMapper mapper;
@@ -50,6 +53,7 @@ public class ProductoRepositoryAdapter implements ProductoRepository {
 
     @Override
     public Pagina<Producto> findAll(int pagina, int tamano) {
-        return PaginaMapper.desde(jpaRepository.findAll(PageRequest.of(pagina, tamano)).map(mapper::toDomain));
+        return PaginaMapper.desde(
+                jpaRepository.findAll(PageRequest.of(pagina, tamano, MAS_RECIENTE_PRIMERO)).map(mapper::toDomain));
     }
 }

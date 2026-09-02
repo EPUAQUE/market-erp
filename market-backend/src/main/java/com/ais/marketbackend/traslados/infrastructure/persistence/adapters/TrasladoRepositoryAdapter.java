@@ -12,10 +12,13 @@ import java.util.Optional;
 import java.util.Set;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TrasladoRepositoryAdapter implements TrasladoRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "fecha");
 
     private final TrasladoJpaRepository jpaRepository;
     private final TrasladoEntityMapper mapper;
@@ -51,13 +54,15 @@ public class TrasladoRepositoryAdapter implements TrasladoRepository {
 
     @Override
     public Pagina<Traslado> listar(int pagina, int tamano) {
-        return PaginaMapper.desde(jpaRepository.findAll(PageRequest.of(pagina, tamano)).map(mapper::toDomain));
+        return PaginaMapper.desde(
+                jpaRepository.findAll(PageRequest.of(pagina, tamano, MAS_RECIENTE_PRIMERO)).map(mapper::toDomain));
     }
 
     @Override
     public Pagina<Traslado> listarPorTiendas(Set<Long> tiendaIds, int pagina, int tamano) {
         return PaginaMapper.desde(jpaRepository
-                .findByTiendaOrigenIdInOrTiendaDestinoIdIn(tiendaIds, tiendaIds, PageRequest.of(pagina, tamano))
+                .findByTiendaOrigenIdInOrTiendaDestinoIdIn(
+                        tiendaIds, tiendaIds, PageRequest.of(pagina, tamano, MAS_RECIENTE_PRIMERO))
                 .map(mapper::toDomain));
     }
 }

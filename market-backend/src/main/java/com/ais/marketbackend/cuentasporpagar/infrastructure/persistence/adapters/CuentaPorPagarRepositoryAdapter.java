@@ -11,10 +11,13 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CuentaPorPagarRepositoryAdapter implements CuentaPorPagarRepository {
+
+    private static final Sort MAS_RECIENTE_PRIMERO = Sort.by(Sort.Direction.DESC, "fechaEmision");
 
     private final CuentaPorPagarJpaRepository jpaRepository;
     private final CuentaPorPagarEntityMapper mapper;
@@ -51,7 +54,8 @@ public class CuentaPorPagarRepositoryAdapter implements CuentaPorPagarRepository
 
     @Override
     public Pagina<CuentaPorPagar> findByTiendaId(Long tiendaId, int pagina, int tamano) {
-        return PaginaMapper.desde(
-                jpaRepository.findByTiendaId(tiendaId, PageRequest.of(pagina, tamano)).map(mapper::toDomain));
+        return PaginaMapper.desde(jpaRepository
+                .findByTiendaId(tiendaId, PageRequest.of(pagina, tamano, MAS_RECIENTE_PRIMERO))
+                .map(mapper::toDomain));
     }
 }

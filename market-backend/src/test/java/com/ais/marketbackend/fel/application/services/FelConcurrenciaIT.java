@@ -111,7 +111,7 @@ class FelConcurrenciaIT {
         MarcaResumen marca = marcaService.crear("Marca FEL");
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad FEL", "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-FEL-" + System.nanoTime(), null, "Producto de prueba FEL", null,
+                "SKU-FEL-" + System.nanoTime(), null, "Producto de prueba FEL", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
         productoTiendaService.asignar(
                 producto.id(), tiendaId, new BigDecimal("100.00"), BigDecimal.ZERO, new BigDecimal("500"),

@@ -16,6 +16,7 @@ public class Producto {
     private String codigoBarras;
     private String nombre;
     private String descripcion;
+    private String descripcionCorta;
     private Long categoriaId;
     private Long marcaId;
     private Long unidadMedidaId;
@@ -24,12 +25,14 @@ public class Producto {
 
     public Producto(
             Long id, String codigoInterno, String codigoBarras, String nombre, String descripcion,
-            Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl, boolean activo) {
+            String descripcionCorta, Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl,
+            boolean activo) {
         this.id = id;
         this.codigoInterno = Objects.requireNonNull(codigoInterno, "codigoInterno");
         this.codigoBarras = codigoBarras;
         this.nombre = Objects.requireNonNull(nombre, "nombre");
         this.descripcion = descripcion;
+        this.descripcionCorta = descripcionCorta;
         this.categoriaId = Objects.requireNonNull(categoriaId, "categoriaId");
         this.marcaId = Objects.requireNonNull(marcaId, "marcaId");
         this.unidadMedidaId = Objects.requireNonNull(unidadMedidaId, "unidadMedidaId");
@@ -38,18 +41,19 @@ public class Producto {
     }
 
     public static Producto nuevo(
-            String codigoInterno, String codigoBarras, String nombre, String descripcion,
+            String codigoInterno, String codigoBarras, String nombre, String descripcion, String descripcionCorta,
             Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl) {
-        return new Producto(null, codigoInterno, codigoBarras, nombre, descripcion, categoriaId, marcaId,
-                unidadMedidaId, imagenUrl, true);
+        return new Producto(null, codigoInterno, codigoBarras, nombre, descripcion, descripcionCorta, categoriaId,
+                marcaId, unidadMedidaId, imagenUrl, true);
     }
 
     public void actualizarDatos(
-            String codigoBarras, String nombre, String descripcion, Long categoriaId, Long marcaId,
-            Long unidadMedidaId, String imagenUrl) {
+            String codigoBarras, String nombre, String descripcion, String descripcionCorta, Long categoriaId,
+            Long marcaId, Long unidadMedidaId, String imagenUrl) {
         this.codigoBarras = codigoBarras;
         this.nombre = Objects.requireNonNull(nombre, "nombre");
         this.descripcion = descripcion;
+        this.descripcionCorta = descripcionCorta;
         this.categoriaId = Objects.requireNonNull(categoriaId, "categoriaId");
         this.marcaId = Objects.requireNonNull(marcaId, "marcaId");
         this.unidadMedidaId = Objects.requireNonNull(unidadMedidaId, "unidadMedidaId");
@@ -86,6 +90,10 @@ public class Producto {
 
     public String getDescripcion() {
         return descripcion;
+    }
+
+    public String getDescripcionCorta() {
+        return descripcionCorta;
     }
 
     public Long getCategoriaId() {

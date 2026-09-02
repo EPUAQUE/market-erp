@@ -33,33 +33,38 @@ const ProductoCatalogoIsarSchema = CollectionSchema(
       name: r'codigoInterno',
       type: IsarType.string,
     ),
-    r'existenciaActual': PropertySchema(
+    r'descripcionCorta': PropertySchema(
       id: 3,
+      name: r'descripcionCorta',
+      type: IsarType.string,
+    ),
+    r'existenciaActual': PropertySchema(
+      id: 4,
       name: r'existenciaActual',
       type: IsarType.string,
     ),
     r'imagenUrl': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'imagenUrl',
       type: IsarType.string,
     ),
-    r'nombre': PropertySchema(id: 5, name: r'nombre', type: IsarType.string),
+    r'nombre': PropertySchema(id: 6, name: r'nombre', type: IsarType.string),
     r'permitirVenta': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'permitirVenta',
       type: IsarType.bool,
     ),
     r'precioVenta': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'precioVenta',
       type: IsarType.string,
     ),
     r'productoId': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'productoId',
       type: IsarType.long,
     ),
-    r'tiendaId': PropertySchema(id: 9, name: r'tiendaId', type: IsarType.long),
+    r'tiendaId': PropertySchema(id: 10, name: r'tiendaId', type: IsarType.long),
   },
 
   estimateSize: _productoCatalogoIsarEstimateSize,
@@ -90,6 +95,12 @@ int _productoCatalogoIsarEstimateSize(
     }
   }
   bytesCount += 3 + object.codigoInterno.length * 3;
+  {
+    final value = object.descripcionCorta;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.existenciaActual.length * 3;
   {
     final value = object.imagenUrl;
@@ -111,13 +122,14 @@ void _productoCatalogoIsarSerialize(
   writer.writeLong(offsets[0], object.categoriaId);
   writer.writeString(offsets[1], object.codigoBarras);
   writer.writeString(offsets[2], object.codigoInterno);
-  writer.writeString(offsets[3], object.existenciaActual);
-  writer.writeString(offsets[4], object.imagenUrl);
-  writer.writeString(offsets[5], object.nombre);
-  writer.writeBool(offsets[6], object.permitirVenta);
-  writer.writeString(offsets[7], object.precioVenta);
-  writer.writeLong(offsets[8], object.productoId);
-  writer.writeLong(offsets[9], object.tiendaId);
+  writer.writeString(offsets[3], object.descripcionCorta);
+  writer.writeString(offsets[4], object.existenciaActual);
+  writer.writeString(offsets[5], object.imagenUrl);
+  writer.writeString(offsets[6], object.nombre);
+  writer.writeBool(offsets[7], object.permitirVenta);
+  writer.writeString(offsets[8], object.precioVenta);
+  writer.writeLong(offsets[9], object.productoId);
+  writer.writeLong(offsets[10], object.tiendaId);
 }
 
 ProductoCatalogoIsar _productoCatalogoIsarDeserialize(
@@ -130,13 +142,14 @@ ProductoCatalogoIsar _productoCatalogoIsarDeserialize(
   object.categoriaId = reader.readLongOrNull(offsets[0]);
   object.codigoBarras = reader.readStringOrNull(offsets[1]);
   object.codigoInterno = reader.readString(offsets[2]);
-  object.existenciaActual = reader.readString(offsets[3]);
-  object.imagenUrl = reader.readStringOrNull(offsets[4]);
-  object.nombre = reader.readString(offsets[5]);
-  object.permitirVenta = reader.readBool(offsets[6]);
-  object.precioVenta = reader.readString(offsets[7]);
-  object.productoId = reader.readLong(offsets[8]);
-  object.tiendaId = reader.readLong(offsets[9]);
+  object.descripcionCorta = reader.readStringOrNull(offsets[3]);
+  object.existenciaActual = reader.readString(offsets[4]);
+  object.imagenUrl = reader.readStringOrNull(offsets[5]);
+  object.nombre = reader.readString(offsets[6]);
+  object.permitirVenta = reader.readBool(offsets[7]);
+  object.precioVenta = reader.readString(offsets[8]);
+  object.productoId = reader.readLong(offsets[9]);
+  object.tiendaId = reader.readLong(offsets[10]);
   return object;
 }
 
@@ -154,18 +167,20 @@ P _productoCatalogoIsarDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
-    case 4:
       return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
+      return (reader.readLong(offset)) as P;
+    case 10:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -756,6 +771,213 @@ extension ProductoCatalogoIsarQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'codigoInterno', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'descripcionCorta'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'descripcionCorta'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'descripcionCorta',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'descripcionCorta',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'descripcionCorta',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'descripcionCorta',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'descripcionCorta',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'descripcionCorta',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'descripcionCorta',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'descripcionCorta',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'descripcionCorta', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ProductoCatalogoIsar,
+    ProductoCatalogoIsar,
+    QAfterFilterCondition
+  >
+  descripcionCortaIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'descripcionCorta', value: ''),
       );
     });
   }
@@ -1798,6 +2020,20 @@ extension ProductoCatalogoIsarQuerySortBy
   }
 
   QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QAfterSortBy>
+  sortByDescripcionCorta() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'descripcionCorta', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QAfterSortBy>
+  sortByDescripcionCortaDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'descripcionCorta', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QAfterSortBy>
   sortByExistenciaActual() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'existenciaActual', Sort.asc);
@@ -1941,6 +2177,20 @@ extension ProductoCatalogoIsarQuerySortThenBy
   }
 
   QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QAfterSortBy>
+  thenByDescripcionCorta() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'descripcionCorta', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QAfterSortBy>
+  thenByDescripcionCortaDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'descripcionCorta', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QAfterSortBy>
   thenByExistenciaActual() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'existenciaActual', Sort.asc);
@@ -2080,6 +2330,16 @@ extension ProductoCatalogoIsarQueryWhereDistinct
   }
 
   QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QDistinct>
+  distinctByDescripcionCorta({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'descripcionCorta',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<ProductoCatalogoIsar, ProductoCatalogoIsar, QDistinct>
   distinctByExistenciaActual({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -2163,6 +2423,13 @@ extension ProductoCatalogoIsarQueryProperty
   codigoInternoProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'codigoInterno');
+    });
+  }
+
+  QueryBuilder<ProductoCatalogoIsar, String?, QQueryOperations>
+  descripcionCortaProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'descripcionCorta');
     });
   }
 

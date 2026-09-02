@@ -22,6 +22,7 @@
 
     <include file="db/changelog/modules/productos/001-producto.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/productos/002-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/productos/003-descripcion-corta.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/inventario/001-inventario.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/inventario/002-check-montos.xml" relativeToChangelogFile="false"/>

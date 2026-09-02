@@ -23,23 +23,25 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional
     public ProductoResumen crear(
-            String codigoInterno, String codigoBarras, String nombre, String descripcion,
+            String codigoInterno, String codigoBarras, String nombre, String descripcion, String descripcionCorta,
             Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl) {
         if (productoRepository.existsByCodigoInterno(codigoInterno)) {
             throw new ProductoDuplicadoException(codigoInterno);
         }
         Producto producto = Producto.nuevo(
-                codigoInterno, codigoBarras, nombre, descripcion, categoriaId, marcaId, unidadMedidaId, imagenUrl);
+                codigoInterno, codigoBarras, nombre, descripcion, descripcionCorta, categoriaId, marcaId,
+                unidadMedidaId, imagenUrl);
         return toResumen(productoRepository.save(producto));
     }
 
     @Override
     @Transactional
     public ProductoResumen actualizar(
-            Long id, String codigoBarras, String nombre, String descripcion,
+            Long id, String codigoBarras, String nombre, String descripcion, String descripcionCorta,
             Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl) {
         Producto producto = obtenerORequerido(id);
-        producto.actualizarDatos(codigoBarras, nombre, descripcion, categoriaId, marcaId, unidadMedidaId, imagenUrl);
+        producto.actualizarDatos(
+                codigoBarras, nombre, descripcion, descripcionCorta, categoriaId, marcaId, unidadMedidaId, imagenUrl);
         return toResumen(productoRepository.save(producto));
     }
 
@@ -85,7 +87,7 @@ public class ProductoServiceImpl implements ProductoService {
     private ProductoResumen toResumen(Producto producto) {
         return new ProductoResumen(
                 producto.getId(), producto.getCodigoInterno(), producto.getCodigoBarras(), producto.getNombre(),
-                producto.getDescripcion(), producto.getCategoriaId(), producto.getMarcaId(),
-                producto.getUnidadMedidaId(), producto.getImagenUrl(), producto.isActivo());
+                producto.getDescripcion(), producto.getDescripcionCorta(), producto.getCategoriaId(),
+                producto.getMarcaId(), producto.getUnidadMedidaId(), producto.getImagenUrl(), producto.isActivo());
     }
 }

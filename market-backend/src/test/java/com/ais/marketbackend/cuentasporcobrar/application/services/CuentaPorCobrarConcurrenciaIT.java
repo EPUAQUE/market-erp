@@ -106,7 +106,7 @@ class CuentaPorCobrarConcurrenciaIT {
         MarcaResumen marca = marcaService.crear("Marca CxC");
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad CxC", "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-CXC-" + System.nanoTime(), null, "Producto de prueba CxC", null,
+                "SKU-CXC-" + System.nanoTime(), null, "Producto de prueba CxC", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
         ClienteResumen cliente = clienteService.crear(null, "Cliente de prueba CxC", null, null, null, null);
         VentaResumen venta = ventaService.crear(

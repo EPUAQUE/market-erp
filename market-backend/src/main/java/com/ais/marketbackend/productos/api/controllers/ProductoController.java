@@ -47,7 +47,8 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> crear(@Valid @RequestBody CrearProductoRequest request) {
         ProductoResponse creado = mapper.toResponse(productoService.crear(
                 request.codigoInterno(), request.codigoBarras(), request.nombre(), request.descripcion(),
-                request.categoriaId(), request.marcaId(), request.unidadMedidaId(), request.imagenUrl()));
+                request.descripcionCorta(), request.categoriaId(), request.marcaId(), request.unidadMedidaId(),
+                request.imagenUrl()));
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
@@ -56,8 +57,8 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> actualizar(
             @PathVariable Long id, @Valid @RequestBody ActualizarProductoRequest request) {
         ProductoResponse actualizado = mapper.toResponse(productoService.actualizar(
-                id, request.codigoBarras(), request.nombre(), request.descripcion(), request.categoriaId(),
-                request.marcaId(), request.unidadMedidaId(), request.imagenUrl()));
+                id, request.codigoBarras(), request.nombre(), request.descripcion(), request.descripcionCorta(),
+                request.categoriaId(), request.marcaId(), request.unidadMedidaId(), request.imagenUrl()));
         return ResponseEntity.ok(actualizado);
     }
 

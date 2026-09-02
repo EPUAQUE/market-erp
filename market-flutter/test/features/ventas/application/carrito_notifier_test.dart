@@ -10,6 +10,7 @@ ProductoCatalogo _producto({int productoId = 1, String precio = '8.50'}) {
     codigoInterno: 'P00$productoId',
     codigoBarras: null,
     nombre: 'Producto $productoId',
+    descripcionCorta: null,
     imagenUrl: null,
     precioVenta: Decimal.parse(precio),
     existenciaActual: Decimal.parse('10'),

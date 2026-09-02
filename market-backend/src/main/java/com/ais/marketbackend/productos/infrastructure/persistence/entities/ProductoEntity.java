@@ -41,6 +41,10 @@ public class ProductoEntity {
     @Column(name = "descripcion", length = 1000)
     private String descripcion;
 
+    /** Para imprimir en factura/recibo y para mostrar en el POS de Flutter — más corta que {@code descripcion}. */
+    @Column(name = "descripcion_corta", length = 100)
+    private String descripcionCorta;
+
     @Column(name = "categoria_id", nullable = false)
     private Long categoriaId;
 

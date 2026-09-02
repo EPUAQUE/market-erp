@@ -100,6 +100,7 @@ class IsarLocalStore implements LocalStore {
                 ..codigoInterno = p.codigoInterno
                 ..codigoBarras = p.codigoBarras
                 ..nombre = p.nombre
+                ..descripcionCorta = p.descripcionCorta
                 ..imagenUrl = p.imagenUrl
                 ..precioVenta = p.precioVenta.toString()
                 ..existenciaActual = p.existenciaActual.toString()
@@ -124,6 +125,7 @@ class IsarLocalStore implements LocalStore {
             codigoInterno: l.codigoInterno,
             codigoBarras: l.codigoBarras,
             nombre: l.nombre,
+            descripcionCorta: l.descripcionCorta,
             imagenUrl: l.imagenUrl,
             precioVenta: Decimal.parse(l.precioVenta),
             existenciaActual: Decimal.parse(l.existenciaActual),

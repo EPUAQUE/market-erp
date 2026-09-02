@@ -7,6 +7,7 @@ export interface DatosProducto {
   codigoBarras?: string
   nombre: string
   descripcion?: string
+  descripcionCorta?: string
   categoriaId: number
   marcaId: number
   unidadMedidaId: number

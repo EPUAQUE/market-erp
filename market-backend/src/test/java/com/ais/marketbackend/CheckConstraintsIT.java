@@ -99,7 +99,7 @@ class CheckConstraintsIT {
         MarcaResumen marca = marcaService.crear("Marca CHECK " + sufijo);
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad CHECK " + sufijo, "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-CHECK-" + System.nanoTime(), null, "Producto de prueba CHECK", null,
+                "SKU-CHECK-" + System.nanoTime(), null, "Producto de prueba CHECK", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
         productoId = producto.id();
 

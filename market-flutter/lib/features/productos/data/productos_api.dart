@@ -55,6 +55,7 @@ class ProductosApi {
         codigoInterno: producto?['codigoInterno'] as String? ?? '',
         codigoBarras: producto?['codigoBarras'] as String?,
         nombre: producto?['nombre'] as String? ?? 'Producto #$productoId',
+        descripcionCorta: producto?['descripcionCorta'] as String?,
         imagenUrl: producto?['imagenUrl'] as String?,
         precioVenta: Decimal.parse(productoTienda['precioVenta'] as String),
         existenciaActual: existencias[productoId] ?? Decimal.zero,

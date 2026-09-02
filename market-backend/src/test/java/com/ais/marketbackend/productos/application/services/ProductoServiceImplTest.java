@@ -32,7 +32,7 @@ class ProductoServiceImplTest {
 
     @Test
     void listarPaginadoDelegaEnElRepositorioYMapeaElContenido() {
-        Producto producto = Producto.nuevo("P001", null, "Leche", null, 1L, 2L, 3L, null);
+        Producto producto = Producto.nuevo("P001", null, "Leche", null, null, 1L, 2L, 3L, null);
         when(productoRepository.findAll(0, 20)).thenReturn(new Pagina<>(List.of(producto), 0, 20, 1, 1));
 
         Pagina<ProductoResumen> resultado = productoService.listar(0, 20);
@@ -45,7 +45,7 @@ class ProductoServiceImplTest {
     void crearDevuelveElResumenCreado() {
         when(productoRepository.existsByCodigoInterno("P001")).thenReturn(false);
 
-        ProductoResumen resumen = productoService.crear("P001", "789", "Leche", "desc", 1L, 2L, 3L, null);
+        ProductoResumen resumen = productoService.crear("P001", "789", "Leche", "desc", "desc corta", 1L, 2L, 3L, null);
 
         assertThat(resumen.codigoInterno()).isEqualTo("P001");
         assertThat(resumen.activo()).isTrue();
@@ -55,7 +55,7 @@ class ProductoServiceImplTest {
     void crearConCodigoInternoDuplicadoLanzaExcepcion() {
         when(productoRepository.existsByCodigoInterno("P001")).thenReturn(true);
 
-        assertThatThrownBy(() -> productoService.crear("P001", null, "Leche", null, 1L, 2L, 3L, null))
+        assertThatThrownBy(() -> productoService.crear("P001", null, "Leche", null, null, 1L, 2L, 3L, null))
                 .isInstanceOf(ProductoDuplicadoException.class);
     }
 
@@ -63,13 +63,13 @@ class ProductoServiceImplTest {
     void actualizarConIdInexistenteLanzaNoEncontrado() {
         when(productoRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> productoService.actualizar(99L, null, "Leche", null, 1L, 2L, 3L, null))
+        assertThatThrownBy(() -> productoService.actualizar(99L, null, "Leche", null, null, 1L, 2L, 3L, null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void activarYDesactivarDelegaEnElAgregado() {
-        Producto producto = Producto.nuevo("P001", null, "Leche", null, 1L, 2L, 3L, null);
+        Producto producto = Producto.nuevo("P001", null, "Leche", null, null, 1L, 2L, 3L, null);
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
 
         productoService.desactivar(1L);

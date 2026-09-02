@@ -92,7 +92,7 @@ class CuentaPorPagarConcurrenciaIT {
         MarcaResumen marca = marcaService.crear("Marca CxP");
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad CxP", "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-CXP-" + System.nanoTime(), null, "Producto de prueba CxP", null,
+                "SKU-CXP-" + System.nanoTime(), null, "Producto de prueba CxP", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
         ProveedorResumen proveedor = proveedorService.crear(
                 "NIT" + (System.nanoTime() % 100_000_000L), "Proveedor de prueba CxP", null, null, null);

@@ -107,7 +107,7 @@ class CompraConcurrenciaIT {
         MarcaResumen marca = marcaService.crear("Marca compra");
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad compra", "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-COMPRA-" + System.nanoTime(), null, "Producto de prueba compra", null,
+                "SKU-COMPRA-" + System.nanoTime(), null, "Producto de prueba compra", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
         ProveedorResumen proveedor = proveedorService.crear(
                 "NIT" + (System.nanoTime() % 100_000_000L), "Proveedor de prueba compra", null, null, null);

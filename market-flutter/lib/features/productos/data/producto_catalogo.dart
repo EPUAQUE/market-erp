@@ -12,6 +12,7 @@ class ProductoCatalogo {
     required this.codigoInterno,
     required this.codigoBarras,
     required this.nombre,
+    required this.descripcionCorta,
     required this.imagenUrl,
     required this.precioVenta,
     required this.existenciaActual,
@@ -23,6 +24,12 @@ class ProductoCatalogo {
   final String codigoInterno;
   final String? codigoBarras;
   final String nombre;
+
+  /// Para mostrar en el POS y (a futuro) imprimir en factura/recibo — más
+  /// corta que la descripción larga del catálogo administrativo, que este
+  /// modelo ni siquiera trae.
+  final String? descripcionCorta;
+
   final String? imagenUrl;
   final Decimal precioVenta;
   final Decimal existenciaActual;

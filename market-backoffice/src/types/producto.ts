@@ -4,6 +4,7 @@ export interface Producto {
   codigoBarras: string | null
   nombre: string
   descripcion: string | null
+  descripcionCorta: string | null
   categoriaId: number
   marcaId: number
   unidadMedidaId: number

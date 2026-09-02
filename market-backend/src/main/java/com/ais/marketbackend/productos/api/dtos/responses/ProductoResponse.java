@@ -12,6 +12,7 @@ public class ProductoResponse {
     String codigoBarras;
     String nombre;
     String descripcion;
+    String descripcionCorta;
     Long categoriaId;
     Long marcaId;
     Long unidadMedidaId;

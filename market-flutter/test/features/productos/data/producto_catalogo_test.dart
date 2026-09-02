@@ -15,6 +15,7 @@ ProductoCatalogo _producto({
     codigoInterno: codigoInterno,
     codigoBarras: codigoBarras,
     nombre: nombre,
+    descripcionCorta: null,
     imagenUrl: null,
     precioVenta: Decimal.parse('8.50'),
     existenciaActual: existenciaActual ?? Decimal.parse('10'),

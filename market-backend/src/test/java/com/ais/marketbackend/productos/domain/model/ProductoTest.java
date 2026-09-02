@@ -8,15 +8,17 @@ class ProductoTest {
 
     @Test
     void nuevoProductoEstaActivoPorDefecto() {
-        Producto producto = Producto.nuevo("P001", "7501234567890", "Leche", "Leche entera 1L", 1L, 2L, 3L, null);
+        Producto producto =
+                Producto.nuevo("P001", "7501234567890", "Leche", "Leche entera 1L", "Leche 1L", 1L, 2L, 3L, null);
 
         assertThat(producto.isActivo()).isTrue();
         assertThat(producto.getCodigoInterno()).isEqualTo("P001");
+        assertThat(producto.getDescripcionCorta()).isEqualTo("Leche 1L");
     }
 
     @Test
     void desactivarYActivarCambianElEstado() {
-        Producto producto = Producto.nuevo("P001", null, "Leche", null, 1L, 2L, 3L, null);
+        Producto producto = Producto.nuevo("P001", null, "Leche", null, null, 1L, 2L, 3L, null);
 
         producto.desactivar();
         assertThat(producto.isActivo()).isFalse();
@@ -27,13 +29,15 @@ class ProductoTest {
 
     @Test
     void actualizarDatosNoCambiaElCodigoInterno() {
-        Producto producto = Producto.nuevo("P001", null, "Leche", null, 1L, 2L, 3L, null);
+        Producto producto = Producto.nuevo("P001", null, "Leche", null, null, 1L, 2L, 3L, null);
 
-        producto.actualizarDatos("7501234567890", "Leche deslactosada", "Nueva descripción", 4L, 5L, 6L, "url.png");
+        producto.actualizarDatos(
+                "7501234567890", "Leche deslactosada", "Nueva descripción", "Leche desl.", 4L, 5L, 6L, "url.png");
 
         assertThat(producto.getCodigoInterno()).isEqualTo("P001");
         assertThat(producto.getCodigoBarras()).isEqualTo("7501234567890");
         assertThat(producto.getNombre()).isEqualTo("Leche deslactosada");
+        assertThat(producto.getDescripcionCorta()).isEqualTo("Leche desl.");
         assertThat(producto.getCategoriaId()).isEqualTo(4L);
         assertThat(producto.getMarcaId()).isEqualTo(5L);
         assertThat(producto.getUnidadMedidaId()).isEqualTo(6L);

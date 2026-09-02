@@ -4,6 +4,7 @@
   "codigoBarras": "7501234567890",
   "nombre": "Coca Cola 600ml",
   "descripcion": "Refresco",
+  "descripcionCorta": "Coca 600ml",
   "categoriaId": 2,
   "marcaId": 3,
   "unidadMedidaId": 4,

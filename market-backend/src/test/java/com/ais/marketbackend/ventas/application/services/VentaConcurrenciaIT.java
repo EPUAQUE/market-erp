@@ -110,7 +110,7 @@ class VentaConcurrenciaIT {
         MarcaResumen marca = marcaService.crear("Marca venta");
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad venta", "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-VENTA-" + System.nanoTime(), null, "Producto de prueba venta", null,
+                "SKU-VENTA-" + System.nanoTime(), null, "Producto de prueba venta", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
         productoTiendaService.asignar(
                 producto.id(), tiendaId, new BigDecimal("100.00"), BigDecimal.ZERO, new BigDecimal("500"),

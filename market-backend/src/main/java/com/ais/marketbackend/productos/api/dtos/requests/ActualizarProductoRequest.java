@@ -15,6 +15,9 @@ public record ActualizarProductoRequest(
         @Size(max = 1000, message = "La descripción no puede superar 1000 caracteres")
         String descripcion,
 
+        @Size(max = 100, message = "La descripción corta no puede superar 100 caracteres")
+        String descripcionCorta,
+
         @NotNull(message = "La categoría es obligatoria") Long categoriaId,
         @NotNull(message = "La marca es obligatoria") Long marcaId,
         @NotNull(message = "La unidad de medida es obligatoria") Long unidadMedidaId,

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Pedido del cliente: una descripción corta por producto, para imprimir en
+         factura/recibo (todavía no existe ningún generador de recibo/factura en el
+         proyecto — esto solo agrega el dato) y para mostrar en el POS de Flutter.
+         Campo nuevo y separado de "descripcion" (VARCHAR 1000, ya existente mas sin
+         uso fuera del formulario de alta/edición) — 100 caracteres alcanza para un
+         renglón de recibo térmico típico (32-48 columnas) sin obligar a truncar en
+         cada consumidor. Nullable: productos existentes no tienen valor todavía. -->
+    <changeSet id="productos-003-descripcion-corta" author="market-backend">
+        <addColumn tableName="producto">
+            <column name="descripcion_corta" type="VARCHAR(100)"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="producto" columnName="descripcion_corta"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

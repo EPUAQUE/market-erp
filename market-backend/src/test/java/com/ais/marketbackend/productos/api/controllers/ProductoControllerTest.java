@@ -44,6 +44,7 @@ class ProductoControllerTest {
                 .codigoBarras(resumen.codigoBarras())
                 .nombre(resumen.nombre())
                 .descripcion(resumen.descripcion())
+                .descripcionCorta(resumen.descripcionCorta())
                 .categoriaId(resumen.categoriaId())
                 .marcaId(resumen.marcaId())
                 .unidadMedidaId(resumen.unidadMedidaId())
@@ -60,7 +61,8 @@ class ProductoControllerTest {
     @Test
     void listarDevuelveLosProductosPaginados() throws Exception {
         when(productoService.listar(0, 20)).thenReturn(new Pagina<>(
-                List.of(new ProductoResumen(1L, "P001", null, "Leche", null, 1L, 2L, 3L, null, true)), 0, 20, 1, 1));
+                List.of(new ProductoResumen(1L, "P001", null, "Leche", null, null, 1L, 2L, 3L, null, true)), 0, 20, 1,
+                1));
 
         mockMvc.perform(get("/api/v1/productos"))
                 .andExpect(status().isOk())
@@ -69,8 +71,8 @@ class ProductoControllerTest {
 
     @Test
     void crearDevuelve201() throws Exception {
-        when(productoService.crear(anyString(), any(), anyString(), any(), any(), any(), any(), any()))
-                .thenReturn(new ProductoResumen(2L, "P002", null, "Azúcar", null, 1L, 2L, 3L, null, true));
+        when(productoService.crear(anyString(), any(), anyString(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new ProductoResumen(2L, "P002", null, "Azúcar", null, null, 1L, 2L, 3L, null, true));
 
         mockMvc.perform(post("/api/v1/productos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -82,7 +84,7 @@ class ProductoControllerTest {
 
     @Test
     void crearDuplicadoDevuelve409() throws Exception {
-        when(productoService.crear(anyString(), any(), anyString(), any(), any(), any(), any(), any()))
+        when(productoService.crear(anyString(), any(), anyString(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(new ProductoDuplicadoException("P001"));
 
         mockMvc.perform(post("/api/v1/productos")
@@ -106,8 +108,8 @@ class ProductoControllerTest {
         MockMultipartFile archivo = new MockMultipartFile("archivo", "foto.jpg", "image/jpeg", new byte[]{1, 2, 3});
         when(imagenAlmacenamientoService.guardar(any())).thenReturn("/api/v1/productos/imagenes/abc.jpg");
         when(productoService.actualizarImagen(1L, "/api/v1/productos/imagenes/abc.jpg")).thenReturn(
-                new ProductoResumen(1L, "P001", null, "Leche", null, 1L, 2L, 3L, "/api/v1/productos/imagenes/abc.jpg",
-                        true));
+                new ProductoResumen(1L, "P001", null, "Leche", null, null, 1L, 2L, 3L,
+                        "/api/v1/productos/imagenes/abc.jpg", true));
 
         mockMvc.perform(multipart("/api/v1/productos/1/imagen").file(archivo))
                 .andExpect(status().isOk())

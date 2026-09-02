@@ -17,6 +17,7 @@ class ProductoCatalogoIsar {
   late String codigoInterno;
   String? codigoBarras;
   late String nombre;
+  String? descripcionCorta;
   String? imagenUrl;
   late String precioVenta;
   late String existenciaActual;

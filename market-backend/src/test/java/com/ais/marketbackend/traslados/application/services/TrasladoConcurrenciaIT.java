@@ -105,7 +105,7 @@ class TrasladoConcurrenciaIT {
         MarcaResumen marca = marcaService.crear("Marca traslado");
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad traslado", "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-TRAS-" + System.nanoTime(), null, "Producto de prueba traslado", null,
+                "SKU-TRAS-" + System.nanoTime(), null, "Producto de prueba traslado", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
 
         productoTiendaService.asignar(

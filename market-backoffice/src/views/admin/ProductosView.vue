@@ -47,6 +47,7 @@ const form = ref({
   codigoBarras: '',
   nombre: '',
   descripcion: '',
+  descripcionCorta: '',
   categoriaId: '' as number | '',
   marcaId: '' as number | '',
   unidadMedidaId: '' as number | '',
@@ -94,6 +95,7 @@ function abrirCrear() {
     codigoBarras: '',
     nombre: '',
     descripcion: '',
+    descripcionCorta: '',
     categoriaId: '',
     marcaId: '',
     unidadMedidaId: '',
@@ -110,6 +112,7 @@ function abrirEditar(producto: Producto) {
     codigoBarras: producto.codigoBarras ?? '',
     nombre: producto.nombre,
     descripcion: producto.descripcion ?? '',
+    descripcionCorta: producto.descripcionCorta ?? '',
     categoriaId: producto.categoriaId,
     marcaId: producto.marcaId,
     unidadMedidaId: producto.unidadMedidaId,
@@ -125,6 +128,7 @@ async function onSubmit() {
     codigoBarras: form.value.codigoBarras || undefined,
     nombre: form.value.nombre,
     descripcion: form.value.descripcion || undefined,
+    descripcionCorta: form.value.descripcionCorta || undefined,
     categoriaId: Number(form.value.categoriaId),
     marcaId: Number(form.value.marcaId),
     unidadMedidaId: Number(form.value.unidadMedidaId),
@@ -223,6 +227,16 @@ onMounted(async () => {
           <input
             v-model="form.descripcion"
             type="text"
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+          />
+        </div>
+        <div class="space-y-1 sm:col-span-2">
+          <label class="text-sm font-medium">Descripción corta</label>
+          <input
+            v-model="form.descripcionCorta"
+            type="text"
+            maxlength="100"
+            placeholder="Para imprimir en factura/recibo y mostrar en el POS"
             class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
           />
         </div>

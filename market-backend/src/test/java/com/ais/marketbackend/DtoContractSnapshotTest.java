@@ -104,6 +104,7 @@ class DtoContractSnapshotTest {
                 .codigoBarras("7501234567890")
                 .nombre("Coca Cola 600ml")
                 .descripcion("Refresco")
+                .descripcionCorta("Coca 600ml")
                 .categoriaId(2L)
                 .marcaId(3L)
                 .unidadMedidaId(4L)

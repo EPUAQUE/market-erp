@@ -270,6 +270,17 @@ class ProductoCard extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              // Igual que la imagen: info secundaria, se recorta en Modo Venta
+              // Rápida para dejar la tarjeta más densa.
+              if (!modoRapido &&
+                  producto.descripcionCorta != null &&
+                  producto.descripcionCorta!.isNotEmpty)
+                Text(
+                  producto.descripcionCorta!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10, color: Colors.black54),
+                ),
               const SizedBox(height: 2),
               Text(
                 'Q ${producto.precioVenta}',

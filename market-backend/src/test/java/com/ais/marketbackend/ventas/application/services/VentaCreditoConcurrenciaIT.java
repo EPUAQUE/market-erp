@@ -115,7 +115,7 @@ class VentaCreditoConcurrenciaIT {
         MarcaResumen marca = marcaService.crear("Marca de prueba");
         UnidadMedidaResumen unidad = unidadMedidaService.crear("Unidad de prueba", "u");
         ProductoResumen producto = productoService.crear(
-                "SKU-CRED-" + System.nanoTime(), null, "Producto de prueba crédito", null,
+                "SKU-CRED-" + System.nanoTime(), null, "Producto de prueba crédito", null, null,
                 categoria.id(), marca.id(), unidad.id(), null);
         productoId = producto.id();
 

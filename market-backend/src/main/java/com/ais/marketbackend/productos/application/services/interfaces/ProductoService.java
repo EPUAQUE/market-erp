@@ -7,11 +7,11 @@ import java.util.List;
 public interface ProductoService {
 
     ProductoResumen crear(
-            String codigoInterno, String codigoBarras, String nombre, String descripcion,
+            String codigoInterno, String codigoBarras, String nombre, String descripcion, String descripcionCorta,
             Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl);
 
     ProductoResumen actualizar(
-            Long id, String codigoBarras, String nombre, String descripcion,
+            Long id, String codigoBarras, String nombre, String descripcion, String descripcionCorta,
             Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl);
 
     ProductoResumen actualizarImagen(Long id, String imagenUrl);

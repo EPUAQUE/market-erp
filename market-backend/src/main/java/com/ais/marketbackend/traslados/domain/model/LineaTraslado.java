@@ -16,6 +16,9 @@ public class LineaTraslado {
         if (cantidad.signum() <= 0) {
             throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
         }
+        if (cantidad.remainder(BigDecimal.ONE).signum() != 0) {
+            throw new IllegalArgumentException("La cantidad debe ser un número entero.");
+        }
         this.cantidad = cantidad;
     }
 

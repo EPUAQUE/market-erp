@@ -198,7 +198,9 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   }
 
   Future<int> _clienteConsumidorFinal() async {
-    final cliente = await ref.read(clientesApiProvider).obtenerConsumidorFinal();
+    final cliente = await ref
+        .read(clientesApiProvider)
+        .obtenerConsumidorFinal();
     _clienteConsumidorFinalIdCacheado = cliente.id;
     return cliente.id;
   }

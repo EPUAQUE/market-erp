@@ -430,7 +430,7 @@ class IsarLocalStore implements LocalStore {
               productoId: l.productoId,
               nombre: l.nombre,
               precioUnitario: Decimal.parse(l.precioUnitario),
-              cantidad: Decimal.parse(l.cantidad),
+              cantidad: int.parse(l.cantidad),
             ),
           )
           .toList(),

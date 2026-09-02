@@ -186,8 +186,8 @@ onMounted(async () => {
           <input
             v-model="form.cantidad"
             type="number"
-            step="0.001"
-            min="0"
+            step="1"
+            min="1"
             required
             class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
           />

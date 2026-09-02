@@ -174,8 +174,8 @@ onMounted(async () => {
           <input
             v-model="linea.cantidad"
             type="number"
-            step="0.001"
-            min="0"
+            step="1"
+            min="1"
             required
             placeholder="Cantidad"
             class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"

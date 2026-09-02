@@ -18,6 +18,9 @@ public class LineaVenta {
         if (cantidad.signum() <= 0) {
             throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
         }
+        if (cantidad.remainder(BigDecimal.ONE).signum() != 0) {
+            throw new IllegalArgumentException("La cantidad debe ser un número entero.");
+        }
         if (precioUnitario.signum() < 0) {
             throw new IllegalArgumentException("El precio unitario no puede ser negativo.");
         }

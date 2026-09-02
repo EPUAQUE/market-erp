@@ -25,12 +25,14 @@
 
     <include file="db/changelog/modules/inventario/001-inventario.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/inventario/002-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/inventario/003-cantidad-entera.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/proveedores/001-proveedor.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/compras/001-compra.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/compras/002-indices.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/compras/003-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/compras/004-cantidad-entera.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/cuentasporpagar/001-cuenta-por-pagar.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/cuentasporpagar/002-check-montos.xml" relativeToChangelogFile="false"/>
@@ -46,6 +48,7 @@
     <include file="db/changelog/modules/ventas/005-indices.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/ventas/006-correlation-id-compuesto.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/ventas/007-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/ventas/008-cantidad-entera.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/cuentasporcobrar/001-cuenta-por-cobrar.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/cuentasporcobrar/002-metodo-pago-cobro.xml" relativeToChangelogFile="false"/>
@@ -61,6 +64,7 @@
     <include file="db/changelog/modules/traslados/001-traslado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/traslados/002-indices.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/traslados/003-check-montos.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/traslados/004-cantidad-entera.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/gastosprogramados/001-gasto-programado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/gastosprogramados/002-check-montos.xml" relativeToChangelogFile="false"/>

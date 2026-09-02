@@ -33,7 +33,7 @@ public class LineaTrasladoEntity {
     @Column(name = "producto_id", nullable = false)
     private Long productoId;
 
-    @Column(name = "cantidad", nullable = false, precision = 12, scale = 3)
+    @Column(name = "cantidad", nullable = false, precision = 12, scale = 0)
     private BigDecimal cantidad;
 
     public LineaTrasladoEntity(Long id, TrasladoEntity traslado, Long productoId, BigDecimal cantidad) {

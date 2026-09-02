@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Ver ventas/008-cantidad-entera.xml: mismo cambio, misma razón (unidades
+         enteras, sin productos por peso/volumen). -->
+    <changeSet id="traslados-004-cantidad-entera" author="market-backend">
+        <preConditions onFail="HALT">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM linea_traslado WHERE cantidad != TRUNC(cantidad)</sqlCheck>
+        </preConditions>
+        <sql>ALTER TABLE linea_traslado ALTER COLUMN cantidad TYPE NUMERIC(12,0);</sql>
+        <rollback>
+            <sql>ALTER TABLE linea_traslado ALTER COLUMN cantidad TYPE NUMERIC(12,3);</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

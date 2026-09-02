@@ -16,6 +16,13 @@ class MovimientoInventarioTest {
     }
 
     @Test
+    void cantidadFraccionariaEsInvalida() {
+        assertThatThrownBy(() -> MovimientoInventario.nuevo(
+                1L, 2L, new BigDecimal("2.5"), BigDecimal.ONE, TipoMovimiento.COMPRA))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void costoUnitarioNegativoEsInvalido() {
         assertThatThrownBy(() -> MovimientoInventario.nuevo(
                 1L, 2L, new BigDecimal("10"), new BigDecimal("-1"), TipoMovimiento.COMPRA))

@@ -28,7 +28,7 @@ void main() {
     container.read(carritoProvider.notifier).agregarProducto(_producto());
     final estado = container.read(carritoProvider);
     expect(estado.lineas, hasLength(1));
-    expect(estado.lineas.single.cantidad, Decimal.one);
+    expect(estado.lineas.single.cantidad, 1);
   });
 
   test('agregarProducto dos veces el mismo producto suma cantidades', () {
@@ -37,7 +37,7 @@ void main() {
     notifier.agregarProducto(_producto(productoId: 1));
     final estado = container.read(carritoProvider);
     expect(estado.lineas, hasLength(1));
-    expect(estado.lineas.single.cantidad, Decimal.parse('2'));
+    expect(estado.lineas.single.cantidad, 2);
   });
 
   test('incrementar/decrementar mutan la línea correcta', () {
@@ -52,7 +52,7 @@ void main() {
           .lineas
           .firstWhere((l) => l.productoId == 2)
           .cantidad,
-      Decimal.parse('2'),
+      2,
     );
     expect(
       container
@@ -60,7 +60,7 @@ void main() {
           .lineas
           .firstWhere((l) => l.productoId == 1)
           .cantidad,
-      Decimal.one,
+      1,
     );
 
     notifier.decrementar(2);
@@ -70,7 +70,7 @@ void main() {
           .lineas
           .firstWhere((l) => l.productoId == 2)
           .cantidad,
-      Decimal.one,
+      1,
     );
   });
 
@@ -101,7 +101,7 @@ void main() {
   test('actualizarCantidad refleja el nuevo total', () {
     final notifier = container.read(carritoProvider.notifier);
     notifier.agregarProducto(_producto(productoId: 1, precio: '10.00'));
-    notifier.actualizarCantidad(1, Decimal.parse('3'));
+    notifier.actualizarCantidad(1, 3);
     expect(container.read(carritoProvider).total, Decimal.parse('30.00'));
   });
 }

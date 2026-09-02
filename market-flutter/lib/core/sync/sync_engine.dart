@@ -391,7 +391,7 @@ final pendientesConErrorProvider = FutureProvider<List<ItemPendienteConError>>((
 
 Decimal _totalVenta(VentaPendienteLocal venta) => venta.lineas.fold(
   Decimal.zero,
-  (total, linea) => total + linea.precioUnitario * linea.cantidad,
+  (total, linea) => total + linea.precioUnitario * linea.cantidad.toDecimal(),
 );
 
 /// Desenlaces posibles de resolver el cliente pendiente de una venta offline

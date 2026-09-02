@@ -35,7 +35,7 @@ public class InventarioEntity {
     @Column(name = "producto_id", nullable = false)
     private Long productoId;
 
-    @Column(name = "existencia_actual", nullable = false, precision = 12, scale = 3)
+    @Column(name = "existencia_actual", nullable = false, precision = 12, scale = 0)
     private BigDecimal existenciaActual;
 
     @Column(name = "costo_promedio_actual", nullable = false, precision = 12, scale = 4)

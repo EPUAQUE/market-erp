@@ -11,4 +11,10 @@ class LineaTrasladoTest {
     void cantidadCeroOMenorEsInvalida() {
         assertThatThrownBy(() -> LineaTraslado.nueva(1L, BigDecimal.ZERO)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void cantidadFraccionariaEsInvalida() {
+        assertThatThrownBy(() -> LineaTraslado.nueva(1L, new BigDecimal("2.5")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

@@ -47,7 +47,7 @@ class DtoContractSnapshotTest {
                 .lineas(List.of(LineaVentaResponse.builder()
                         .id(10L)
                         .productoId(20L)
-                        .cantidad("2.000")
+                        .cantidad("2")
                         .precioUnitario("8.00")
                         .build()))
                 .total("16.00")

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Decisión del cliente: los productos se venden por unidades enteras, nunca
+         fraccionadas (no hay productos por peso/volumen en este negocio) — cantidad
+         pasa de NUMERIC(12,3) a NUMERIC(12,0). La precondición HALT es a propósito:
+         si alguna vez hay una cantidad fraccionaria real en producción, preferimos
+         que el arranque falle fuerte a que la migración la redondee en silencio. -->
+    <changeSet id="ventas-008-cantidad-entera" author="market-backend">
+        <preConditions onFail="HALT">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM linea_venta WHERE cantidad != TRUNC(cantidad)</sqlCheck>
+        </preConditions>
+        <sql>ALTER TABLE linea_venta ALTER COLUMN cantidad TYPE NUMERIC(12,0);</sql>
+        <rollback>
+            <sql>ALTER TABLE linea_venta ALTER COLUMN cantidad TYPE NUMERIC(12,3);</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

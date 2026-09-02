@@ -33,7 +33,7 @@ public class LineaVentaEntity {
     @Column(name = "producto_id", nullable = false)
     private Long productoId;
 
-    @Column(name = "cantidad", nullable = false, precision = 12, scale = 3)
+    @Column(name = "cantidad", nullable = false, precision = 12, scale = 0)
     private BigDecimal cantidad;
 
     @Column(name = "precio_unitario", nullable = false, precision = 12, scale = 4)

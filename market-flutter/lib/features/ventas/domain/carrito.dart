@@ -1,7 +1,8 @@
 import 'package:decimal/decimal.dart';
 
-/// Una línea del carrito. Cantidad es `Decimal` (no `int`) porque el backend
-/// la modela así — productos por peso/volumen son una fracción legítima.
+/// Una línea del carrito. Cantidad es `int`: los productos se venden por
+/// unidades enteras, nunca fraccionadas (decisión del cliente — el backend
+/// también exige entero, ver `market-backend` Fase de cantidades enteras).
 class LineaCarrito {
   const LineaCarrito({
     required this.productoId,
@@ -13,11 +14,11 @@ class LineaCarrito {
   final int productoId;
   final String nombre;
   final Decimal precioUnitario;
-  final Decimal cantidad;
+  final int cantidad;
 
-  Decimal get subtotal => precioUnitario * cantidad;
+  Decimal get subtotal => precioUnitario * cantidad.toDecimal();
 
-  LineaCarrito conCantidad(Decimal nuevaCantidad) {
+  LineaCarrito conCantidad(int nuevaCantidad) {
     return LineaCarrito(
       productoId: productoId,
       nombre: nombre,
@@ -50,8 +51,8 @@ class CarritoState {
     return CarritoState(lineas: copia);
   }
 
-  CarritoState actualizarCantidad(int productoId, Decimal cantidad) {
-    if (cantidad <= Decimal.zero) return quitar(productoId);
+  CarritoState actualizarCantidad(int productoId, int cantidad) {
+    if (cantidad <= 0) return quitar(productoId);
     final copia = lineas
         .map((l) => l.productoId == productoId ? l.conCantidad(cantidad) : l)
         .toList();

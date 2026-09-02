@@ -6,29 +6,29 @@ LineaCarrito _linea({
   int productoId = 1,
   String nombre = 'Producto',
   String precioUnitario = '10.00',
-  String cantidad = '1',
+  int cantidad = 1,
 }) {
   return LineaCarrito(
     productoId: productoId,
     nombre: nombre,
     precioUnitario: Decimal.parse(precioUnitario),
-    cantidad: Decimal.parse(cantidad),
+    cantidad: cantidad,
   );
 }
 
 void main() {
   group('LineaCarrito', () {
     test('subtotal multiplica precio por cantidad', () {
-      final linea = _linea(precioUnitario: '8.50', cantidad: '3');
+      final linea = _linea(precioUnitario: '8.50', cantidad: 3);
       expect(linea.subtotal, Decimal.parse('25.50'));
     });
 
     test('conCantidad devuelve una copia con la nueva cantidad', () {
-      final linea = _linea(cantidad: '2');
-      final actualizada = linea.conCantidad(Decimal.parse('5'));
-      expect(actualizada.cantidad, Decimal.parse('5'));
+      final linea = _linea(cantidad: 2);
+      final actualizada = linea.conCantidad(5);
+      expect(actualizada.cantidad, 5);
       expect(actualizada.productoId, linea.productoId);
-      expect(linea.cantidad, Decimal.parse('2'));
+      expect(linea.cantidad, 2);
     });
   });
 
@@ -41,30 +41,30 @@ void main() {
 
     test('suma la cantidad cuando el producto ya está en el carrito', () {
       final carrito = const CarritoState().agregar(
-        _linea(productoId: 1, cantidad: '2'),
+        _linea(productoId: 1, cantidad: 2),
       );
-      final resultado = carrito.agregar(_linea(productoId: 1, cantidad: '3'));
+      final resultado = carrito.agregar(_linea(productoId: 1, cantidad: 3));
       expect(resultado.lineas, hasLength(1));
-      expect(resultado.lineas.single.cantidad, Decimal.parse('5'));
+      expect(resultado.lineas.single.cantidad, 5);
     });
   });
 
   group('CarritoState.actualizarCantidad', () {
     test('actualiza la cantidad de la línea indicada', () {
       final carrito = const CarritoState().agregar(_linea(productoId: 1));
-      final resultado = carrito.actualizarCantidad(1, Decimal.parse('7'));
-      expect(resultado.lineas.single.cantidad, Decimal.parse('7'));
+      final resultado = carrito.actualizarCantidad(1, 7);
+      expect(resultado.lineas.single.cantidad, 7);
     });
 
     test('cantidad cero quita la línea en vez de dejarla en 0', () {
       final carrito = const CarritoState().agregar(_linea(productoId: 1));
-      final resultado = carrito.actualizarCantidad(1, Decimal.zero);
+      final resultado = carrito.actualizarCantidad(1, 0);
       expect(resultado.lineas, isEmpty);
     });
 
     test('cantidad negativa también quita la línea', () {
       final carrito = const CarritoState().agregar(_linea(productoId: 1));
-      final resultado = carrito.actualizarCantidad(1, Decimal.parse('-1'));
+      final resultado = carrito.actualizarCantidad(1, -1);
       expect(resultado.lineas, isEmpty);
     });
   });
@@ -88,12 +88,8 @@ void main() {
   group('CarritoState.total / estaVacio', () {
     test('total suma el subtotal de todas las líneas', () {
       final carrito = const CarritoState()
-          .agregar(
-            _linea(productoId: 1, precioUnitario: '10.00', cantidad: '2'),
-          )
-          .agregar(
-            _linea(productoId: 2, precioUnitario: '5.50', cantidad: '1'),
-          );
+          .agregar(_linea(productoId: 1, precioUnitario: '10.00', cantidad: 2))
+          .agregar(_linea(productoId: 2, precioUnitario: '5.50', cantidad: 1));
       expect(carrito.total, Decimal.parse('25.50'));
     });
 

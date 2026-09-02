@@ -22,6 +22,12 @@ class LineaVentaTest {
     }
 
     @Test
+    void cantidadFraccionariaEsInvalida() {
+        assertThatThrownBy(() -> LineaVenta.nueva(1L, new BigDecimal("2.5"), BigDecimal.ONE))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void precioUnitarioNegativoEsInvalido() {
         assertThatThrownBy(() -> LineaVenta.nueva(1L, BigDecimal.ONE, new BigDecimal("-1")))
                 .isInstanceOf(IllegalArgumentException.class);

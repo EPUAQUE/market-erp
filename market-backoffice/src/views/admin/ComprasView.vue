@@ -196,11 +196,15 @@ onMounted(async () => {
 
       <div class="space-y-2">
         <label class="text-sm font-medium">Líneas</label>
-        <div v-for="(linea, index) in form.lineas" :key="index" class="grid gap-3 sm:grid-cols-4">
+        <div
+          v-for="(linea, index) in form.lineas"
+          :key="index"
+          class="grid items-center gap-3 sm:grid-cols-12"
+        >
           <select
             v-model="linea.productoId"
             required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-4"
           >
             <option value="" disabled>Producto…</option>
             <option v-for="producto in productos" :key="producto.id" :value="producto.id">
@@ -214,42 +218,37 @@ onMounted(async () => {
             min="1"
             required
             placeholder="Cantidad"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
             @input="onCantidadOCostoUnitarioInput(linea)"
           />
-          <div class="flex gap-2">
-            <input
-              v-model="linea.costoUnitario"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-              placeholder="Costo unitario"
-              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-              @input="onCantidadOCostoUnitarioInput(linea)"
-            />
-            <button
-              type="button"
-              class="text-mk-danger disabled:opacity-40"
-              :disabled="form.lineas.length <= 1"
-              @click="quitarLinea(index)"
-            >
-              Quitar
-            </button>
-          </div>
-          <div class="flex items-center gap-2 sm:col-start-4">
-            <label class="text-sm text-mk-text/70">Subtotal</label>
-            <input
-              v-model="linea.subtotal"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="Subtotal"
-              class="mk-input mk-num w-full rounded border border-mk-border bg-transparent px-3 py-2"
-              @input="onSubtotalInput(linea)"
-              @blur="onSubtotalBlur(linea)"
-            />
-          </div>
+          <input
+            v-model="linea.costoUnitario"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            placeholder="Costo unitario"
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+            @input="onCantidadOCostoUnitarioInput(linea)"
+          />
+          <input
+            v-model="linea.subtotal"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Subtotal"
+            class="mk-input mk-num w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+            @input="onSubtotalInput(linea)"
+            @blur="onSubtotalBlur(linea)"
+          />
+          <button
+            type="button"
+            class="text-mk-danger disabled:opacity-40 sm:col-span-2"
+            :disabled="form.lineas.length <= 1"
+            @click="quitarLinea(index)"
+          >
+            Quitar
+          </button>
         </div>
         <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
           + Agregar línea

@@ -65,6 +65,17 @@ const tiendasPermitidas = computed(() =>
 )
 const detalleAbiertoId = ref<number | null>(null)
 
+// El cliente suele dar su NIT, no su nombre — se busca por ambos (coincidencia
+// parcial, sin distinguir mayúsculas) para no obligar a tipear el nombre exacto.
+const busquedaCliente = ref('')
+const clientesFiltrados = computed(() => {
+  const query = busquedaCliente.value.trim().toLowerCase()
+  if (query === '') return clientes.value
+  return clientes.value.filter(
+    (c) => c.nombre.toLowerCase().includes(query) || (c.nit ?? '').toLowerCase().includes(query),
+  )
+})
+
 const form = ref({
   clienteId: '',
   metodoPago: '' as MetodoPago | '',
@@ -153,6 +164,7 @@ function abrirCrear() {
     metodoPago: '',
     lineas: [{ productoId: '', cantidad: '', precioUnitario: '', subtotal: '' }],
   }
+  busquedaCliente.value = ''
   showForm.value = true
 }
 
@@ -244,14 +256,20 @@ onMounted(async () => {
     <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
       <div class="space-y-1">
         <label class="text-sm font-medium">Cliente</label>
+        <input
+          v-model="busquedaCliente"
+          type="text"
+          placeholder="Buscar por NIT o nombre…"
+          class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
+        />
         <select
           v-model="form.clienteId"
           required
           class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
         >
           <option value="" disabled>Seleccione…</option>
-          <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
-            {{ cliente.nombre }}
+          <option v-for="cliente in clientesFiltrados" :key="cliente.id" :value="cliente.id">
+            {{ cliente.nombre }}{{ cliente.nit ? ` — NIT: ${cliente.nit}` : '' }}
           </option>
         </select>
       </div>

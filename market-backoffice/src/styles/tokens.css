@@ -34,17 +34,19 @@
 }
 
 /*
- * Modo oscuro: el botón primario y el acento se mantienen iguales en los dos
- * temas a propósito, para que se reconozcan sin importar el tema elegido.
- * El sidebar (--mk-brand/--mk-brand-deep) SÍ se redefine a un petróleo más
- * oscuro — igual que en la propuesta de diseño original, donde el degradado
- * del sidebar cambiaba de tono entre claro y oscuro, no se quedaba fijo.
- * Activado por ThemeStore vía [data-theme="dark"] en <html> — nunca sigue
- * el tema del sistema operativo (decisión del cliente: siempre abre claro).
+ * Modo oscuro: la propuesta de diseño (panel "Paleta — clara y oscura")
+ * redefine Sidebar/Primario/Acento a tonos propios del tema oscuro, no solo
+ * las superficies — se sigue ese mismo criterio acá: primario/acento suben
+ * de luminosidad para seguir leyéndose bien sobre fondos oscuros, en vez de
+ * quedarse con el valor exacto del tema claro. Activado por ThemeStore vía
+ * [data-theme="dark"] en <html> — nunca sigue el tema del sistema operativo
+ * (decisión del cliente: siempre abre claro).
  */
 :root[data-theme='dark'] {
   --mk-brand: 10 50 61; /* #0A323D */
   --mk-brand-deep: 5 27 33; /* #051B21 */
+  --mk-primary: 52 160 106; /* #34A06A */
+  --mk-accent: 230 180 88; /* #E6B458 */
   --mk-bg: 16 23 26; /* #10171A */
   --mk-surface: 23 31 34; /* #171F22 */
   --mk-surface-2: 35 43 46; /* #232B2E */

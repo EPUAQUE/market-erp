@@ -191,13 +191,13 @@ async function onLogout() {
             v-for="item in group.items"
             :key="item.path"
             :to="item.path"
-            class="group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
-            active-class="!bg-white/12 !text-white"
+            class="group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-white/75 shadow-none transition-colors hover:bg-white/10 hover:text-white"
+            active-class="!bg-mk-primary !text-white !shadow-[0_4px_12px_-4px_rgba(46,139,87,0.7)]"
           >
-            <span
-              class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-mk-accent opacity-0 transition-opacity group-[.router-link-active]:opacity-100"
+            <NavIcon
+              :name="item.icon"
+              class="h-4 w-4 shrink-0 opacity-80 group-[.router-link-active]:opacity-100"
             />
-            <NavIcon :name="item.icon" class="h-4 w-4 shrink-0 opacity-80" />
             {{ item.label }}
           </RouterLink>
         </div>

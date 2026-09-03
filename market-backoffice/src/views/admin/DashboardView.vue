@@ -347,18 +347,26 @@ function tipoVencimientoLabel(tipo: string): string {
           </div>
 
           <div class="mk-card space-y-1 p-4">
-            <p class="text-sm text-mk-text-muted">Ventas del mes</p>
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-mk-text-muted">Ventas del mes</p>
+              <span
+                v-if="comparativoVentasPct !== null"
+                class="rounded-full px-2 py-0.5 text-xs font-bold"
+                :class="
+                  comparativoVentasPct >= 0
+                    ? 'bg-mk-success/10 text-mk-success'
+                    : 'bg-mk-danger/10 text-mk-danger'
+                "
+              >
+                {{ comparativoVentasPct >= 0 ? '+' : '' }}{{ comparativoVentasPct.toFixed(1) }}%
+              </span>
+            </div>
             <p class="mk-num text-2xl font-semibold text-mk-text">
               {{ formatCurrency(resumen.ventasMesTotal) }}
             </p>
-            <p
-              v-if="comparativoVentasPct !== null"
-              class="text-sm"
-              :class="comparativoVentasPct >= 0 ? 'text-mk-success' : 'text-mk-danger'"
-            >
-              {{ comparativoVentasPct >= 0 ? '+' : '' }}{{ comparativoVentasPct.toFixed(1) }}% vs mes anterior
+            <p class="text-sm text-mk-text-muted">
+              {{ comparativoVentasPct !== null ? 'vs mes anterior' : 'Sin datos del mes anterior' }}
             </p>
-            <p v-else class="text-sm text-mk-text-muted">Sin datos del mes anterior</p>
           </div>
 
           <div class="mk-card space-y-1 p-4">
@@ -418,13 +426,17 @@ function tipoVencimientoLabel(tipo: string): string {
         <!-- Caja y alertas -->
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div class="mk-card space-y-1 p-4">
-            <p class="text-sm text-mk-text-muted">Caja</p>
-            <p class="text-2xl font-semibold text-mk-text">
-              {{ resumen.cajaAbierta ? 'Abierta' : 'Cerrada' }}
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-mk-text-muted">Caja</p>
+              <EstadoBadge
+                :variant="resumen.cajaAbierta ? 'success' : 'neutral'"
+                :label="resumen.cajaAbierta ? 'Abierta' : 'Cerrada'"
+              />
+            </div>
+            <p class="mk-num text-2xl font-semibold text-mk-text">
+              {{ resumen.cajaAbierta ? formatCurrency(resumen.cajaSaldoEsperado) : '—' }}
             </p>
-            <p v-if="resumen.cajaAbierta" class="mk-num text-sm text-mk-text-muted">
-              Saldo esperado: {{ formatCurrency(resumen.cajaSaldoEsperado) }}
-            </p>
+            <p v-if="resumen.cajaAbierta" class="text-sm text-mk-text-muted">Saldo esperado</p>
           </div>
           <div class="mk-card space-y-1 p-4">
             <p class="text-sm text-mk-text-muted">Ingresos de hoy</p>

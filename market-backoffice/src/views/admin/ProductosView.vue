@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useProductos } from '@/composables/useProductos'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { categoriasService } from '@/services/categorias.service'
 import { marcasService } from '@/services/marcas.service'
@@ -39,7 +40,6 @@ const categorias = ref<Categoria[]>([])
 const marcas = ref<Marca[]>([])
 const unidades = ref<UnidadMedida[]>([])
 
-const search = ref('')
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const form = ref({
@@ -64,14 +64,6 @@ function onArchivoImagenSeleccionado(event: Event) {
   previewImagen.value = archivo ? URL.createObjectURL(archivo) : null
 }
 
-const filtered = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  if (!term) return items.value
-  return items.value.filter(
-    (p) => p.nombre.toLowerCase().includes(term) || p.codigoInterno.toLowerCase().includes(term),
-  )
-})
-
 function nombreCategoria(id: number) {
   return categorias.value.find((c) => c.id === id)?.nombre ?? id
 }
@@ -81,6 +73,33 @@ function nombreMarca(id: number) {
 function nombreUnidad(id: number) {
   return unidades.value.find((u) => u.id === id)?.abreviacion ?? id
 }
+
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el catálogo (ver CLAUDE.md, "Server-side
+// pagination").
+const COLUMNAS_FILTRO_PRODUCTOS: FiltroColumna<Producto>[] = [
+  { clave: 'codigo', tipo: 'texto', valor: (p) => p.codigoInterno },
+  { clave: 'nombre', tipo: 'texto', valor: (p) => p.nombre },
+  { clave: 'categoria', tipo: 'texto', valor: (p) => String(nombreCategoria(p.categoriaId)) },
+  { clave: 'marca', tipo: 'texto', valor: (p) => String(nombreMarca(p.marcaId)) },
+  { clave: 'unidad', tipo: 'texto', valor: (p) => String(nombreUnidad(p.unidadMedidaId)) },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (p) => (p.activo ? 'true' : 'false'),
+    opciones: [
+      { valor: 'true', etiqueta: 'Activo' },
+      { valor: 'false', etiqueta: 'Inactivo' },
+    ],
+  },
+]
+const {
+  busquedaGlobal: busquedaProductos,
+  filtrosColumna: filtrosProductos,
+  itemsFiltrados: filtered,
+  limpiarFiltros: limpiarFiltrosProductos,
+  hayFiltrosActivos: hayFiltrosProductosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO_PRODUCTOS)
 
 function resetImagenForm() {
   if (previewImagen.value) URL.revokeObjectURL(previewImagen.value)
@@ -177,12 +196,22 @@ onMounted(async () => {
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Buscar por código o nombre…"
-        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaProductos"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosProductosActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltrosProductos"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <button
         v-if="permissions.can('PRODUCTOS_CREAR')"
         type="button"
@@ -316,6 +345,63 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Unidad</th>
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosProductos.codigo"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosProductos.nombre"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosProductos.categoria"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todas</option>
+                <option v-for="c in categorias" :key="c.id" :value="c.nombre">{{ c.nombre }}</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosProductos.marca"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todas</option>
+                <option v-for="m in marcas" :key="m.id" :value="m.nombre">{{ m.nombre }}</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosProductos.unidad"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todas</option>
+                <option v-for="u in unidades" :key="u.id" :value="u.abreviacion">{{ u.abreviacion }}</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosProductos.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

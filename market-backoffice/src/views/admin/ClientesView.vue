@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useClientes } from '@/composables/useClientes'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Cliente } from '@/types/cliente'
@@ -27,8 +28,6 @@ const {
 tamano.value = 10
 const permissions = usePermissionsStore()
 
-const search = ref('')
-
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const form = ref({ nit: '', nombre: '', direccion: '', telefono: '', correo: '' })
@@ -36,13 +35,26 @@ const form = ref({ nit: '', nombre: '', direccion: '', telefono: '', correo: '' 
 // Nota: con paginación del servidor, este filtro solo busca dentro de la
 // página cargada, no en todo el catálogo — mismo trade-off documentado para
 // Productos (ver CLAUDE.md, "Server-side pagination").
-const filtered = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  if (!term) return items.value
-  return items.value.filter(
-    (c) => c.nombre.toLowerCase().includes(term) || (c.nit ?? '').toLowerCase().includes(term),
-  )
-})
+const COLUMNAS_FILTRO: FiltroColumna<Cliente>[] = [
+  { clave: 'nit', tipo: 'texto', valor: (c) => c.nit ?? '' },
+  { clave: 'nombre', tipo: 'texto', valor: (c) => c.nombre },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (c) => c.estado,
+    opciones: [
+      { valor: 'ACTIVO', etiqueta: 'Activo' },
+      { valor: 'INACTIVO', etiqueta: 'Inactivo' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: filtered,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 function abrirCrear() {
   editingId.value = null
@@ -95,12 +107,22 @@ onMounted(cargar)
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Buscar por NIT o nombre…"
-        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaGlobal"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltros"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <button
         v-if="permissions.can('CLIENTES_CREAR')"
         type="button"
@@ -175,6 +197,35 @@ onMounted(cargar)
             <th class="px-4 py-2 font-medium">Nombre</th>
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nit"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nombre"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

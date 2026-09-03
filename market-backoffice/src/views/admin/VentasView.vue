@@ -4,6 +4,7 @@ import { useVentas } from '@/composables/useVentas'
 import { useTiendas } from '@/composables/useTiendas'
 import { useClientes } from '@/composables/useClientes'
 import { useProductos } from '@/composables/useProductos'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { resolverImagenUrl } from '@/utils/imagenUrl'
 import { formatCurrency, calcularSubtotal } from '@/utils/money'
@@ -64,6 +65,32 @@ const tiendasPermitidas = computed(() =>
   permissions.alcanceGlobal ? tiendas.value : tiendas.value.filter((t) => permissions.tiendaIds.has(t.id)),
 )
 const detalleAbiertoId = ref<number | null>(null)
+
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el listado (ver CLAUDE.md, "Server-side
+// pagination"). "Vendedor" queda fuera de la búsqueda global a propósito —
+// es un id crudo (#3), no algo que un usuario tipee para buscar.
+const COLUMNAS_FILTRO_VENTAS: FiltroColumna<Venta>[] = [
+  { clave: 'cliente', tipo: 'texto', valor: (v) => nombreCliente(v.clienteId) },
+  { clave: 'vendedor', tipo: 'texto', valor: (v) => `#${v.vendedorId}`, incluirEnGlobal: false },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (v) => v.estado,
+    opciones: [
+      { valor: 'BORRADOR', etiqueta: 'Borrador' },
+      { valor: 'COMPLETADA', etiqueta: 'Completada' },
+      { valor: 'ANULADA', etiqueta: 'Anulada' },
+    ],
+  },
+]
+const {
+  busquedaGlobal: busquedaVentas,
+  filtrosColumna: filtrosVentas,
+  itemsFiltrados: ventasFiltradas,
+  limpiarFiltros: limpiarFiltrosVentas,
+  hayFiltrosActivos: hayFiltrosVentasActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO_VENTAS)
 
 // El cliente suele dar su NIT, no su nombre — se busca por ambos (coincidencia
 // parcial, sin distinguir mayúsculas) para no obligar a tipear el nombre exacto.
@@ -369,6 +396,23 @@ onMounted(async () => {
       </button>
     </form>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaVentas"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosVentasActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltrosVentas"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -380,6 +424,38 @@ onMounted(async () => {
             <th class="mk-num px-4 py-2 font-medium">Total</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosVentas.cliente"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosVentas.vendedor"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosVentas.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="BORRADOR">Borrador</option>
+                <option value="COMPLETADA">Completada</option>
+                <option value="ANULADA">Anulada</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -388,10 +464,14 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="6" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="ventasFiltradas.length === 0">
             <td colspan="6" class="px-4 py-6 text-center text-mk-text/60">Sin ventas registradas.</td>
           </tr>
-          <tr v-for="venta in items" :key="venta.id" class="border-b border-mk-border last:border-0">
+          <tr
+            v-for="venta in ventasFiltradas"
+            :key="venta.id"
+            class="border-b border-mk-border last:border-0"
+          >
             <td class="px-4 py-2">{{ new Date(venta.fecha).toLocaleString() }}</td>
             <td class="px-4 py-2">{{ nombreCliente(venta.clienteId) }}</td>
             <td class="px-4 py-2">#{{ venta.vendedorId }}</td>

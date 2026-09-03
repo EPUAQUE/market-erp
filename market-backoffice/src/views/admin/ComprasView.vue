@@ -4,6 +4,7 @@ import { useCompras } from '@/composables/useCompras'
 import { useTiendas } from '@/composables/useTiendas'
 import { useProveedores } from '@/composables/useProveedores'
 import { useProductos } from '@/composables/useProductos'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency, calcularSubtotal } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
@@ -44,6 +45,30 @@ const permissions = usePermissionsStore()
 const tiendaId = ref<number | null>(null)
 const showForm = ref(false)
 const detalleAbiertoId = ref<number | null>(null)
+
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el listado (ver CLAUDE.md, "Server-side
+// pagination").
+const COLUMNAS_FILTRO_COMPRAS: FiltroColumna<Compra>[] = [
+  { clave: 'proveedor', tipo: 'texto', valor: (c) => nombreProveedor(c.proveedorId) },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (c) => c.estado,
+    opciones: [
+      { valor: 'BORRADOR', etiqueta: 'Borrador' },
+      { valor: 'RECIBIDA', etiqueta: 'Recibida' },
+      { valor: 'ANULADA', etiqueta: 'Anulada' },
+    ],
+  },
+]
+const {
+  busquedaGlobal: busquedaCompras,
+  filtrosColumna: filtrosCompras,
+  itemsFiltrados: comprasFiltradas,
+  limpiarFiltros: limpiarFiltrosCompras,
+  hayFiltrosActivos: hayFiltrosComprasActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO_COMPRAS)
 
 const form = ref({
   proveedorId: '',
@@ -266,6 +291,23 @@ onMounted(async () => {
       </button>
     </form>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaCompras"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosComprasActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltrosCompras"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -276,6 +318,30 @@ onMounted(async () => {
             <th class="mk-num px-4 py-2 font-medium">Total</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosCompras.proveedor"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosCompras.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="BORRADOR">Borrador</option>
+                <option value="RECIBIDA">Recibida</option>
+                <option value="ANULADA">Anulada</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -284,10 +350,14 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="5" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="comprasFiltradas.length === 0">
             <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Sin compras registradas.</td>
           </tr>
-          <tr v-for="compra in items" :key="compra.id" class="border-b border-mk-border last:border-0">
+          <tr
+            v-for="compra in comprasFiltradas"
+            :key="compra.id"
+            class="border-b border-mk-border last:border-0"
+          >
             <td class="px-4 py-2">{{ new Date(compra.fecha).toLocaleString() }}</td>
             <td class="px-4 py-2">{{ nombreProveedor(compra.proveedorId) }}</td>
             <td class="px-4 py-2">

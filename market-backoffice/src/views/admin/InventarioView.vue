@@ -3,9 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useInventario } from '@/composables/useInventario'
 import { useTiendas } from '@/composables/useTiendas'
 import { useProductos } from '@/composables/useProductos'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
-import type { TipoMovimiento } from '@/types/inventario'
+import type { Inventario, MovimientoInventario, TipoMovimiento } from '@/types/inventario'
 
 const {
   items,
@@ -66,6 +67,32 @@ function nombreProducto(productoId: number): string {
 const filaKardex = computed(() =>
   kardexProductoId.value !== null ? nombreProducto(kardexProductoId.value) : '',
 )
+
+// Nota: con paginación del servidor, estos filtros solo buscan dentro de la
+// página cargada, no en todo el listado (ver CLAUDE.md, "Server-side
+// pagination").
+const COLUMNAS_FILTRO_EXISTENCIAS: FiltroColumna<Inventario>[] = [
+  { clave: 'producto', tipo: 'texto', valor: (inv) => nombreProducto(inv.productoId) },
+]
+const {
+  busquedaGlobal: busquedaExistencias,
+  filtrosColumna: filtrosExistencias,
+  itemsFiltrados: existenciasFiltradas,
+  limpiarFiltros: limpiarFiltrosExistencias,
+  hayFiltrosActivos: hayFiltrosExistenciasActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO_EXISTENCIAS)
+
+const COLUMNAS_FILTRO_KARDEX: FiltroColumna<MovimientoInventario>[] = [
+  { clave: 'tipo', tipo: 'opciones', valor: (mov) => mov.tipoMovimiento },
+  { clave: 'proveedor', tipo: 'texto', valor: (mov) => mov.proveedorNombre ?? '' },
+]
+const {
+  busquedaGlobal: busquedaKardex,
+  filtrosColumna: filtrosKardex,
+  itemsFiltrados: movimientosFiltrados,
+  limpiarFiltros: limpiarFiltrosKardex,
+  hayFiltrosActivos: hayFiltrosKardexActivos,
+} = useFiltrosTabla(movimientos, COLUMNAS_FILTRO_KARDEX)
 
 watch(tiendaId, (id) => {
   kardexProductoId.value = null
@@ -215,6 +242,23 @@ onMounted(async () => {
       </button>
     </form>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaExistencias"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosExistenciasActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltrosExistencias"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -224,6 +268,19 @@ onMounted(async () => {
             <th class="mk-num px-4 py-2 font-medium">Costo promedio</th>
             <th class="px-4 py-2 font-medium">Kardex</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosExistencias.producto"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -232,10 +289,14 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="4" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="existenciasFiltradas.length === 0">
             <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Sin movimientos registrados.</td>
           </tr>
-          <tr v-for="inv in items" :key="inv.productoId" class="border-b border-mk-border last:border-0">
+          <tr
+            v-for="inv in existenciasFiltradas"
+            :key="inv.productoId"
+            class="border-b border-mk-border last:border-0"
+          >
             <td class="px-4 py-2">{{ nombreProducto(inv.productoId) }}</td>
             <td class="mk-num px-4 py-2">{{ inv.existenciaActual }}</td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(inv.costoPromedioActual) }}</td>
@@ -278,6 +339,22 @@ onMounted(async () => {
 
     <div v-if="kardexProductoId !== null" class="space-y-2">
       <h2 class="text-sm font-medium">Kardex — {{ filaKardex }}</h2>
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaKardex"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosKardexActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltrosKardex"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
         <table class="w-full text-left text-sm">
           <thead class="border-b border-mk-border bg-mk-surface">
@@ -288,6 +365,28 @@ onMounted(async () => {
               <th class="mk-num px-4 py-2 font-medium">Costo unitario</th>
               <th class="px-4 py-2 font-medium">Proveedor</th>
             </tr>
+            <tr class="border-b border-mk-border bg-mk-surface/50">
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5 font-normal">
+                <select
+                  v-model="filtrosKardex.tipo"
+                  class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+                >
+                  <option value="">Todos</option>
+                  <option v-for="tipo in TIPOS_MOVIMIENTO" :key="tipo" :value="tipo">{{ tipo }}</option>
+                </select>
+              </th>
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5 font-normal">
+                <input
+                  v-model="filtrosKardex.proveedor"
+                  type="text"
+                  placeholder="Filtrar…"
+                  class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+                />
+              </th>
+            </tr>
           </thead>
           <tbody>
             <tr v-if="movimientosLoading">
@@ -296,10 +395,14 @@ onMounted(async () => {
             <tr v-else-if="movimientosError">
               <td colspan="5" class="px-4 py-6 text-center text-mk-danger">{{ movimientosError }}</td>
             </tr>
-            <tr v-else-if="movimientos.length === 0">
+            <tr v-else-if="movimientosFiltrados.length === 0">
               <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Sin movimientos.</td>
             </tr>
-            <tr v-for="mov in movimientos" :key="mov.id" class="border-b border-mk-border last:border-0">
+            <tr
+              v-for="mov in movimientosFiltrados"
+              :key="mov.id"
+              class="border-b border-mk-border last:border-0"
+            >
               <td class="px-4 py-2">{{ new Date(mov.fecha).toLocaleString() }}</td>
               <td class="px-4 py-2">{{ mov.tipoMovimiento }}</td>
               <td class="mk-num px-4 py-2">{{ mov.cantidad }}</td>

@@ -18,6 +18,18 @@ class AuthService {
   logout() {
     return apiClient.post<void>(API_ENDPOINTS.auth.logout, undefined, { requiresAuth: false })
   }
+
+  forgotPassword(username: string) {
+    return apiClient.post<void>(API_ENDPOINTS.auth.forgotPassword, { username }, { requiresAuth: false })
+  }
+
+  resetPassword(token: string, nuevaPassword: string) {
+    return apiClient.post<void>(
+      API_ENDPOINTS.auth.resetPassword,
+      { token, nuevaPassword },
+      { requiresAuth: false },
+    )
+  }
 }
 
 export const authService = new AuthService()

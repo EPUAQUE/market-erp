@@ -66,7 +66,7 @@ class UsuarioServiceImplTest {
         autorizacionTiendaService = mock(AutorizacionTiendaService.class);
 
         SeguridadProperties properties = new SeguridadProperties(
-                null, null, null,
+                null, null, null, null,
                 new SeguridadProperties.PasswordPolicy(12, 64),
                 null, null, null);
 

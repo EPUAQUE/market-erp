@@ -20,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 public record SeguridadProperties(
         @NotNull @Valid Jwt jwt,
         RefreshToken refreshToken,
+        PasswordReset passwordReset,
         Argon2 argon2,
         PasswordPolicy passwordPolicy,
         RateLimit rateLimit,
@@ -35,6 +36,10 @@ public record SeguridadProperties(
     }
 
     public record RefreshToken(Duration ttl) {
+    }
+
+    /** TTL del token de un solo uso del flujo "olvidé mi contraseña" (AuthController.forgotPassword). */
+    public record PasswordReset(Duration ttl) {
     }
 
     public record Argon2(int saltLength, int hashLength, int parallelism, int memoryKib, int iterations) {

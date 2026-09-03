@@ -38,7 +38,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource(properties)))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh", "/actuator/health").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/login", "/api/v1/auth/refresh",
+                                "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password",
+                                "/actuator/health").permitAll()
                         // Lectura pública, igual que cualquier otra imagen alojada externamente
                         // (lo que reemplaza) — nunca requirió JWT antes, y <img>/Image.network no
                         // adjuntan el header Authorization. Solo GET: la subida (POST .../imagen)

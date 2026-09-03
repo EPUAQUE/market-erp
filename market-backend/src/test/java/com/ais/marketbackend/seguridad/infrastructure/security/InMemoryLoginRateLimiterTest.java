@@ -19,7 +19,7 @@ class InMemoryLoginRateLimiterTest {
 
     private SeguridadProperties propiedadesConCapacidadUno(Duration refillPeriod) {
         return new SeguridadProperties(
-                null, null, null, null,
+                null, null, null, null, null,
                 new SeguridadProperties.RateLimit(new SeguridadProperties.Login(1, 1, refillPeriod)),
                 null, null);
     }

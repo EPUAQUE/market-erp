@@ -14,13 +14,17 @@ import static org.mockito.Mockito.when;
 import com.ais.marketbackend.seguridad.application.dtos.LoginResult;
 import com.ais.marketbackend.seguridad.application.services.impl.AuthServiceImpl;
 import com.ais.marketbackend.seguridad.domain.exception.AutenticacionFallidaException;
+import com.ais.marketbackend.seguridad.domain.exception.TokenResetInvalidoException;
+import com.ais.marketbackend.seguridad.domain.model.PasswordResetToken;
 import com.ais.marketbackend.seguridad.domain.model.PermisosEfectivos;
 import com.ais.marketbackend.seguridad.domain.model.RefreshToken;
 import com.ais.marketbackend.seguridad.domain.model.Usuario;
+import com.ais.marketbackend.seguridad.domain.repository.PasswordResetTokenRepository;
 import com.ais.marketbackend.seguridad.domain.repository.RefreshTokenRepository;
 import com.ais.marketbackend.seguridad.domain.repository.UsuarioRepository;
 import com.ais.marketbackend.seguridad.domain.service.AccessTokenIssuer;
 import com.ais.marketbackend.seguridad.domain.service.LoginRateLimiter;
+import com.ais.marketbackend.seguridad.domain.service.PasswordResetMailSender;
 import com.ais.marketbackend.seguridad.domain.service.PermisosEfectivosResolver;
 import com.ais.marketbackend.seguridad.domain.service.SecurityAuditPublisher;
 import com.ais.marketbackend.seguridad.infrastructure.security.SeguridadProperties;
@@ -36,6 +40,8 @@ class AuthServiceImplTest {
 
     private UsuarioRepository usuarioRepository;
     private RefreshTokenRepository refreshTokenRepository;
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+    private PasswordResetMailSender passwordResetMailSender;
     private PasswordEncoder passwordEncoder;
     private AccessTokenIssuer accessTokenIssuer;
     private PermisosEfectivosResolver permisosEfectivosResolver;
@@ -49,6 +55,8 @@ class AuthServiceImplTest {
     void setUp() {
         usuarioRepository = mock(UsuarioRepository.class);
         refreshTokenRepository = mock(RefreshTokenRepository.class);
+        passwordResetTokenRepository = mock(PasswordResetTokenRepository.class);
+        passwordResetMailSender = mock(PasswordResetMailSender.class);
         passwordEncoder = mock(PasswordEncoder.class);
         accessTokenIssuer = mock(AccessTokenIssuer.class);
         permisosEfectivosResolver = mock(PermisosEfectivosResolver.class);
@@ -60,11 +68,15 @@ class AuthServiceImplTest {
         SeguridadProperties properties = new SeguridadProperties(
                 null,
                 new SeguridadProperties.RefreshToken(Duration.ofDays(30)),
-                null, null, null, null, null);
+                new SeguridadProperties.PasswordReset(Duration.ofMinutes(30)),
+                null,
+                new SeguridadProperties.PasswordPolicy(12, 64),
+                null, null, null);
 
         authService = new AuthServiceImpl(
-                usuarioRepository, refreshTokenRepository, passwordEncoder, accessTokenIssuer,
-                permisosEfectivosResolver, loginRateLimiter, auditPublisher, properties);
+                usuarioRepository, refreshTokenRepository, passwordResetTokenRepository, passwordResetMailSender,
+                passwordEncoder, accessTokenIssuer, permisosEfectivosResolver, loginRateLimiter, auditPublisher,
+                properties);
 
         when(accessTokenIssuer.emitir(any(), any()))
                 .thenReturn(new AccessTokenIssuer.Resultado("jwt-token", Instant.now().plusSeconds(600)));
@@ -291,5 +303,101 @@ class AuthServiceImplTest {
         authService.logout("token-desconocido");
 
         verify(refreshTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void solicitarRestablecimientoConUsuarioElegibleEnviaCorreoYGuardaToken() {
+        Usuario usuario = new Usuario(
+                1L, "ana", "hash-real", com.ais.marketbackend.seguridad.domain.model.EstadoUsuario.ACTIVO, 0L,
+                "Ana", "5555-5555", "ana@correo.com", false);
+        when(usuarioRepository.findByUsername("ana")).thenReturn(Optional.of(usuario));
+        when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        authService.solicitarRestablecimiento("ana", "127.0.0.1");
+
+        verify(loginRateLimiter).verificarPermitido(eq("127.0.0.1"), anyString());
+        verify(passwordResetTokenRepository).invalidarNoUsadosDeUsuario(1L);
+        verify(passwordResetTokenRepository).save(any());
+        verify(passwordResetMailSender).enviar(eq("ana@correo.com"), anyString());
+    }
+
+    @Test
+    void solicitarRestablecimientoConUsuarioInexistenteNoEnviaNadaNiFalla() {
+        when(usuarioRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+
+        authService.solicitarRestablecimiento("no-existe", "127.0.0.1");
+
+        verify(passwordResetMailSender, never()).enviar(anyString(), anyString());
+        verify(passwordResetTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void solicitarRestablecimientoConUsuarioSinCorreoNoEnviaNadaNiFalla() {
+        Usuario usuario = Usuario.nuevo("ana", "hash-real");
+        when(usuarioRepository.findByUsername("ana")).thenReturn(Optional.of(usuario));
+
+        authService.solicitarRestablecimiento("ana", "127.0.0.1");
+
+        verify(passwordResetMailSender, never()).enviar(anyString(), anyString());
+        verify(passwordResetTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void solicitarRestablecimientoConUsuarioBloqueadoNoEnviaNadaNiFalla() {
+        Usuario usuario = new Usuario(
+                1L, "ana", "hash-real", com.ais.marketbackend.seguridad.domain.model.EstadoUsuario.BLOQUEADO, 0L,
+                "Ana", "5555-5555", "ana@correo.com", false);
+        when(usuarioRepository.findByUsername("ana")).thenReturn(Optional.of(usuario));
+
+        authService.solicitarRestablecimiento("ana", "127.0.0.1");
+
+        verify(passwordResetMailSender, never()).enviar(anyString(), anyString());
+    }
+
+    @Test
+    void solicitarRestablecimientoRespetaElRateLimit() {
+        org.mockito.Mockito.doThrow(
+                        new com.ais.marketbackend.seguridad.domain.exception.RateLimitExcedidoException(Duration.ofSeconds(30)))
+                .when(loginRateLimiter).verificarPermitido(anyString(), anyString());
+
+        assertThatThrownBy(() -> authService.solicitarRestablecimiento("ana", "127.0.0.1"))
+                .isInstanceOf(com.ais.marketbackend.seguridad.domain.exception.RateLimitExcedidoException.class);
+
+        verify(usuarioRepository, never()).findByUsername(anyString());
+    }
+
+    @Test
+    void restablecerPasswordConTokenValidoCambiaLaPasswordYRevocaSesiones() {
+        PasswordResetToken token = PasswordResetToken.nuevo(1L, "hash-token", Instant.now(), Instant.now().plusSeconds(1800));
+        Usuario usuario = new Usuario(
+                1L, "ana", "hash-viejo", com.ais.marketbackend.seguridad.domain.model.EstadoUsuario.ACTIVO, 0L,
+                null, null, null, false);
+        when(passwordResetTokenRepository.consumir(anyString(), any())).thenReturn(1);
+        when(passwordResetTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.encode("nuevaClaveSegura1")).thenReturn("hash-nuevo");
+
+        authService.restablecerPassword("token-plano", "nuevaClaveSegura1");
+
+        verify(usuarioRepository).save(usuario);
+        verify(refreshTokenRepository).revocarTodosDeUsuario(1L);
+    }
+
+    @Test
+    void restablecerPasswordConTokenYaUsadoOExpiradoLanzaExcepcionGenerica() {
+        when(passwordResetTokenRepository.consumir(anyString(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> authService.restablecerPassword("token-plano", "nuevaClaveSegura1"))
+                .isInstanceOf(TokenResetInvalidoException.class);
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void restablecerPasswordConPasswordQueNoCumpleLaPoliticaNoConsumeElToken() {
+        assertThatThrownBy(() -> authService.restablecerPassword("token-plano", "corta"))
+                .isInstanceOf(com.ais.marketbackend.seguridad.domain.exception.PoliticaContrasenaException.class);
+
+        verify(passwordResetTokenRepository, never()).consumir(anyString(), any());
     }
 }

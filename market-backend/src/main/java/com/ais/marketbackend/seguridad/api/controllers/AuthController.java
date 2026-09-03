@@ -1,7 +1,10 @@
 package com.ais.marketbackend.seguridad.api.controllers;
 
 import com.ais.marketbackend.seguridad.api.dtos.requests.CambiarPasswordRequest;
+import com.ais.marketbackend.seguridad.api.dtos.requests.ForgotPasswordRequest;
 import com.ais.marketbackend.seguridad.api.dtos.requests.LoginRequest;
+import com.ais.marketbackend.seguridad.api.dtos.requests.ResetPasswordRequest;
+import com.ais.marketbackend.seguridad.api.dtos.responses.ForgotPasswordResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.LoginResponse;
 import com.ais.marketbackend.seguridad.api.dtos.responses.MeResponse;
 import com.ais.marketbackend.seguridad.application.dtos.LoginResult;
@@ -41,6 +44,8 @@ public class AuthController {
 
     private static final String COOKIE_REFRESH = "refresh_token";
     private static final String COOKIE_PATH = "/api/v1/auth";
+    private static final String MENSAJE_FORGOT_PASSWORD =
+            "Si el usuario existe y tiene un correo registrado, se enviará un enlace para restablecer la contraseña.";
 
     private final AuthService authService;
     private final UsuarioService usuarioService;
@@ -92,6 +97,29 @@ public class AuthController {
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody CambiarPasswordRequest request) {
         Long usuarioId = usuarioService.obtenerPorUsername(jwt.getSubject()).id();
         usuarioService.cambiarMiPassword(usuarioId, request.passwordActual(), request.passwordNueva());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Público — sin JWT (ver SecurityConfig). Respuesta siempre 200 con el mismo
+     * mensaje genérico, exista o no el usuario, tenga o no correo, esté o no activo
+     * — {@code AuthServiceImpl.solicitarRestablecimiento} nunca lanza excepción para
+     * distinguir esos casos, evita enumeración de usuarios.
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest http) {
+        authService.solicitarRestablecimiento(request.username(), clienteIp(http));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .body(new ForgotPasswordResponse(MENSAJE_FORGOT_PASSWORD));
+    }
+
+    /** Público — sin JWT (ver SecurityConfig). Token de un solo uso emitido por {@link #forgotPassword}. */
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.restablecerPassword(request.token(), request.nuevaPassword());
         return ResponseEntity.noContent().build();
     }
 

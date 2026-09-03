@@ -94,6 +94,9 @@ app:
     refresh-token:
       ttl: ${REFRESH_TOKEN_TTL:P30D}
       cleanup-interval: ${REFRESH_TOKEN_CLEANUP_INTERVAL:PT1H}
+    password-reset:
+      # Flujo público "olvidé mi contraseña" (AuthController.forgotPassword/resetPassword).
+      ttl: ${PASSWORD_RESET_TOKEN_TTL:PT30M}
     argon2:
       salt-length: 16
       hash-length: 32
@@ -145,6 +148,11 @@ app:
     email:
       from: ${ALERT_EMAIL_FROM:}
       to: ${ALERT_EMAIL_TO:}
+  frontend:
+    # Dominio real de producción (inven365.com.gt) — usado por
+    # PasswordResetMailSenderImpl para armar el enlace del correo de "olvidé mi
+    # contraseña". Mismo SMTP (ALERT_SMTP_*) que AlertaEmailService, sin config nueva.
+    password-reset-url: ${FRONTEND_PASSWORD_RESET_URL:https://inven365.com.gt/restablecer-password}
 
 logging:
   level:

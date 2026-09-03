@@ -17,6 +17,7 @@ import com.ais.marketbackend.seguridad.application.dtos.UsuarioResumen;
 import com.ais.marketbackend.seguridad.application.services.interfaces.AuthService;
 import com.ais.marketbackend.seguridad.application.services.interfaces.UsuarioService;
 import com.ais.marketbackend.seguridad.domain.exception.AutenticacionFallidaException;
+import com.ais.marketbackend.seguridad.domain.exception.TokenResetInvalidoException;
 import com.ais.marketbackend.seguridad.domain.model.EstadoUsuario;
 import com.ais.marketbackend.seguridad.domain.model.PermisosEfectivos;
 import com.ais.marketbackend.seguridad.infrastructure.security.SeguridadProperties;
@@ -47,7 +48,7 @@ class AuthControllerTest {
         SeguridadProperties properties = new SeguridadProperties(
                 null,
                 new SeguridadProperties.RefreshToken(Duration.ofDays(30)),
-                null, null, null, null, null);
+                null, null, null, null, null, null);
 
         controller = new AuthController(authService, usuarioService, properties);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
@@ -159,5 +160,48 @@ class AuthControllerTest {
 
         assertThat(respuesta.getStatusCode().value()).isEqualTo(204);
         org.mockito.Mockito.verify(usuarioService).cambiarMiPassword(1L, "actual123456", "nueva1234567");
+    }
+
+    @Test
+    void forgotPasswordSiempreDevuelve200ConMensajeGenerico() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"ana\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").exists())
+                .andExpect(header().string("Cache-Control", "no-store"));
+
+        org.mockito.Mockito.verify(authService).solicitarRestablecimiento(org.mockito.ArgumentMatchers.eq("ana"), anyString());
+    }
+
+    @Test
+    void forgotPasswordConCuerpoInvalidoDevuelve400DeValidacion() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void resetPasswordConTokenValidoDevuelve204() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-plano\",\"nuevaPassword\":\"clave-larga-segura\"}"))
+                .andExpect(status().isNoContent());
+
+        org.mockito.Mockito.verify(authService).restablecerPassword("token-plano", "clave-larga-segura");
+    }
+
+    @Test
+    void resetPasswordConTokenInvalidoDevuelve400Generico() throws Exception {
+        org.mockito.Mockito.doThrow(new TokenResetInvalidoException())
+                .when(authService).restablecerPassword(anyString(), anyString());
+
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"token-invalido\",\"nuevaPassword\":\"clave-larga-segura\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("PASSWORD_RESET_TOKEN_INVALID"));
     }
 }

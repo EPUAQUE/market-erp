@@ -16,6 +16,18 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/olvide-password',
+    name: 'olvide-password',
+    component: () => import('@/views/ForgotPasswordView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/restablecer-password',
+    name: 'restablecer-password',
+    component: () => import('@/views/ResetPasswordView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/forbidden',
     name: 'forbidden',
     component: () => import('@/views/ForbiddenView.vue'),

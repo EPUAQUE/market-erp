@@ -16,6 +16,13 @@ body {
 }
 
 @layer components {
+  /* Igual que la propuesta de diseño: el sidebar es un degradado
+     --mk-brand → --mk-brand-deep, no un color plano — y ambos tokens
+     cambian de tono entre claro/oscuro (ver tokens.css). */
+  .mk-sidebar {
+    background-image: linear-gradient(185deg, rgb(var(--mk-brand)), rgb(var(--mk-brand-deep)));
+  }
+
   .mk-bg {
     background-color: rgb(var(--mk-bg));
   }

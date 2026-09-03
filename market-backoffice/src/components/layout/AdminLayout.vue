@@ -164,7 +164,7 @@ async function onLogout() {
 
 <template>
   <div class="flex min-h-screen bg-mk-bg text-mk-text">
-    <aside class="flex w-64 shrink-0 flex-col bg-mk-brand text-mk-brand-ink">
+    <aside class="mk-sidebar flex w-64 shrink-0 flex-col text-mk-brand-ink">
       <div class="flex items-center gap-2 px-5 py-5">
         <div
           class="flex h-9 items-center justify-center rounded-md bg-white/10 px-2 text-xs font-bold tracking-wide"

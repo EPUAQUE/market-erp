@@ -1,6 +1,9 @@
 :root {
-  /* Marca — verde petróleo: sidebar, encabezados de marca */
+  /* Marca — verde petróleo: sidebar, encabezados de marca. El sidebar usa un
+     degradado (--mk-brand → --mk-brand-deep), igual que en la propuesta de
+     diseño original — no es un color plano. */
   --mk-brand: 15 76 92; /* #0F4C5C */
+  --mk-brand-deep: 10 55 66; /* #0A3742 */
   --mk-brand-ink: 255 255 255;
 
   /* Acción principal — verde esmeralda: botones, estados activos */
@@ -31,13 +34,17 @@
 }
 
 /*
- * Modo oscuro: solo redefine superficies/texto — la marca (sidebar, botón
- * primario, acento) se mantiene igual en los dos temas a propósito, para
- * que el logo/color de marca sea reconocible sin importar el tema elegido.
+ * Modo oscuro: el botón primario y el acento se mantienen iguales en los dos
+ * temas a propósito, para que se reconozcan sin importar el tema elegido.
+ * El sidebar (--mk-brand/--mk-brand-deep) SÍ se redefine a un petróleo más
+ * oscuro — igual que en la propuesta de diseño original, donde el degradado
+ * del sidebar cambiaba de tono entre claro y oscuro, no se quedaba fijo.
  * Activado por ThemeStore vía [data-theme="dark"] en <html> — nunca sigue
  * el tema del sistema operativo (decisión del cliente: siempre abre claro).
  */
 :root[data-theme='dark'] {
+  --mk-brand: 10 50 61; /* #0A323D */
+  --mk-brand-deep: 5 27 33; /* #051B21 */
   --mk-bg: 16 23 26; /* #10171A */
   --mk-surface: 23 31 34; /* #171F22 */
   --mk-surface-2: 35 43 46; /* #232B2E */

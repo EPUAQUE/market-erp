@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProductoTiendas } from '@/composables/useProductoTiendas'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { tiendasService } from '@/services/tiendas.service'
 import { formatCurrency } from '@/utils/money'
@@ -37,6 +38,44 @@ const tiendasDisponibles = computed(() => {
 function nombreTienda(id: number) {
   return tiendas.value.find((t) => t.id === id)?.nombre ?? id
 }
+
+const COLUMNAS_FILTRO: FiltroColumna<ProductoTienda>[] = [
+  { clave: 'tienda', tipo: 'texto', valor: (pt) => String(nombreTienda(pt.tiendaId)) },
+  {
+    clave: 'venta',
+    tipo: 'opciones',
+    valor: (pt) => (pt.permitirVenta ? 'true' : 'false'),
+    opciones: [
+      { valor: 'true', etiqueta: 'Sí' },
+      { valor: 'false', etiqueta: 'No' },
+    ],
+  },
+  {
+    clave: 'ingreso',
+    tipo: 'opciones',
+    valor: (pt) => (pt.permitirIngreso ? 'true' : 'false'),
+    opciones: [
+      { valor: 'true', etiqueta: 'Sí' },
+      { valor: 'false', etiqueta: 'No' },
+    ],
+  },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (pt) => (pt.activo ? 'true' : 'false'),
+    opciones: [
+      { valor: 'true', etiqueta: 'Activo' },
+      { valor: 'false', etiqueta: 'Inactivo' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: filtrado,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 function abrirAsignar() {
   editingId.value = null
@@ -167,6 +206,23 @@ onMounted(async () => {
       </button>
     </form>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaGlobal"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltros"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -179,6 +235,49 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.tienda"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.venta"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.ingreso"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -187,10 +286,10 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="7" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="filtrado.length === 0">
             <td colspan="7" class="px-4 py-6 text-center text-mk-text/60">Sin configuraciones aún.</td>
           </tr>
-          <tr v-for="pt in items" :key="pt.id" class="border-b border-mk-border last:border-0">
+          <tr v-for="pt in filtrado" :key="pt.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ nombreTienda(pt.tiendaId) }}</td>
             <td class="px-4 py-2 fc-num">{{ formatCurrency(pt.precioVenta) }}</td>
             <td class="px-4 py-2 fc-num">{{ pt.stockMinimo }} / {{ pt.stockMaximo }}</td>

@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useTraslados } from '@/composables/useTraslados'
 import { useTiendas } from '@/composables/useTiendas'
 import { useProductos } from '@/composables/useProductos'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Traslado } from '@/types/traslado'
@@ -54,6 +55,31 @@ function nombreTienda(tiendaId: number): string {
 function nombreProducto(productoId: number): string {
   return productos.value.find((p) => p.id === productoId)?.nombre ?? `#${productoId}`
 }
+
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el listado (ver CLAUDE.md, "Server-side
+// pagination").
+const COLUMNAS_FILTRO: FiltroColumna<Traslado>[] = [
+  { clave: 'origen', tipo: 'texto', valor: (t) => nombreTienda(t.tiendaOrigenId) },
+  { clave: 'destino', tipo: 'texto', valor: (t) => nombreTienda(t.tiendaDestinoId) },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (t) => t.estado,
+    opciones: [
+      { valor: 'BORRADOR', etiqueta: 'Borrador' },
+      { valor: 'COMPLETADO', etiqueta: 'Completado' },
+      { valor: 'ANULADO', etiqueta: 'Anulado' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: trasladosFiltrados,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 function agregarLinea() {
   form.value.lineas.push({ productoId: '', cantidad: '' })
@@ -192,6 +218,23 @@ onMounted(async () => {
       </button>
     </form>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaGlobal"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltros"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -202,6 +245,37 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.origen"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.destino"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="BORRADOR">Borrador</option>
+                <option value="COMPLETADO">Completado</option>
+                <option value="ANULADO">Anulado</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -210,10 +284,14 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="5" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="trasladosFiltrados.length === 0">
             <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Sin traslados registrados.</td>
           </tr>
-          <tr v-for="traslado in items" :key="traslado.id" class="border-b border-mk-border last:border-0">
+          <tr
+            v-for="traslado in trasladosFiltrados"
+            :key="traslado.id"
+            class="border-b border-mk-border last:border-0"
+          >
             <td class="px-4 py-2">{{ new Date(traslado.fecha).toLocaleString() }}</td>
             <td class="px-4 py-2">{{ nombreTienda(traslado.tiendaOrigenId) }}</td>
             <td class="px-4 py-2">{{ nombreTienda(traslado.tiendaDestinoId) }}</td>

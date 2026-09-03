@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useMarcas } from '@/composables/useMarcas'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import type { Marca } from '@/types/marca'
 
 const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } = useMarcas()
 const permissions = usePermissionsStore()
 
-const search = ref('')
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const nombre = ref('')
 
-const filtered = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  if (!term) return items.value
-  return items.value.filter((m) => m.nombre.toLowerCase().includes(term))
-})
+const COLUMNAS_FILTRO: FiltroColumna<Marca>[] = [{ clave: 'nombre', tipo: 'texto', valor: (m) => m.nombre }]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: filtered,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 function abrirCrear() {
   editingId.value = null
@@ -46,12 +49,22 @@ onMounted(cargar)
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Buscar por nombre…"
-        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaGlobal"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltros"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <button
         v-if="permissions.can('MARCAS_CREAR')"
         type="button"
@@ -88,6 +101,17 @@ onMounted(cargar)
           <tr>
             <th class="px-4 py-2 font-medium">Nombre</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nombre"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

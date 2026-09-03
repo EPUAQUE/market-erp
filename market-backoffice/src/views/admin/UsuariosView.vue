@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useUsuarios } from '@/composables/useUsuarios'
 import { useTiendas } from '@/composables/useTiendas'
 import { useGruposTienda } from '@/composables/useGruposTienda'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { rolesService } from '@/services/roles.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
@@ -47,7 +48,6 @@ const { items: tiendas, cargar: cargarTiendasCatalogo } = useTiendas()
 const { items: grupos, cargar: cargarGruposCatalogo } = useGruposTienda()
 const permissions = usePermissionsStore()
 
-const search = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
@@ -115,14 +115,29 @@ async function onAsignarGrupo(usuarioId: number) {
   }
 }
 
-const filtered = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  if (!term) return items.value
-  return items.value.filter(
-    (usuario) =>
-      usuario.username.toLowerCase().includes(term) || (usuario.nombre ?? '').toLowerCase().includes(term),
-  )
-})
+const COLUMNAS_FILTRO: FiltroColumna<Usuario>[] = [
+  { clave: 'nombre', tipo: 'texto', valor: (u) => u.nombre ?? '' },
+  { clave: 'username', tipo: 'texto', valor: (u) => u.username },
+  { clave: 'telefono', tipo: 'texto', valor: (u) => u.telefono ?? '' },
+  { clave: 'correo', tipo: 'texto', valor: (u) => u.correo ?? '' },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (u) => u.estado,
+    opciones: [
+      { valor: 'ACTIVO', etiqueta: 'Activo' },
+      { valor: 'INACTIVO', etiqueta: 'Inactivo' },
+      { valor: 'BLOQUEADO', etiqueta: 'Bloqueado' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: filtered,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
 
@@ -188,12 +203,22 @@ onMounted(async () => {
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Buscar por usuario…"
-        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaGlobal"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltros"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <button
         v-if="permissions.can('USUARIOS_CREAR')"
         type="button"
@@ -302,6 +327,52 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Correo</th>
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nombre"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.username"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.telefono"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.correo"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+                <option value="BLOQUEADO">Bloqueado</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

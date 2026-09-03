@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useProveedores } from '@/composables/useProveedores'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Proveedor } from '@/types/proveedor'
@@ -9,7 +10,6 @@ const { items, listLoading, listError, saveLoading, saveError, cargar, crear, ac
   useProveedores()
 const permissions = usePermissionsStore()
 
-const search = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
@@ -17,13 +17,26 @@ const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const form = ref({ nit: '', nombre: '', direccion: '', telefono: '', correo: '' })
 
-const filtered = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  if (!term) return items.value
-  return items.value.filter(
-    (p) => p.nombre.toLowerCase().includes(term) || p.nit.toLowerCase().includes(term),
-  )
-})
+const COLUMNAS_FILTRO: FiltroColumna<Proveedor>[] = [
+  { clave: 'nit', tipo: 'texto', valor: (p) => p.nit },
+  { clave: 'nombre', tipo: 'texto', valor: (p) => p.nombre },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (p) => p.estado,
+    opciones: [
+      { valor: 'ACTIVO', etiqueta: 'Activo' },
+      { valor: 'INACTIVO', etiqueta: 'Inactivo' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: filtered,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
 const paged = computed(() => {
@@ -73,12 +86,22 @@ onMounted(cargar)
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Buscar por NIT o nombre…"
-        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaGlobal"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltros"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <button
         v-if="permissions.can('PROVEEDORES_CREAR')"
         type="button"
@@ -153,6 +176,35 @@ onMounted(cargar)
             <th class="px-4 py-2 font-medium">Nombre</th>
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nit"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nombre"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useGastosProgramados } from '@/composables/useGastosProgramados'
 import { useTiendas } from '@/composables/useTiendas'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
@@ -78,6 +79,32 @@ function toggleDetalle(gasto: GastoProgramado) {
 function puedeGenerarPago(gasto: GastoProgramado): boolean {
   return gasto.activo && new Date(gasto.proximaFecha).getTime() <= Date.now()
 }
+
+const COLUMNAS_FILTRO: FiltroColumna<GastoProgramado>[] = [
+  { clave: 'concepto', tipo: 'texto', valor: (g) => g.concepto },
+  {
+    clave: 'frecuencia',
+    tipo: 'opciones',
+    valor: (g) => g.frecuencia,
+    opciones: FRECUENCIAS.map((f) => ({ valor: f, etiqueta: f })),
+  },
+  {
+    clave: 'activo',
+    tipo: 'opciones',
+    valor: (g) => (g.activo ? 'true' : 'false'),
+    opciones: [
+      { valor: 'true', etiqueta: 'Activo' },
+      { valor: 'false', etiqueta: 'Inactivo' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: gastosFiltrados,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 const gastoEnDetalle = computed(() => items.value.find((g) => g.id === detalleAbiertoId.value) ?? null)
 
@@ -172,6 +199,23 @@ onMounted(async () => {
       </button>
     </form>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaGlobal"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltros"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -183,6 +227,38 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Activo</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.concepto"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.frecuencia"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todas</option>
+                <option v-for="f in FRECUENCIAS" :key="f" :value="f">{{ f }}</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.activo"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -191,10 +267,14 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="6" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="gastosFiltrados.length === 0">
             <td colspan="6" class="px-4 py-6 text-center text-mk-text/60">Sin gastos programados.</td>
           </tr>
-          <tr v-for="gasto in items" :key="gasto.id" class="border-b border-mk-border last:border-0">
+          <tr
+            v-for="gasto in gastosFiltrados"
+            :key="gasto.id"
+            class="border-b border-mk-border last:border-0"
+          >
             <td class="px-4 py-2">{{ gasto.concepto }}</td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(gasto.monto) }}</td>
             <td class="px-4 py-2">{{ gasto.frecuencia }}</td>

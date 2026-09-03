@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useFel } from '@/composables/useFel'
 import { useTiendas } from '@/composables/useTiendas'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { DocumentoFel } from '@/types/fel'
@@ -42,6 +43,33 @@ const ESTADO_VARIANT: Record<string, EstadoBadgeVariant> = {
   ANULADO: 'neutral',
   ERROR: 'danger',
 }
+
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el listado (ver CLAUDE.md, "Server-side
+// pagination").
+const COLUMNAS_FILTRO: FiltroColumna<DocumentoFel>[] = [
+  { clave: 'venta', tipo: 'texto', valor: (d) => `#${d.ventaId}` },
+  { clave: 'serieNumero', tipo: 'texto', valor: (d) => `${d.serie}-${d.numero}` },
+  { clave: 'uuid', tipo: 'texto', valor: (d) => d.uuid ?? '' },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (d) => d.estado,
+    opciones: [
+      { valor: 'PENDIENTE', etiqueta: 'Pendiente' },
+      { valor: 'CERTIFICADO', etiqueta: 'Certificado' },
+      { valor: 'ANULADO', etiqueta: 'Anulado' },
+      { valor: 'ERROR', etiqueta: 'Error' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: documentosFiltrados,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 watch(tiendaId, (id) => {
   pagina.value = 1
@@ -124,6 +152,23 @@ onMounted(async () => {
     </form>
     <p v-if="emitirError" class="text-sm text-mk-danger" role="alert">{{ emitirError }}</p>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaGlobal"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltros"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -134,6 +179,45 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.venta"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.serieNumero"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.uuid"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="CERTIFICADO">Certificado</option>
+                <option value="ANULADO">Anulado</option>
+                <option value="ERROR">Error</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -142,10 +226,10 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="5" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="documentosFiltrados.length === 0">
             <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Sin documentos FEL.</td>
           </tr>
-          <template v-for="documento in items" :key="documento.id">
+          <template v-for="documento in documentosFiltrados" :key="documento.id">
             <tr class="border-b border-mk-border last:border-0">
               <td class="px-4 py-2">#{{ documento.ventaId }}</td>
               <td class="px-4 py-2">{{ documento.serie }}-{{ documento.numero }}</td>

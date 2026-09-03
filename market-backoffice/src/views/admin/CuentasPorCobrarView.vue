@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useCuentasPorCobrar } from '@/composables/useCuentasPorCobrar'
 import { useTiendas } from '@/composables/useTiendas'
 import { useClientes } from '@/composables/useClientes'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
@@ -40,6 +41,31 @@ const montoCobro = ref('')
 function nombreCliente(clienteId: number): string {
   return clientes.value.find((c) => c.id === clienteId)?.nombre ?? `#${clienteId}`
 }
+
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el listado (ver CLAUDE.md, "Server-side
+// pagination").
+const COLUMNAS_FILTRO: FiltroColumna<CuentaPorCobrar>[] = [
+  { clave: 'venta', tipo: 'texto', valor: (c) => `#${c.ventaId}` },
+  { clave: 'cliente', tipo: 'texto', valor: (c) => nombreCliente(c.clienteId) },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (c) => c.estado,
+    opciones: [
+      { valor: 'PENDIENTE', etiqueta: 'Pendiente' },
+      { valor: 'COBRADA', etiqueta: 'Cobrada' },
+      { valor: 'ANULADA', etiqueta: 'Anulada' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: cuentasFiltradas,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 function toggleDetalle(cuenta: CuentaPorCobrar) {
   detalleAbiertoId.value = detalleAbiertoId.value === cuenta.id ? null : cuenta.id
@@ -92,6 +118,23 @@ onMounted(async () => {
       <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
     </select>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaGlobal"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltros"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -104,6 +147,39 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.venta"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.cliente"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="COBRADA">Cobrada</option>
+                <option value="ANULADA">Anulada</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
+          </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
@@ -112,10 +188,14 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="7" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="cuentasFiltradas.length === 0">
             <td colspan="7" class="px-4 py-6 text-center text-mk-text/60">Sin cuentas por cobrar.</td>
           </tr>
-          <tr v-for="cuenta in items" :key="cuenta.id" class="border-b border-mk-border last:border-0">
+          <tr
+            v-for="cuenta in cuentasFiltradas"
+            :key="cuenta.id"
+            class="border-b border-mk-border last:border-0"
+          >
             <td class="px-4 py-2">#{{ cuenta.ventaId }}</td>
             <td class="px-4 py-2">{{ nombreCliente(cuenta.clienteId) }}</td>
             <td class="px-4 py-2">{{ new Date(cuenta.fechaVencimiento).toLocaleDateString() }}</td>

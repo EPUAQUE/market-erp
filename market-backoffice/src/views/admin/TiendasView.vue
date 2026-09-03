@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useTiendas } from '@/composables/useTiendas'
 import { useGruposTienda } from '@/composables/useGruposTienda'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { Tienda } from '@/types/tienda'
@@ -11,7 +12,6 @@ const { items, listLoading, listError, saveLoading, saveError, cargar, crear, ac
 const { items: grupos, cargar: cargarGrupos } = useGruposTienda()
 const permissions = usePermissionsStore()
 
-const search = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
@@ -26,17 +26,31 @@ const form = ref({
   grupoId: null as number | null,
 })
 
-const filtered = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  if (!term) return items.value
-  return items.value.filter(
-    (t) => t.nombre.toLowerCase().includes(term) || t.codigo.toLowerCase().includes(term),
-  )
-})
-
 function nombreGrupo(grupoId: number): string {
   return grupos.value.find((g) => g.id === grupoId)?.nombre ?? '—'
 }
+
+const COLUMNAS_FILTRO: FiltroColumna<Tienda>[] = [
+  { clave: 'codigo', tipo: 'texto', valor: (t) => t.codigo },
+  { clave: 'nombre', tipo: 'texto', valor: (t) => t.nombre },
+  { clave: 'grupo', tipo: 'texto', valor: (t) => nombreGrupo(t.grupoId) },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (t) => t.estado,
+    opciones: [
+      { valor: 'ACTIVA', etiqueta: 'Activa' },
+      { valor: 'INACTIVA', etiqueta: 'Inactiva' },
+    ],
+  },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: filtered,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
 const paged = computed(() => {
@@ -94,12 +108,22 @@ onMounted(() => {
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Buscar por código o nombre…"
-        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaGlobal"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltros"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <button
         v-if="permissions.can('TIENDAS_CREAR')"
         type="button"
@@ -186,6 +210,44 @@ onMounted(() => {
             <th class="px-4 py-2 font-medium">Grupo</th>
             <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.codigo"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nombre"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.grupo"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option v-for="g in grupos" :key="g.id" :value="g.nombre">{{ g.nombre }}</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="ACTIVA">Activa</option>
+                <option value="INACTIVA">Inactiva</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

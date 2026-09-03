@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useUnidadesMedida } from '@/composables/useUnidadesMedida'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import type { UnidadMedida } from '@/types/unidadMedida'
 
@@ -8,18 +9,21 @@ const { items, listLoading, listError, saveLoading, saveError, cargar, crear, ac
   useUnidadesMedida()
 const permissions = usePermissionsStore()
 
-const search = ref('')
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const form = ref({ nombre: '', abreviacion: '' })
 
-const filtered = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  if (!term) return items.value
-  return items.value.filter(
-    (u) => u.nombre.toLowerCase().includes(term) || u.abreviacion.toLowerCase().includes(term),
-  )
-})
+const COLUMNAS_FILTRO: FiltroColumna<UnidadMedida>[] = [
+  { clave: 'nombre', tipo: 'texto', valor: (u) => u.nombre },
+  { clave: 'abreviacion', tipo: 'texto', valor: (u) => u.abreviacion },
+]
+const {
+  busquedaGlobal,
+  filtrosColumna,
+  itemsFiltrados: filtered,
+  limpiarFiltros,
+  hayFiltrosActivos,
+} = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
 function abrirCrear() {
   editingId.value = null
@@ -51,12 +55,22 @@ onMounted(cargar)
     </header>
 
     <div class="flex items-center justify-between gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Buscar por nombre o abreviación…"
-        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaGlobal"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltros"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <button
         v-if="permissions.can('UNIDADES_MEDIDA_CREAR')"
         type="button"
@@ -105,6 +119,25 @@ onMounted(cargar)
             <th class="px-4 py-2 font-medium">Nombre</th>
             <th class="px-4 py-2 font-medium">Abreviación</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.nombre"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.abreviacion"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

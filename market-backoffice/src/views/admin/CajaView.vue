@@ -2,10 +2,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useCaja } from '@/composables/useCaja'
 import { useTiendas } from '@/composables/useTiendas'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
-import type { TipoMovimientoCaja } from '@/types/caja'
+import type { CajaSesion, TipoMovimientoCaja } from '@/types/caja'
 
 const {
   sesionAbierta,
@@ -36,6 +37,25 @@ const showHistorial = ref(false)
 const tiendasPermitidas = computed(() =>
   permissions.alcanceGlobal ? tiendas.value : tiendas.value.filter((t) => permissions.tiendaIds.has(t.id)),
 )
+
+const COLUMNAS_FILTRO_HISTORIAL: FiltroColumna<CajaSesion>[] = [
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (s) => s.estado,
+    opciones: [
+      { valor: 'ABIERTA', etiqueta: 'Abierta' },
+      { valor: 'CERRADA', etiqueta: 'Cerrada' },
+    ],
+  },
+]
+const {
+  busquedaGlobal: busquedaHistorial,
+  filtrosColumna: filtrosHistorial,
+  itemsFiltrados: historialFiltrado,
+  limpiarFiltros: limpiarFiltrosHistorial,
+  hayFiltrosActivos: hayFiltrosHistorialActivos,
+} = useFiltrosTabla(historial, COLUMNAS_FILTRO_HISTORIAL)
 
 const montoInicial = ref('')
 const movimiento = ref({ tipo: 'INGRESO' as TipoMovimientoCaja, concepto: '', monto: '' })
@@ -254,6 +274,22 @@ onMounted(async () => {
 
     <div v-if="showHistorial" class="space-y-2">
       <h2 class="text-sm font-medium">Historial de sesiones</h2>
+      <div class="flex items-center gap-2">
+        <input
+          v-model="busquedaHistorial"
+          type="search"
+          placeholder="Buscar en todas las columnas…"
+          class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+        />
+        <button
+          v-if="hayFiltrosHistorialActivos"
+          type="button"
+          class="text-sm text-mk-text/60 hover:underline"
+          @click="limpiarFiltrosHistorial"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
         <table class="w-full text-left text-sm">
           <thead class="border-b border-mk-border bg-mk-surface">
@@ -265,15 +301,36 @@ onMounted(async () => {
               <th class="mk-num px-4 py-2 font-medium">Monto contado</th>
               <th class="px-4 py-2 font-medium">Estado</th>
             </tr>
+            <tr class="border-b border-mk-border bg-mk-surface/50">
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5"></th>
+              <th class="px-4 py-1.5 font-normal">
+                <select
+                  v-model="filtrosHistorial.estado"
+                  class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+                >
+                  <option value="">Todos</option>
+                  <option value="ABIERTA">Abierta</option>
+                  <option value="CERRADA">Cerrada</option>
+                </select>
+              </th>
+            </tr>
           </thead>
           <tbody>
             <tr v-if="historialLoading">
               <td colspan="6" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
             </tr>
-            <tr v-else-if="historial.length === 0">
+            <tr v-else-if="historialFiltrado.length === 0">
               <td colspan="6" class="px-4 py-6 text-center text-mk-text/60">Sin sesiones registradas.</td>
             </tr>
-            <tr v-for="sesion in historial" :key="sesion.id" class="border-b border-mk-border last:border-0">
+            <tr
+              v-for="sesion in historialFiltrado"
+              :key="sesion.id"
+              class="border-b border-mk-border last:border-0"
+            >
               <td class="px-4 py-2">{{ new Date(sesion.fechaApertura).toLocaleString() }}</td>
               <td class="px-4 py-2">
                 {{ sesion.fechaCierre ? new Date(sesion.fechaCierre).toLocaleString() : '—' }}

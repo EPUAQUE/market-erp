@@ -2,9 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useNotificaciones } from '@/composables/useNotificaciones'
 import { useTiendas } from '@/composables/useTiendas'
+import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
-import type { TipoNotificacion } from '@/types/notificacion'
+import type { Notificacion, TipoNotificacion } from '@/types/notificacion'
 
 const {
   items,
@@ -31,8 +32,29 @@ const ETIQUETAS_TIPO: Record<TipoNotificacion, string> = {
   STOCK_BAJO: 'Stock bajo',
 }
 
+// Nota: con paginación del servidor, este filtro solo busca dentro de la
+// página cargada, no en todo el listado (ver CLAUDE.md, "Server-side
+// pagination").
+const COLUMNAS_FILTRO: FiltroColumna<Notificacion>[] = [
+  { clave: 'tipo', tipo: 'opciones', valor: (n) => n.tipo },
+  { clave: 'mensaje', tipo: 'texto', valor: (n) => n.mensaje },
+  {
+    clave: 'leida',
+    tipo: 'opciones',
+    valor: (n) => (n.leida ? 'true' : 'false'),
+    opciones: [
+      { valor: 'false', etiqueta: 'Nueva' },
+      { valor: 'true', etiqueta: 'Leída' },
+    ],
+  },
+]
+const { busquedaGlobal, filtrosColumna, itemsFiltrados, limpiarFiltros, hayFiltrosActivos } = useFiltrosTabla(
+  items,
+  COLUMNAS_FILTRO,
+)
+
 const itemsOrdenados = computed(() =>
-  [...items.value].sort((a, b) => {
+  [...itemsFiltrados.value].sort((a, b) => {
     if (a.leida !== b.leida) return a.leida ? 1 : -1
     return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
   }),
@@ -87,6 +109,23 @@ onMounted(async () => {
       </button>
     </div>
 
+    <div class="flex items-center gap-2">
+      <input
+        v-model="busquedaGlobal"
+        type="search"
+        placeholder="Buscar en todas las columnas…"
+        class="mk-input w-full max-w-xs rounded border border-mk-border bg-transparent px-3 py-2"
+      />
+      <button
+        v-if="hayFiltrosActivos"
+        type="button"
+        class="text-sm text-mk-text/60 hover:underline"
+        @click="limpiarFiltros"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-mk-border bg-mk-surface">
@@ -96,6 +135,39 @@ onMounted(async () => {
             <th class="px-4 py-2 font-medium">Fecha</th>
             <th class="px-4 py-2 font-medium">Leída</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
+          </tr>
+          <tr class="border-b border-mk-border bg-mk-surface/50">
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.tipo"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option v-for="(etiqueta, tipo) in ETIQUETAS_TIPO" :key="tipo" :value="tipo">
+                  {{ etiqueta }}
+                </option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5 font-normal">
+              <input
+                v-model="filtrosColumna.mensaje"
+                type="text"
+                placeholder="Filtrar…"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              />
+            </th>
+            <th class="px-4 py-1.5"></th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.leida"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todas</option>
+                <option value="false">Nueva</option>
+                <option value="true">Leída</option>
+              </select>
+            </th>
+            <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>

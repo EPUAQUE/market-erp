@@ -47,4 +47,18 @@ public class MarcaController {
         MarcaResponse actualizada = mapper.toResponse(marcaService.actualizar(id, request.nombre()));
         return ResponseEntity.ok(actualizada);
     }
+
+    @PostMapping("/{id}/activar")
+    @RequiresPermission("MARCAS_EDITAR")
+    public ResponseEntity<Void> activar(@PathVariable Long id) {
+        marcaService.activar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/desactivar")
+    @RequiresPermission("MARCAS_EDITAR")
+    public ResponseEntity<Void> desactivar(@PathVariable Long id) {
+        marcaService.desactivar(id);
+        return ResponseEntity.noContent().build();
+    }
 }

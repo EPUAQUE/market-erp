@@ -3,11 +3,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useMarcas } from '@/composables/useMarcas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Marca } from '@/types/marca'
 
-const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } = useMarcas()
+const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado } =
+  useMarcas()
 const permissions = usePermissionsStore()
 
 const page = ref(1)
@@ -17,7 +19,18 @@ const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const nombre = ref('')
 
-const COLUMNAS_FILTRO: FiltroColumna<Marca>[] = [{ clave: 'nombre', tipo: 'texto', valor: (m) => m.nombre }]
+const COLUMNAS_FILTRO: FiltroColumna<Marca>[] = [
+  { clave: 'nombre', tipo: 'texto', valor: (m) => m.nombre },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (m) => m.estado,
+    opciones: [
+      { valor: 'ACTIVA', etiqueta: 'Activa' },
+      { valor: 'INACTIVA', etiqueta: 'Inactiva' },
+    ],
+  },
+]
 const {
   busquedaGlobal,
   filtrosColumna,
@@ -124,6 +137,7 @@ onMounted(cargar)
         <thead class="border-b border-mk-border bg-mk-surface">
           <tr>
             <th class="px-4 py-2 font-medium">Nombre</th>
+            <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
           <tr class="border-b border-mk-border bg-mk-surface/50">
@@ -135,21 +149,37 @@ onMounted(cargar)
                 class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
               />
             </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="ACTIVA">Activa</option>
+                <option value="INACTIVA">Inactiva</option>
+              </select>
+            </th>
             <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
-            <td colspan="2" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
+            <td colspan="3" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
           </tr>
           <tr v-else-if="listError">
-            <td colspan="2" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
+            <td colspan="3" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
           <tr v-else-if="paged.length === 0">
-            <td colspan="2" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
+            <td colspan="3" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
           </tr>
           <tr v-for="marca in paged" :key="marca.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ marca.nombre }}</td>
+            <td class="px-4 py-2">
+              <EstadoBadge
+                :variant="marca.estado === 'ACTIVA' ? 'success' : 'neutral'"
+                :label="marca.estado === 'ACTIVA' ? 'Activa' : 'Inactiva'"
+              />
+            </td>
             <td class="px-4 py-2">
               <div class="mk-row-actions">
                 <button
@@ -160,6 +190,16 @@ onMounted(cargar)
                   @click="abrirEditar(marca)"
                 >
                   <ActionIcon name="edit" />
+                </button>
+                <button
+                  v-if="permissions.can('MARCAS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  :class="marca.estado === 'ACTIVA' ? 'mk-row-btn-danger' : 'mk-row-btn-success'"
+                  :title="marca.estado === 'ACTIVA' ? 'Desactivar' : 'Activar'"
+                  @click="alternarEstado(marca)"
+                >
+                  <ActionIcon name="power" />
                 </button>
               </div>
             </td>

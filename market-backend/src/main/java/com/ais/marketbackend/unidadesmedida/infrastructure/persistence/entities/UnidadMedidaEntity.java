@@ -1,7 +1,10 @@
 package com.ais.marketbackend.unidadesmedida.infrastructure.persistence.entities;
 
+import com.ais.marketbackend.unidadesmedida.domain.model.EstadoUnidadMedida;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,4 +32,8 @@ public class UnidadMedidaEntity {
 
     @Column(name = "abreviacion", nullable = false, length = 10)
     private String abreviacion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    private EstadoUnidadMedida estado;
 }

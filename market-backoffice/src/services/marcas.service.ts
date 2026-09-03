@@ -14,6 +14,14 @@ class MarcasService {
   actualizar(id: number, nombre: string) {
     return apiClient.put<Marca>(API_ENDPOINTS.marcas.porId(id), { nombre })
   }
+
+  activar(id: number) {
+    return apiClient.post<void>(API_ENDPOINTS.marcas.activar(id))
+  }
+
+  desactivar(id: number) {
+    return apiClient.post<void>(API_ENDPOINTS.marcas.desactivar(id))
+  }
 }
 
 export const marcasService = new MarcasService()

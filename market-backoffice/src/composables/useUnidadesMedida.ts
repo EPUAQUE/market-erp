@@ -52,5 +52,19 @@ export function useUnidadesMedida() {
     }
   }
 
-  return { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar }
+  async function alternarEstado(unidad: UnidadMedida) {
+    try {
+      if (unidad.estado === 'ACTIVA') {
+        await unidadesMedidaService.desactivar(unidad.id)
+        unidad.estado = 'INACTIVA'
+      } else {
+        await unidadesMedidaService.activar(unidad.id)
+        unidad.estado = 'ACTIVA'
+      }
+    } catch (error) {
+      listError.value = error instanceof ApiClientError ? error.message : 'No se pudo cambiar el estado.'
+    }
+  }
+
+  return { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado }
 }

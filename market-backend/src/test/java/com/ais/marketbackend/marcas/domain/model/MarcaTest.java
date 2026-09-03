@@ -21,4 +21,16 @@ class MarcaTest {
 
         assertThat(marca.getNombre()).isEqualTo("Nestlé S.A.");
     }
+
+    @Test
+    void desactivarYActivarCambianElEstado() {
+        Marca marca = Marca.nueva("Nestlé");
+        assertThat(marca.getEstado()).isEqualTo(EstadoMarca.ACTIVA);
+
+        marca.desactivar();
+        assertThat(marca.getEstado()).isEqualTo(EstadoMarca.INACTIVA);
+
+        marca.activar();
+        assertThat(marca.getEstado()).isEqualTo(EstadoMarca.ACTIVA);
+    }
 }

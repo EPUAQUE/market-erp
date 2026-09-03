@@ -31,6 +31,8 @@ export const API_ENDPOINTS = {
   unidadesMedida: {
     base: '/api/v1/unidades-medida',
     porId: (id: number) => `/api/v1/unidades-medida/${id}`,
+    activar: (id: number) => `/api/v1/unidades-medida/${id}/activar`,
+    desactivar: (id: number) => `/api/v1/unidades-medida/${id}/desactivar`,
   },
   categorias: {
     base: '/api/v1/categorias',
@@ -41,6 +43,8 @@ export const API_ENDPOINTS = {
   marcas: {
     base: '/api/v1/marcas',
     porId: (id: number) => `/api/v1/marcas/${id}`,
+    activar: (id: number) => `/api/v1/marcas/${id}/activar`,
+    desactivar: (id: number) => `/api/v1/marcas/${id}/desactivar`,
   },
   productos: {
     base: '/api/v1/productos',

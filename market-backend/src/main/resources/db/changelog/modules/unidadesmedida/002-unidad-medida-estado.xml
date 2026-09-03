@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Unidades existentes nunca fueron desactivadas (la funcionalidad no existía),
+         por eso ACTIVA es el valor real, no uno fabricado. -->
+    <changeSet id="unidadesmedida-002-unidad-medida-estado" author="market-backend">
+        <addColumn tableName="unidad_medida">
+            <column name="estado" type="VARCHAR(20)" defaultValue="ACTIVA">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

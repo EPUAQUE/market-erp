@@ -1,4 +1,6 @@
 package com.ais.marketbackend.marcas.application.dtos;
 
-public record MarcaResumen(Long id, String nombre) {
+import com.ais.marketbackend.marcas.domain.model.EstadoMarca;
+
+public record MarcaResumen(Long id, String nombre, EstadoMarca estado) {
 }

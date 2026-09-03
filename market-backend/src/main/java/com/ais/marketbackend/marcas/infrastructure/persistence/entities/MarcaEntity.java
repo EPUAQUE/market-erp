@@ -1,7 +1,10 @@
 package com.ais.marketbackend.marcas.infrastructure.persistence.entities;
 
+import com.ais.marketbackend.marcas.domain.model.EstadoMarca;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,4 +29,8 @@ public class MarcaEntity {
 
     @Column(name = "nombre", nullable = false, unique = true, length = 100)
     private String nombre;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    private EstadoMarca estado;
 }

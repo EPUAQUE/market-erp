@@ -2,6 +2,7 @@ package com.ais.marketbackend.unidadesmedida.api.controllers;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,6 +16,7 @@ import com.ais.marketbackend.unidadesmedida.api.mappers.UnidadMedidaApiMapper;
 import com.ais.marketbackend.unidadesmedida.application.dtos.UnidadMedidaResumen;
 import com.ais.marketbackend.unidadesmedida.application.services.interfaces.UnidadMedidaService;
 import com.ais.marketbackend.unidadesmedida.domain.exception.UnidadMedidaDuplicadaException;
+import com.ais.marketbackend.unidadesmedida.domain.model.EstadoUnidadMedida;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,7 @@ class UnidadMedidaControllerTest {
                 .id(resumen.id())
                 .nombre(resumen.nombre())
                 .abreviacion(resumen.abreviacion())
+                .estado(resumen.estado())
                 .build();
 
         UnidadMedidaController controller = new UnidadMedidaController(unidadMedidaService, mapper);
@@ -44,7 +47,8 @@ class UnidadMedidaControllerTest {
 
     @Test
     void listarDevuelveLasUnidades() throws Exception {
-        when(unidadMedidaService.listar()).thenReturn(List.of(new UnidadMedidaResumen(1L, "Kilogramo", "kg")));
+        when(unidadMedidaService.listar())
+                .thenReturn(List.of(new UnidadMedidaResumen(1L, "Kilogramo", "kg", EstadoUnidadMedida.ACTIVA)));
 
         mockMvc.perform(get("/api/v1/unidades-medida"))
                 .andExpect(status().isOk())
@@ -54,7 +58,7 @@ class UnidadMedidaControllerTest {
     @Test
     void crearDevuelve201() throws Exception {
         when(unidadMedidaService.crear(anyString(), anyString()))
-                .thenReturn(new UnidadMedidaResumen(2L, "Litro", "l"));
+                .thenReturn(new UnidadMedidaResumen(2L, "Litro", "l", EstadoUnidadMedida.ACTIVA));
 
         mockMvc.perform(post("/api/v1/unidades-medida")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -81,5 +85,14 @@ class UnidadMedidaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nombre\":\"\",\"abreviacion\":\"\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void activarYDesactivarDevuelven204() throws Exception {
+        mockMvc.perform(post("/api/v1/unidades-medida/1/desactivar")).andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/v1/unidades-medida/1/activar")).andExpect(status().isNoContent());
+
+        verify(unidadMedidaService).desactivar(1L);
+        verify(unidadMedidaService).activar(1L);
     }
 }

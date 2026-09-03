@@ -9,5 +9,9 @@ public interface MarcaService {
 
     MarcaResumen actualizar(Long id, String nombre);
 
+    void activar(Long id);
+
+    void desactivar(Long id);
+
     List<MarcaResumen> listar();
 }

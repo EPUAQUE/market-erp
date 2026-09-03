@@ -23,4 +23,16 @@ class UnidadMedidaTest {
         assertThat(unidad.getNombre()).isEqualTo("Kilogramos");
         assertThat(unidad.getAbreviacion()).isEqualTo("Kg.");
     }
+
+    @Test
+    void desactivarYActivarCambianElEstado() {
+        UnidadMedida unidad = UnidadMedida.nueva("Kilogramo", "kg");
+        assertThat(unidad.getEstado()).isEqualTo(EstadoUnidadMedida.ACTIVA);
+
+        unidad.desactivar();
+        assertThat(unidad.getEstado()).isEqualTo(EstadoUnidadMedida.INACTIVA);
+
+        unidad.activar();
+        assertThat(unidad.getEstado()).isEqualTo(EstadoUnidadMedida.ACTIVA);
+    }
 }

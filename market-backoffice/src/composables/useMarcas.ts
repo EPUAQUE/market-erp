@@ -52,5 +52,19 @@ export function useMarcas() {
     }
   }
 
-  return { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar }
+  async function alternarEstado(marca: Marca) {
+    try {
+      if (marca.estado === 'ACTIVA') {
+        await marcasService.desactivar(marca.id)
+        marca.estado = 'INACTIVA'
+      } else {
+        await marcasService.activar(marca.id)
+        marca.estado = 'ACTIVA'
+      }
+    } catch (error) {
+      listError.value = error instanceof ApiClientError ? error.message : 'No se pudo cambiar el estado.'
+    }
+  }
+
+  return { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado }
 }

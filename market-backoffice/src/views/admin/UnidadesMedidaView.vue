@@ -3,11 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useUnidadesMedida } from '@/composables/useUnidadesMedida'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { UnidadMedida } from '@/types/unidadMedida'
 
-const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } =
+const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado } =
   useUnidadesMedida()
 const permissions = usePermissionsStore()
 
@@ -21,6 +22,15 @@ const form = ref({ nombre: '', abreviacion: '' })
 const COLUMNAS_FILTRO: FiltroColumna<UnidadMedida>[] = [
   { clave: 'nombre', tipo: 'texto', valor: (u) => u.nombre },
   { clave: 'abreviacion', tipo: 'texto', valor: (u) => u.abreviacion },
+  {
+    clave: 'estado',
+    tipo: 'opciones',
+    valor: (u) => u.estado,
+    opciones: [
+      { valor: 'ACTIVA', etiqueta: 'Activa' },
+      { valor: 'INACTIVA', etiqueta: 'Inactiva' },
+    ],
+  },
 ]
 const {
   busquedaGlobal,
@@ -142,6 +152,7 @@ onMounted(cargar)
           <tr>
             <th class="px-4 py-2 font-medium">Nombre</th>
             <th class="px-4 py-2 font-medium">Abreviación</th>
+            <th class="px-4 py-2 font-medium">Estado</th>
             <th class="px-4 py-2 font-medium">Acciones</th>
           </tr>
           <tr class="border-b border-mk-border bg-mk-surface/50">
@@ -161,22 +172,38 @@ onMounted(cargar)
                 class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
               />
             </th>
+            <th class="px-4 py-1.5 font-normal">
+              <select
+                v-model="filtrosColumna.estado"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-2 py-1 text-xs"
+              >
+                <option value="">Todos</option>
+                <option value="ACTIVA">Activa</option>
+                <option value="INACTIVA">Inactiva</option>
+              </select>
+            </th>
             <th class="px-4 py-1.5"></th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="listLoading">
-            <td colspan="3" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
+            <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
           </tr>
           <tr v-else-if="listError">
-            <td colspan="3" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
+            <td colspan="4" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
           <tr v-else-if="paged.length === 0">
-            <td colspan="3" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
+            <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
           </tr>
           <tr v-for="unidad in paged" :key="unidad.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ unidad.nombre }}</td>
             <td class="px-4 py-2">{{ unidad.abreviacion }}</td>
+            <td class="px-4 py-2">
+              <EstadoBadge
+                :variant="unidad.estado === 'ACTIVA' ? 'success' : 'neutral'"
+                :label="unidad.estado === 'ACTIVA' ? 'Activa' : 'Inactiva'"
+              />
+            </td>
             <td class="px-4 py-2">
               <div class="mk-row-actions">
                 <button
@@ -187,6 +214,16 @@ onMounted(cargar)
                   @click="abrirEditar(unidad)"
                 >
                   <ActionIcon name="edit" />
+                </button>
+                <button
+                  v-if="permissions.can('UNIDADES_MEDIDA_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  :class="unidad.estado === 'ACTIVA' ? 'mk-row-btn-danger' : 'mk-row-btn-success'"
+                  :title="unidad.estado === 'ACTIVA' ? 'Desactivar' : 'Activar'"
+                  @click="alternarEstado(unidad)"
+                >
+                  <ActionIcon name="power" />
                 </button>
               </div>
             </td>

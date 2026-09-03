@@ -9,5 +9,9 @@ public interface UnidadMedidaService {
 
     UnidadMedidaResumen actualizar(Long id, String nombre, String abreviacion);
 
+    void activar(Long id);
+
+    void desactivar(Long id);
+
     List<UnidadMedidaResumen> listar();
 }

@@ -31,10 +31,25 @@ public class MarcaServiceImpl implements MarcaService {
     @Override
     @Transactional
     public MarcaResumen actualizar(Long id, String nombre) {
-        Marca marca = marcaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada: " + id));
+        Marca marca = obtenerORequerida(id);
         marca.actualizar(nombre);
         return toResumen(marcaRepository.save(marca));
+    }
+
+    @Override
+    @Transactional
+    public void activar(Long id) {
+        Marca marca = obtenerORequerida(id);
+        marca.activar();
+        marcaRepository.save(marca);
+    }
+
+    @Override
+    @Transactional
+    public void desactivar(Long id) {
+        Marca marca = obtenerORequerida(id);
+        marca.desactivar();
+        marcaRepository.save(marca);
     }
 
     @Override
@@ -42,7 +57,12 @@ public class MarcaServiceImpl implements MarcaService {
         return marcaRepository.findAll().stream().map(this::toResumen).toList();
     }
 
+    private Marca obtenerORequerida(Long id) {
+        return marcaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada: " + id));
+    }
+
     private MarcaResumen toResumen(Marca marca) {
-        return new MarcaResumen(marca.getId(), marca.getNombre());
+        return new MarcaResumen(marca.getId(), marca.getNombre(), marca.getEstado());
     }
 }

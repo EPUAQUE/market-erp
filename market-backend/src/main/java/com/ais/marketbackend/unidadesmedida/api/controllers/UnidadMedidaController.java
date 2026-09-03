@@ -49,4 +49,18 @@ public class UnidadMedidaController {
                 unidadMedidaService.actualizar(id, request.nombre(), request.abreviacion()));
         return ResponseEntity.ok(actualizada);
     }
+
+    @PostMapping("/{id}/activar")
+    @RequiresPermission("UNIDADES_MEDIDA_EDITAR")
+    public ResponseEntity<Void> activar(@PathVariable Long id) {
+        unidadMedidaService.activar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/desactivar")
+    @RequiresPermission("UNIDADES_MEDIDA_EDITAR")
+    public ResponseEntity<Void> desactivar(@PathVariable Long id) {
+        unidadMedidaService.desactivar(id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -32,10 +32,25 @@ public class UnidadMedidaServiceImpl implements UnidadMedidaService {
     @Override
     @Transactional
     public UnidadMedidaResumen actualizar(Long id, String nombre, String abreviacion) {
-        UnidadMedida unidadMedida = unidadMedidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Unidad de medida no encontrada: " + id));
+        UnidadMedida unidadMedida = obtenerORequerida(id);
         unidadMedida.actualizar(nombre, abreviacion);
         return toResumen(unidadMedidaRepository.save(unidadMedida));
+    }
+
+    @Override
+    @Transactional
+    public void activar(Long id) {
+        UnidadMedida unidadMedida = obtenerORequerida(id);
+        unidadMedida.activar();
+        unidadMedidaRepository.save(unidadMedida);
+    }
+
+    @Override
+    @Transactional
+    public void desactivar(Long id) {
+        UnidadMedida unidadMedida = obtenerORequerida(id);
+        unidadMedida.desactivar();
+        unidadMedidaRepository.save(unidadMedida);
     }
 
     @Override
@@ -43,7 +58,14 @@ public class UnidadMedidaServiceImpl implements UnidadMedidaService {
         return unidadMedidaRepository.findAll().stream().map(this::toResumen).toList();
     }
 
+    private UnidadMedida obtenerORequerida(Long id) {
+        return unidadMedidaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Unidad de medida no encontrada: " + id));
+    }
+
     private UnidadMedidaResumen toResumen(UnidadMedida unidadMedida) {
-        return new UnidadMedidaResumen(unidadMedida.getId(), unidadMedida.getNombre(), unidadMedida.getAbreviacion());
+        return new UnidadMedidaResumen(
+                unidadMedida.getId(), unidadMedida.getNombre(), unidadMedida.getAbreviacion(),
+                unidadMedida.getEstado());
     }
 }

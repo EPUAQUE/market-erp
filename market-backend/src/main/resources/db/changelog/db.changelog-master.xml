@@ -19,6 +19,8 @@
     <include file="db/changelog/modules/unidadesmedida/001-unidad-medida.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/categorias/001-categoria.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/marcas/001-marca.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/marcas/002-marca-estado.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/unidadesmedida/002-unidad-medida-estado.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/productos/001-producto.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/productos/002-check-montos.xml" relativeToChangelogFile="false"/>

@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.unidadesmedida.application.dtos.UnidadMedidaResumen;
 import com.ais.marketbackend.unidadesmedida.application.services.impl.UnidadMedidaServiceImpl;
 import com.ais.marketbackend.unidadesmedida.domain.exception.UnidadMedidaDuplicadaException;
+import com.ais.marketbackend.unidadesmedida.domain.model.EstadoUnidadMedida;
 import com.ais.marketbackend.unidadesmedida.domain.model.UnidadMedida;
 import com.ais.marketbackend.unidadesmedida.domain.repository.UnidadMedidaRepository;
 import java.util.Optional;
@@ -70,5 +73,19 @@ class UnidadMedidaServiceImplTest {
         when(unidadMedidaRepository.findAll()).thenReturn(java.util.List.of(UnidadMedida.nueva("Kilogramo", "kg")));
 
         assertThat(unidadMedidaService.listar()).hasSize(1);
+    }
+
+    @Test
+    void activarYDesactivarDelegaEnElAgregado() {
+        UnidadMedida unidad = UnidadMedida.nueva("Kilogramo", "kg");
+        when(unidadMedidaRepository.findById(1L)).thenReturn(Optional.of(unidad));
+
+        unidadMedidaService.desactivar(1L);
+        assertThat(unidad.getEstado()).isEqualTo(EstadoUnidadMedida.INACTIVA);
+
+        unidadMedidaService.activar(1L);
+        assertThat(unidad.getEstado()).isEqualTo(EstadoUnidadMedida.ACTIVA);
+
+        verify(unidadMedidaRepository, times(2)).save(unidad);
     }
 }

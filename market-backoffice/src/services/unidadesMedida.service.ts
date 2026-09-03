@@ -14,6 +14,14 @@ class UnidadesMedidaService {
   actualizar(id: number, nombre: string, abreviacion: string) {
     return apiClient.put<UnidadMedida>(API_ENDPOINTS.unidadesMedida.porId(id), { nombre, abreviacion })
   }
+
+  activar(id: number) {
+    return apiClient.post<void>(API_ENDPOINTS.unidadesMedida.activar(id))
+  }
+
+  desactivar(id: number) {
+    return apiClient.post<void>(API_ENDPOINTS.unidadesMedida.desactivar(id))
+  }
 }
 
 export const unidadesMedidaService = new UnidadesMedidaService()

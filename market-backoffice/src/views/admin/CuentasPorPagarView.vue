@@ -9,6 +9,7 @@ import { formatCurrency } from '@/utils/money'
 import { formatFecha, formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
+import PaginacionTabla from '@/components/common/PaginacionTabla.vue'
 import type { CuentaPorPagar } from '@/types/cuentaPorPagar'
 
 function estadoVisual(cuenta: CuentaPorPagar) {
@@ -243,19 +244,9 @@ onMounted(async () => {
         <option :value="50">50 / página</option>
         <option :value="100">100 / página</option>
       </select>
-      <div class="flex items-center gap-2">
-        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">
-          Anterior
-        </button>
-        <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
-        <button
-          type="button"
-          :disabled="pagina >= totalPaginas"
-          class="disabled:opacity-40"
-          @click="pagina++"
-        >
-          Siguiente
-        </button>
+      <div class="flex items-center gap-3">
+        <span>{{ totalElementos }} en total</span>
+        <PaginacionTabla v-model:pagina="pagina" :total-paginas="totalPaginas" />
       </div>
     </div>
 

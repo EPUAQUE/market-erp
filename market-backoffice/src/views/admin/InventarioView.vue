@@ -9,6 +9,7 @@ import { formatCurrency } from '@/utils/money'
 import { formatFechaHora } from '@/utils/fecha'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
+import PaginacionTabla from '@/components/common/PaginacionTabla.vue'
 import type { Inventario, MovimientoInventario, TipoMovimiento } from '@/types/inventario'
 
 const {
@@ -338,19 +339,9 @@ onMounted(async () => {
         <option :value="50">50 / página</option>
         <option :value="100">100 / página</option>
       </select>
-      <div class="flex items-center gap-2">
-        <button type="button" :disabled="pagina <= 1" class="disabled:opacity-40" @click="pagina--">
-          Anterior
-        </button>
-        <span>Página {{ pagina }} de {{ totalPaginas }} ({{ totalElementos }} en total)</span>
-        <button
-          type="button"
-          :disabled="pagina >= totalPaginas"
-          class="disabled:opacity-40"
-          @click="pagina++"
-        >
-          Siguiente
-        </button>
+      <div class="flex items-center gap-3">
+        <span>{{ totalElementos }} en total</span>
+        <PaginacionTabla v-model:pagina="pagina" :total-paginas="totalPaginas" />
       </div>
     </div>
 
@@ -440,27 +431,9 @@ onMounted(async () => {
           <option :value="50">50 / página</option>
           <option :value="100">100 / página</option>
         </select>
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            :disabled="movimientosPagina <= 1"
-            class="disabled:opacity-40"
-            @click="movimientosPagina--"
-          >
-            Anterior
-          </button>
-          <span>
-            Página {{ movimientosPagina }} de {{ movimientosTotalPaginas }} ({{ movimientosTotalElementos }}
-            en total)
-          </span>
-          <button
-            type="button"
-            :disabled="movimientosPagina >= movimientosTotalPaginas"
-            class="disabled:opacity-40"
-            @click="movimientosPagina++"
-          >
-            Siguiente
-          </button>
+        <div class="flex items-center gap-3">
+          <span>{{ movimientosTotalElementos }} en total</span>
+          <PaginacionTabla v-model:pagina="movimientosPagina" :total-paginas="movimientosTotalPaginas" />
         </div>
       </div>
     </div>

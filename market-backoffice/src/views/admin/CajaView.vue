@@ -7,6 +7,7 @@ import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import { formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import PaginacionTabla from '@/components/common/PaginacionTabla.vue'
 import type { CajaSesion, TipoMovimientoCaja } from '@/types/caja'
 
 const {
@@ -360,27 +361,9 @@ onMounted(async () => {
           <option :value="50">50 / página</option>
           <option :value="100">100 / página</option>
         </select>
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            :disabled="historialPagina <= 1"
-            class="disabled:opacity-40"
-            @click="historialPagina--"
-          >
-            Anterior
-          </button>
-          <span
-            >Página {{ historialPagina }} de {{ historialTotalPaginas }} ({{ historialTotalElementos }} en
-            total)</span
-          >
-          <button
-            type="button"
-            :disabled="historialPagina >= historialTotalPaginas"
-            class="disabled:opacity-40"
-            @click="historialPagina++"
-          >
-            Siguiente
-          </button>
+        <div class="flex items-center gap-3">
+          <span>{{ historialTotalElementos }} en total</span>
+          <PaginacionTabla v-model:pagina="historialPagina" :total-paginas="historialTotalPaginas" />
         </div>
       </div>
     </div>

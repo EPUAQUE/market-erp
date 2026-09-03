@@ -138,6 +138,33 @@ body {
   .mk-row-btn-neutral {
     color: rgb(var(--mk-text-muted));
   }
+
+  /* Paginación numerada — igual que la propuesta de diseño (botones de
+     página en vez de solo Anterior/Siguiente). */
+  .mk-pager-btn {
+    display: inline-flex;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    padding: 0 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(var(--mk-text-muted));
+  }
+  .mk-pager-btn:hover:not(:disabled):not(.mk-pager-btn-activo) {
+    background-color: rgb(var(--mk-surface-2));
+    color: rgb(var(--mk-text));
+  }
+  .mk-pager-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .mk-pager-btn-activo {
+    background-color: rgb(var(--mk-primary));
+    color: white;
+  }
 }
 
 /* Colores por variante de .mk-badge — fuera de @layer components a

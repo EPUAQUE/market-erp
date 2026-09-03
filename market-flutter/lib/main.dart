@@ -26,7 +26,7 @@ class MarketPosApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'Market POS',
+      title: 'Inven365 POS',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

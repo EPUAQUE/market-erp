@@ -56,7 +56,7 @@ async function onSubmit() {
       @submit.prevent="onSubmit"
     >
       <div class="space-y-1 text-center">
-        <h1 class="text-xl font-semibold text-mk-text">Market</h1>
+        <h1 class="text-xl font-semibold text-mk-text">Inven365</h1>
         <p class="text-sm text-mk-text/70">Backoffice administrativo</p>
       </div>
 

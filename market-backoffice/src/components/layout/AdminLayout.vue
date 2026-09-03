@@ -87,7 +87,7 @@ const tiendaLabel = computed(() => {
   return n === 1 ? '1 tienda asignada' : `${n} tiendas asignadas`
 })
 
-const moduleTitle = computed(() => (route.meta.title as string | undefined) ?? 'Market')
+const moduleTitle = computed(() => (route.meta.title as string | undefined) ?? 'Inven365')
 
 const searchOpen = ref(false)
 const searchQuery = ref('')
@@ -130,9 +130,13 @@ async function onLogout() {
   <div class="flex min-h-screen bg-mk-bg text-mk-text">
     <aside class="flex w-64 shrink-0 flex-col bg-mk-brand text-mk-brand-ink">
       <div class="flex items-center gap-2 px-5 py-5">
-        <div class="flex h-9 w-9 items-center justify-center rounded-md bg-white/10 text-sm font-bold">M</div>
+        <div
+          class="flex h-9 items-center justify-center rounded-md bg-white/10 px-2 text-xs font-bold tracking-wide"
+        >
+          i365
+        </div>
         <div class="leading-tight">
-          <p class="text-sm font-bold tracking-wide">Market</p>
+          <p class="text-sm font-bold tracking-wide">Inven365</p>
           <p class="text-[11px] text-white/60">ERP Retail Multi-Tienda</p>
         </div>
       </div>
@@ -169,7 +173,7 @@ async function onLogout() {
       >
         <div class="min-w-0">
           <h1 class="truncate text-base font-bold text-mk-text">{{ moduleTitle }}</h1>
-          <p class="truncate text-xs text-mk-text-muted">Market / {{ moduleTitle }}</p>
+          <p class="truncate text-xs text-mk-text-muted">Inven365 / {{ moduleTitle }}</p>
         </div>
 
         <div class="relative w-full max-w-sm">

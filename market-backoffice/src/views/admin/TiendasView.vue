@@ -104,7 +104,7 @@ onMounted(() => {
   <div class="mx-auto max-w-4xl space-y-6 p-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Tiendas</h1>
-      <p class="text-sm text-mk-text/70">Catálogo de sucursales de Market.</p>
+      <p class="text-sm text-mk-text/70">Catálogo de sucursales de Inven365.</p>
     </header>
 
     <div class="flex items-center justify-between gap-3">

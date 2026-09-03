@@ -6,6 +6,7 @@ import { useProductos } from '@/composables/useProductos'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
+import { formatFechaHora } from '@/utils/fecha'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Inventario, MovimientoInventario, TipoMovimiento } from '@/types/inventario'
@@ -419,7 +420,7 @@ onMounted(async () => {
               :key="mov.id"
               class="border-b border-mk-border last:border-0"
             >
-              <td class="px-4 py-2">{{ new Date(mov.fecha).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ formatFechaHora(mov.fecha) }}</td>
               <td class="px-4 py-2">{{ mov.tipoMovimiento }}</td>
               <td class="mk-num px-4 py-2">{{ mov.cantidad }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(mov.costoUnitario) }}</td>

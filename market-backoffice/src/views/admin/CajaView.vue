@@ -5,6 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
+import { formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import type { CajaSesion, TipoMovimientoCaja } from '@/types/caja'
 
@@ -166,7 +167,7 @@ onMounted(async () => {
         <dl class="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
           <div>
             <dt class="text-mk-text/60">Apertura</dt>
-            <dd>{{ new Date(sesionAbierta.fechaApertura).toLocaleString() }}</dd>
+            <dd>{{ formatFechaHora(sesionAbierta.fechaApertura) }}</dd>
           </div>
           <div>
             <dt class="text-mk-text/60">Monto inicial</dt>
@@ -198,7 +199,7 @@ onMounted(async () => {
               :key="mov.id"
               class="border-b border-mk-border last:border-0"
             >
-              <td class="px-4 py-2">{{ new Date(mov.fecha).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ formatFechaHora(mov.fecha) }}</td>
               <td class="px-4 py-2">{{ mov.tipo }}</td>
               <td class="px-4 py-2">{{ mov.concepto }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(mov.monto) }}</td>
@@ -331,9 +332,9 @@ onMounted(async () => {
               :key="sesion.id"
               class="border-b border-mk-border last:border-0"
             >
-              <td class="px-4 py-2">{{ new Date(sesion.fechaApertura).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ formatFechaHora(sesion.fechaApertura) }}</td>
               <td class="px-4 py-2">
-                {{ sesion.fechaCierre ? new Date(sesion.fechaCierre).toLocaleString() : '—' }}
+                {{ sesion.fechaCierre ? formatFechaHora(sesion.fechaCierre) : '—' }}
               </td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(sesion.montoInicial) }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(sesion.saldoEsperado) }}</td>

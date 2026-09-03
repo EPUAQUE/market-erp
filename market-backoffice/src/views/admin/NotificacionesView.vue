@@ -4,6 +4,7 @@ import { useNotificaciones } from '@/composables/useNotificaciones'
 import { useTiendas } from '@/composables/useTiendas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Notificacion, TipoNotificacion } from '@/types/notificacion'
@@ -189,7 +190,7 @@ onMounted(async () => {
           >
             <td class="px-4 py-2">{{ ETIQUETAS_TIPO[notificacion.tipo] }}</td>
             <td class="px-4 py-2">{{ notificacion.mensaje }}</td>
-            <td class="px-4 py-2">{{ new Date(notificacion.fecha).toLocaleString() }}</td>
+            <td class="px-4 py-2">{{ formatFechaHora(notificacion.fecha) }}</td>
             <td class="px-4 py-2">
               <EstadoBadge
                 :variant="notificacion.leida ? 'neutral' : 'info'"

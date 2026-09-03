@@ -5,6 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
+import { formatFecha, formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
@@ -293,7 +294,7 @@ onMounted(async () => {
             <td class="px-4 py-2">{{ gasto.concepto }}</td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(gasto.monto) }}</td>
             <td class="px-4 py-2">{{ gasto.frecuencia }}</td>
-            <td class="px-4 py-2">{{ new Date(gasto.proximaFecha).toLocaleDateString() }}</td>
+            <td class="px-4 py-2">{{ formatFecha(gasto.proximaFecha) }}</td>
             <td class="px-4 py-2">
               <EstadoBadge
                 :variant="gasto.activo ? 'success' : 'neutral'"
@@ -372,7 +373,7 @@ onMounted(async () => {
               :key="pago.id"
               class="border-b border-mk-border last:border-0"
             >
-              <td class="px-4 py-2">{{ new Date(pago.fecha).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ formatFechaHora(pago.fecha) }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(pago.monto) }}</td>
             </tr>
           </tbody>

@@ -7,6 +7,7 @@ import { useProductos } from '@/composables/useProductos'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency, calcularSubtotal } from '@/utils/money'
+import { formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
@@ -371,7 +372,7 @@ onMounted(async () => {
             :key="compra.id"
             class="border-b border-mk-border last:border-0"
           >
-            <td class="px-4 py-2">{{ new Date(compra.fecha).toLocaleString() }}</td>
+            <td class="px-4 py-2">{{ formatFechaHora(compra.fecha) }}</td>
             <td class="px-4 py-2">{{ nombreProveedor(compra.proveedorId) }}</td>
             <td class="px-4 py-2">
               <EstadoBadge :variant="ESTADO_VARIANT[compra.estado]" :label="ESTADO_LABEL[compra.estado]" />

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useReportes } from '@/composables/useReportes'
 import { useTiendas } from '@/composables/useTiendas'
 import { formatCurrency } from '@/utils/money'
+import { formatFechaHora } from '@/utils/fecha'
 
 const { reporteVentas, reporteCompras, loading, error, generarReporteVentas, generarReporteCompras } =
   useReportes()
@@ -171,7 +172,7 @@ onMounted(async () => {
             >
               <td class="px-4 py-2">#{{ linea.ventaId }}</td>
               <td class="px-4 py-2">#{{ linea.clienteId }}</td>
-              <td class="px-4 py-2">{{ new Date(linea.fecha).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ formatFechaHora(linea.fecha) }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(linea.total) }}</td>
             </tr>
           </tbody>
@@ -210,7 +211,7 @@ onMounted(async () => {
             >
               <td class="px-4 py-2">#{{ linea.compraId }}</td>
               <td class="px-4 py-2">#{{ linea.proveedorId }}</td>
-              <td class="px-4 py-2">{{ new Date(linea.fecha).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ formatFechaHora(linea.fecha) }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(linea.total) }}</td>
             </tr>
           </tbody>

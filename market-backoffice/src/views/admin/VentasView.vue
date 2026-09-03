@@ -8,6 +8,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { resolverImagenUrl } from '@/utils/imagenUrl'
 import { formatCurrency, calcularSubtotal } from '@/utils/money'
+import { formatFechaHora } from '@/utils/fecha'
 import { productosService } from '@/services/productos.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
@@ -485,7 +486,7 @@ onMounted(async () => {
             :key="venta.id"
             class="border-b border-mk-border last:border-0"
           >
-            <td class="px-4 py-2">{{ new Date(venta.fecha).toLocaleString() }}</td>
+            <td class="px-4 py-2">{{ formatFechaHora(venta.fecha) }}</td>
             <td class="px-4 py-2">{{ nombreCliente(venta.clienteId) }}</td>
             <td class="px-4 py-2">#{{ venta.vendedorId }}</td>
             <td class="px-4 py-2">

@@ -8,6 +8,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useGruposTienda } from '@/composables/useGruposTienda'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
+import { formatFecha } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
@@ -125,10 +126,6 @@ const agingChartData = computed(() => ({
     },
   ],
 }))
-
-function formatFecha(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-GT', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 function tipoVencimientoLabel(tipo: string): string {
   return tipo === 'CUENTA_POR_COBRAR' ? 'Por cobrar' : 'Por pagar'

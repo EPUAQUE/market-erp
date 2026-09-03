@@ -6,6 +6,7 @@ import { useProveedores } from '@/composables/useProveedores'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
+import { formatFecha, formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { CuentaPorPagar } from '@/types/cuentaPorPagar'
@@ -199,7 +200,7 @@ onMounted(async () => {
           >
             <td class="px-4 py-2">#{{ cuenta.compraId }}</td>
             <td class="px-4 py-2">{{ nombreProveedor(cuenta.proveedorId) }}</td>
-            <td class="px-4 py-2">{{ new Date(cuenta.fechaVencimiento).toLocaleDateString() }}</td>
+            <td class="px-4 py-2">{{ formatFecha(cuenta.fechaVencimiento) }}</td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(cuenta.montoOriginal) }}</td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(cuenta.saldoPendiente) }}</td>
             <td class="px-4 py-2">
@@ -302,7 +303,7 @@ onMounted(async () => {
               :key="pago.id"
               class="border-b border-mk-border last:border-0"
             >
-              <td class="px-4 py-2">{{ new Date(pago.fecha).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ formatFechaHora(pago.fecha) }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(pago.monto) }}</td>
             </tr>
           </tbody>

@@ -5,6 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useProductos } from '@/composables/useProductos'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { formatFechaHora } from '@/utils/fecha'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
@@ -309,7 +310,7 @@ onMounted(async () => {
             :key="traslado.id"
             class="border-b border-mk-border last:border-0"
           >
-            <td class="px-4 py-2">{{ new Date(traslado.fecha).toLocaleString() }}</td>
+            <td class="px-4 py-2">{{ formatFechaHora(traslado.fecha) }}</td>
             <td class="px-4 py-2">{{ nombreTienda(traslado.tiendaOrigenId) }}</td>
             <td class="px-4 py-2">{{ nombreTienda(traslado.tiendaDestinoId) }}</td>
             <td class="px-4 py-2">

@@ -125,6 +125,14 @@ const moduleTitle = computed(() => (route.meta.title as string | undefined) ?? '
 
 const iniciales = computed(() => (userStore.username ?? '??').slice(0, 2).toUpperCase())
 
+const SIDEBAR_OCULTO_KEY = 'inven365-sidebar-oculto'
+const sidebarOculto = ref(localStorage.getItem(SIDEBAR_OCULTO_KEY) === '1')
+
+function alternarSidebar() {
+  sidebarOculto.value = !sidebarOculto.value
+  localStorage.setItem(SIDEBAR_OCULTO_KEY, sidebarOculto.value ? '1' : '0')
+}
+
 const searchOpen = ref(false)
 const searchQuery = ref('')
 
@@ -164,7 +172,10 @@ async function onLogout() {
 
 <template>
   <div class="flex min-h-screen bg-mk-bg text-mk-text">
-    <aside class="mk-sidebar flex w-64 shrink-0 flex-col text-mk-brand-ink">
+    <aside
+      class="mk-sidebar flex shrink-0 flex-col overflow-hidden text-mk-brand-ink transition-[width] duration-200"
+      :class="sidebarOculto ? 'w-0' : 'w-64'"
+    >
       <div class="flex items-center gap-2 px-5 py-5">
         <div
           class="flex h-9 items-center justify-center rounded-md bg-white/10 px-2 text-xs font-bold tracking-wide"
@@ -208,9 +219,21 @@ async function onLogout() {
       <header
         class="flex items-center justify-between gap-4 border-b border-mk-border bg-mk-surface px-6 py-3"
       >
-        <div class="min-w-0">
-          <h1 class="truncate text-base font-bold text-mk-text">{{ moduleTitle }}</h1>
-          <p class="truncate text-xs text-mk-text-muted">Inven365 / {{ moduleTitle }}</p>
+        <div class="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            class="mk-btn-ghost flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
+            :title="sidebarOculto ? 'Mostrar menú' : 'Ocultar menú'"
+            @click="alternarSidebar"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="min-w-0">
+            <h1 class="truncate text-base font-bold text-mk-text">{{ moduleTitle }}</h1>
+            <p class="truncate text-xs text-mk-text-muted">Inven365 / {{ moduleTitle }}</p>
+          </div>
         </div>
 
         <div class="relative w-full max-w-sm">

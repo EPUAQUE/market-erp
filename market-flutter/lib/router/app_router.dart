@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/application/auth_notifier.dart';
+import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/tienda_picker_screen.dart';
 import '../features/caja/presentation/caja_screen.dart';
 import '../features/cuentas_por_cobrar/presentation/cuentas_por_cobrar_screen.dart';
@@ -33,9 +35,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final sesion = authState.value;
       final isLoggingIn = state.matchedLocation == '/login';
       final isPickingTienda = state.matchedLocation == '/tienda';
+      final isRecuperandoPassword =
+          state.matchedLocation == '/olvide-password' ||
+          state.matchedLocation == '/restablecer-password';
 
       if (sesion == null) {
-        return isLoggingIn ? null : '/login';
+        return (isLoggingIn || isRecuperandoPassword) ? null : '/login';
       }
 
       final tiendaActiva = ref.read(tiendaActivaProvider);
@@ -63,6 +68,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/olvide-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/restablecer-password',
+        builder: (context, state) => const ResetPasswordScreen(),
+      ),
       GoRoute(
         path: '/tienda',
         builder: (context, state) => const TiendaPickerScreen(),

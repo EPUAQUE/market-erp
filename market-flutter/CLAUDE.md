@@ -1543,8 +1543,49 @@ Con esto, TODAS las pantallas que pintan color propio ya responden al
 modo oscuro — no queda ninguna pantalla con paleta fija conocida.
 
 Verificado: `flutter analyze` limpio, `dart format --set-exit-if-changed .`
-limpio, `flutter test` 62/62. **No verificado visualmente en Chrome/device**
-esta vez — mismo motivo que la fase anterior (sin login funcionando contra
-el backend de esta sesión al momento de migrar); verificado solo por
-revisión de código y por los tres chequeos automatizados de arriba.
+limpio, `flutter test` 62/62. **No verificado visualmente en Chrome/device**:
+se intentó levantar `flutter run -d web-server` contra el backend local (que
+sí respondía, con credenciales válidas) pero el renderer quedó en blanco/
+congelado más de un minuto sin avanzar (mismo tipo de inestabilidad de
+entorno vista con el backend en esta sesión) — se abortó el intento en vez
+de seguir insistiendo; verificado solo por revisión de código y por los tres
+chequeos automatizados de arriba.
+
+### "Recordarme" + recuperar contraseña — built this phase
+
+Paridad con el backoffice, que ya tenía ambas cosas (`LoginView.vue`,
+`ForgotPasswordView.vue`, `ResetPasswordView.vue`) — la app solo tenía
+usuario/contraseña sin ninguna de las dos.
+
+- **Recordarme**: igual que en el backoffice, **solo recuerda el usuario
+  tecleado** (`SharedPreferences`, clave `inven365-usuario-recordado` — misma
+  clave lógica que `USUARIO_RECORDADO_KEY` en `LoginView.vue`), nunca la
+  contraseña ni la sesión — la persistencia de sesión entre reinicios de la
+  app es un tema aparte, ya cubierto por la cookie de refresh
+  (`SecureCookieStorage`) y no se tocó. Checkbox en `LoginScreen`; si está
+  marcado al hacer login exitoso guarda el usuario, si no lo borra.
+- **Recuperar contraseña**: dos pantallas nuevas, `ForgotPasswordScreen`
+  (`/olvide-password`) y `ResetPasswordScreen` (`/restablecer-password`),
+  contra los mismos endpoints que ya usaba el backoffice
+  (`POST /auth/forgot-password`, `POST /auth/reset-password` — no fue
+  necesario tocar el backend). Diferencia real con el backoffice: el
+  backoffice lee el token del enlace desde `?token=` en la URL (es una SPA
+  web); esta app no tiene deep-linking configurado para abrir ese enlace
+  directo, así que `ResetPasswordScreen` pide el código **pegado a mano** en
+  un campo de texto en vez de leerlo de una URL — el usuario copia el código
+  del correo y lo pega. `ForgotPasswordScreen` muestra siempre el mismo
+  mensaje de éxito exista o no el usuario (igual que el backend, que nunca
+  distingue el caso para no filtrar qué usuarios existen). Ambas rutas
+  agregadas a `app_router.dart` como accesibles sin sesión (junto a
+  `/login`), igual que en el resto del guard.
+- Decoración de campo compartida extraída a `auth_pill_decoration.dart`
+  (`authPillDecoration`) — antes vivía duplicada como método privado dentro
+  de `LoginScreen`; ahora la usan las tres pantallas de auth.
+
+Verificado: `flutter analyze` limpio, `dart format --set-exit-if-changed .`
+limpio, `flutter test` 70/70 (8 tests nuevos: validaciones de
+`ForgotPasswordScreen`/`ResetPasswordScreen` sin llamar al backend, y el
+checkbox/precarga de `LoginScreen` con `SharedPreferences.setMockInitialValues`).
+**No verificado visualmente en Chrome/device** — misma inestabilidad de
+`flutter run -d web-server` que la fase anterior.
 

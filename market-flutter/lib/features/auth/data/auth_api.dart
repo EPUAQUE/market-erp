@@ -27,4 +27,25 @@ class AuthApi {
   Future<void> logout() {
     return _client.post<void>('/api/v1/auth/logout', parser: (_) {});
   }
+
+  /// Siempre resuelve sin error si el request llega al backend — este nunca
+  /// distingue usuario inexistente/sin correo/inactivo (mismo criterio que
+  /// `AuthController.forgotPassword`), para no filtrar qué usuarios existen.
+  Future<void> forgotPassword(String username) {
+    return _client.post<void>(
+      '/api/v1/auth/forgot-password',
+      data: {'username': username},
+      parser: (_) {},
+      requiresAuth: false,
+    );
+  }
+
+  Future<void> resetPassword(String token, String nuevaPassword) {
+    return _client.post<void>(
+      '/api/v1/auth/reset-password',
+      data: {'token': token, 'nuevaPassword': nuevaPassword},
+      parser: (_) {},
+      requiresAuth: false,
+    );
+  }
 }

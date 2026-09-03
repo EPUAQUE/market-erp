@@ -30,6 +30,8 @@ const permissions = usePermissionsStore()
 const FRECUENCIAS: FrecuenciaGasto[] = ['SEMANAL', 'QUINCENAL', 'MENSUAL', 'ANUAL']
 
 const tiendaId = ref<number | null>(null)
+const page = ref(1)
+const pageSize = ref(10)
 const showForm = ref(false)
 const editandoId = ref<number | null>(null)
 const detalleAbiertoId = ref<number | null>(null)
@@ -113,9 +115,16 @@ const {
 
 const gastoEnDetalle = computed(() => items.value.find((g) => g.id === detalleAbiertoId.value) ?? null)
 
+const totalPages = computed(() => Math.max(1, Math.ceil(gastosFiltrados.value.length / pageSize.value)))
+const gastosPaginados = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return gastosFiltrados.value.slice(start, start + pageSize.value)
+})
+
 watch(tiendaId, (id) => {
   detalleAbiertoId.value = null
   showForm.value = false
+  page.value = 1
   if (id !== null) cargar(id)
 })
 
@@ -283,11 +292,11 @@ onMounted(async () => {
           <tr v-else-if="listError">
             <td colspan="6" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="gastosFiltrados.length === 0">
+          <tr v-else-if="gastosPaginados.length === 0">
             <td colspan="6" class="px-4 py-6 text-center text-mk-text/60">Sin gastos programados.</td>
           </tr>
           <tr
-            v-for="gasto in gastosFiltrados"
+            v-for="gasto in gastosPaginados"
             :key="gasto.id"
             class="border-b border-mk-border last:border-0"
           >
@@ -352,6 +361,24 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="flex items-center justify-between text-sm text-mk-text/70">
+      <select v-model.number="pageSize" class="rounded border border-mk-border bg-transparent px-2 py-1">
+        <option :value="10">10 / página</option>
+        <option :value="25">25 / página</option>
+        <option :value="50">50 / página</option>
+        <option :value="100">100 / página</option>
+      </select>
+      <div class="flex items-center gap-2">
+        <button type="button" :disabled="page <= 1" class="disabled:opacity-40" @click="page--">
+          Anterior
+        </button>
+        <span>Página {{ page }} de {{ totalPages }}</span>
+        <button type="button" :disabled="page >= totalPages" class="disabled:opacity-40" @click="page++">
+          Siguiente
+        </button>
+      </div>
     </div>
 
     <div v-if="gastoEnDetalle" class="space-y-2">

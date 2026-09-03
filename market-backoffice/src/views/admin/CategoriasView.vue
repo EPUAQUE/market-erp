@@ -12,6 +12,9 @@ const { items, listLoading, listError, saveLoading, saveError, cargar, crear, ac
   useCategorias()
 const permissions = usePermissionsStore()
 
+const page = ref(1)
+const pageSize = ref(10)
+
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const form = ref({ nombre: '' })
@@ -35,6 +38,12 @@ const {
   limpiarFiltros,
   hayFiltrosActivos,
 } = useFiltrosTabla(items, COLUMNAS_FILTRO)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
+const paged = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
 
 const modalTitle = computed(() => (editingId.value !== null ? 'Editar categoría' : 'Nueva categoría'))
 
@@ -164,14 +173,10 @@ onMounted(cargar)
           <tr v-else-if="listError">
             <td colspan="3" class="px-4 py-6 text-center text-mk-danger">{{ listError }}</td>
           </tr>
-          <tr v-else-if="filtered.length === 0">
+          <tr v-else-if="paged.length === 0">
             <td colspan="3" class="px-4 py-6 text-center text-mk-text/60">Sin resultados.</td>
           </tr>
-          <tr
-            v-for="categoria in filtered"
-            :key="categoria.id"
-            class="border-b border-mk-border last:border-0"
-          >
+          <tr v-for="categoria in paged" :key="categoria.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ categoria.nombre }}</td>
             <td class="px-4 py-2">
               <EstadoBadge
@@ -205,6 +210,24 @@ onMounted(cargar)
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="flex items-center justify-between text-sm text-mk-text/70">
+      <select v-model.number="pageSize" class="rounded border border-mk-border bg-transparent px-2 py-1">
+        <option :value="10">10 / página</option>
+        <option :value="25">25 / página</option>
+        <option :value="50">50 / página</option>
+        <option :value="100">100 / página</option>
+      </select>
+      <div class="flex items-center gap-2">
+        <button type="button" :disabled="page <= 1" class="disabled:opacity-40" @click="page--">
+          Anterior
+        </button>
+        <span>Página {{ page }} de {{ totalPages }}</span>
+        <button type="button" :disabled="page >= totalPages" class="disabled:opacity-40" @click="page++">
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 </template>

@@ -1425,3 +1425,97 @@ change was made and reasoned through, but the APK wasn't rebuilt and
 reinstalled again in this session to confirm visually. Rebuild and reinstall
 before considering this closed.
 
+### Sistema de tema centralizado + modo oscuro — built this phase, partial rollout
+
+Before this phase there was no real theming at all: `main.dart`'s `ThemeData`
+was a bare `colorSchemeSeed`, no screen ever read `Theme.of(context)`, and
+the same brand hex values were redeclared as local `_brand`/`_primary`/
+`_danger` constants in ~10 files (`pos_colors.dart`, `DashboardPalette`, and
+private consts in `caja_screen.dart`, `cuentas_por_cobrar_screen.dart`,
+`pendientes_error_screen.dart`, `barcode_scanner_screen.dart`,
+`cobro_sheet.dart`, `cliente_selector_sheet.dart`). The values already
+matched `market-backoffice`'s tokens almost exactly (same session, same
+palette decisions carried over informally) — this phase is about giving them
+one source of truth and adding a real dark mode, not changing what anything
+looks like in light mode.
+
+New `core/theme/`: `app_colors.dart` (`AppColors`, light + dark, same hex as
+`market-backoffice/src/styles/tokens.css` — brand/primary/accent stay
+identical between themes on purpose, only surfaces/text/border/semantic
+tones change, same reasoning as the backoffice), `app_theme.dart`
+(`ThemeData.light`/`.dark` built from `AppColors` via an explicit
+`ColorScheme`, not `ColorScheme.fromSeed` — needed exact hex control),
+`theme_notifier.dart` (`ThemeNotifier extends Notifier<ThemeMode>`, default
+always `ThemeMode.light`, never follows the OS theme — same policy as the
+backoffice's `theme.store.ts` — persisted via `shared_preferences` under key
+`inven365-tema`, same name as the backoffice's `localStorage` key though the
+two are unrelated storages on different devices). `shared_preferences` is a
+new dependency — nothing lightweight existed before for a UI preference
+(`flutter_secure_storage` is OS-keychain-backed, overkill for this;
+`isar_community` backs the offline queues, not preferences).
+
+A sol/luna `IconButton` toggling `themeModeProvider.notifier.alternar()` was
+added to `PosScreen` (the actual home screen after login) and to both
+`DashboardEncargadoScreen`/`DashboardVendedorScreen` app bars — mirroring
+where the backoffice put its own toggle (always-visible, next to
+notifications/logout). `LoginScreen` itself has no toggle (same as the
+backoffice login) — it just renders whatever `ThemeMode` is already active.
+
+`LoginScreen` was reskinned to match the backoffice's own redesigned login
+(brand mark badge instead of plain "Inven365" text, no bordered `Card`,
+pill-shaped fields via a local `_pillDecoration`, `AppColors.of(context)`
+throughout) — **all existing logic was preserved untouched**: the
+`LayoutBuilder`/`SingleChildScrollView`/`ConstrainedBox` keyboard-overflow
+fix, and the generic-credentials-vs-network-error message split
+(`ApiException.isNetworkError`) both documented earlier in this file. Global
+`InputDecorationTheme` (`app_theme.dart`) got a mild 12px rounded rectangle
+for every other text field in the app — the pill shape is Login-only, a
+local override, exactly like the backoffice keeps `mk-input` mostly
+square-ish and only makes the login fields pill-shaped.
+
+`pos_colors.dart` and `DashboardPalette` (`dashboard_widgets.dart`) were
+updated to carry the exact same values as `AppColors.light` — **still
+duplicated as `const` literals, not references**, because Dart doesn't allow
+reading an instance field of another class inside a `const` expression
+(`const x = AppColors.light.brand;` is a compile error:
+`const_eval_property_access`). Each file now has a comment pointing back to
+`app_colors.dart` as the source of truth to keep them in sync by hand if it
+ever changes. `DashboardPalette.ink`/`.inkMuted` were nudged from their
+slightly-different original hex (`#1E293B`/`#64748B`) to match
+`AppColors.light.text`/`.textMuted` (`#1F2937`/`#6B7280`) exactly — an
+imperceptible shift, done for consistency.
+
+**Deliberately partial, staged like the backoffice's own theme rollout**:
+none of `caja_screen.dart`, `cuentas_por_cobrar_screen.dart`,
+`pendientes_error_screen.dart`, `barcode_scanner_screen.dart`,
+`cobro_sheet.dart`, `cliente_selector_sheet.dart`,
+`connectivity_badge.dart`, or the `pos/` sub-widgets were touched — they
+still hardcode their own local color constants and render in light-mode
+colors regardless of `themeModeProvider`. Toggling dark mode today only
+visibly re-themes `LoginScreen`, `PosScreen`'s own chrome (app bar,
+scaffold background), and the two dashboards' app bars/scaffold — the rest
+of the app doesn't yet look wrong, it just doesn't respond. Migrating the
+rest to `AppColors.of(context)` is future work, not started this phase.
+
+Also fixed in passing: `test/widget_test.dart` asserted `find.text('Market')`
+— stale from before the Market→Inven365 rebrand (confirmed via `git stash`
+that this assertion already failed on `main` before this phase's changes,
+unrelated to anything done here) — updated to check for the new login's
+actual heading text (`'Bienvenido de nuevo'`).
+
+Verified: `flutter analyze` clean, `dart format --set-exit-if-changed .`
+clean, `flutter test` 62/62 (61 pre-existing + the widget_test fix).
+Visually confirmed in Chrome (`flutter run -d web-server --web-port=8765
+--dart-define=API_BASE_URL=http://localhost:8080`) — light login matches the
+backoffice's redesigned login; dark login confirmed by temporarily forcing
+`ThemeNotifier.build()` to return `ThemeMode.dark` for one screenshot, then
+reverting immediately (the real default is verified back to
+`ThemeMode.light` by the clean `flutter analyze`/`test` run taken
+afterward). **Not verified**: `PosScreen`/dashboards with the toggle
+actually switching live — no valid credentials were available against the
+local backend this session to log in past `LoginScreen`, so the toggle
+button itself and the rest of `PosScreen`/dashboard theming were only
+verified by code review, not click-tested. Needs a real login session next
+time to confirm the toggle actually flips `PosScreen`/dashboard chrome and
+that nothing renders unreadable in dark mode.
+

@@ -4,6 +4,7 @@ import '../../auth/application/auth_notifier.dart';
 import '../../dashboard/application/dashboard_provider.dart';
 import '../../dashboard/data/dashboard_resumen.dart';
 import '../../dashboard/presentation/dashboard_widgets.dart';
+import '../../../core/theme/theme_notifier.dart';
 
 /// Rendimiento del vendedor. El backend agrega por TIENDA, no por vendedor
 /// (no expone `usuarioId` en `/me` ni un corte por vendedor en ventas) — así
@@ -20,6 +21,7 @@ class DashboardVendedorScreen extends ConsumerWidget {
     if (tiendaId == null) return const SizedBox.shrink();
 
     final resumenAsync = ref.watch(dashboardResumenProvider(tiendaId));
+    final modoOscuro = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Scaffold(
       backgroundColor: DashboardPalette.surface,
@@ -27,6 +29,15 @@ class DashboardVendedorScreen extends ConsumerWidget {
         backgroundColor: DashboardPalette.brand,
         foregroundColor: Colors.white,
         title: const Text('Mi rendimiento'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              modoOscuro ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            ),
+            tooltip: modoOscuro ? 'Modo claro' : 'Modo oscuro',
+            onPressed: () => ref.read(themeModeProvider.notifier).alternar(),
+          ),
+        ],
       ),
       body: resumenAsync.when(
         data: (resumen) => _Contenido(tiendaId: tiendaId, resumen: resumen),

@@ -3,9 +3,14 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
 /// Paleta compartida por los dos dashboards (encargado/vendedor) — mismos
-/// tokens de marca (`market-backoffice/CLAUDE.md`: petróleo/esmeralda/ámbar)
-/// más violeta/coral/azul para dar variedad visual a las tarjetas sin
-/// inventar un segundo sistema de diseño.
+/// valores que `AppColors.light` (`core/theme/app_colors.dart`, fuente única
+/// de verdad); duplicados aquí como literales `const` porque Dart no permite
+/// acceder a un campo de instancia de otra clase dentro de una expresión
+/// `const`. Si cambia el claro en `AppColors`, actualizar también acá.
+/// Violeta/coral/azul son decorativos propios de las tarjetas del dashboard,
+/// sin equivalente en el sistema de marca. Todavía toma siempre el valor
+/// claro — migrar estos dashboards a `AppColors.of(context)` queda para una
+/// fase aparte.
 class DashboardPalette {
   const DashboardPalette._();
 
@@ -18,8 +23,8 @@ class DashboardPalette {
   static const danger = Color(0xFFDC6B6B);
   static const warning = Color(0xFFF4B942);
   static const surface = Color(0xFFF8FAFC);
-  static const ink = Color(0xFF1E293B);
-  static const inkMuted = Color(0xFF64748B);
+  static const ink = Color(0xFF1F2937);
+  static const inkMuted = Color(0xFF6B7280);
 }
 
 /// Fondo con acento de color suave detrás de un ícono — usado como "avatar"

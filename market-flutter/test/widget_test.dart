@@ -10,7 +10,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MarketPosApp()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Market'), findsOneWidget);
+    expect(find.text('Bienvenido de nuevo'), findsOneWidget);
     expect(find.text('Usuario'), findsOneWidget);
     expect(find.text('Contraseña'), findsOneWidget);
     expect(find.text('Ingresar'), findsOneWidget);

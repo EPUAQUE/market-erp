@@ -4,6 +4,7 @@ import '../../auth/application/auth_notifier.dart';
 import '../../dashboard/application/dashboard_provider.dart';
 import '../../dashboard/data/dashboard_resumen.dart';
 import '../../dashboard/presentation/dashboard_widgets.dart';
+import '../../../core/theme/theme_notifier.dart';
 
 class DashboardEncargadoScreen extends ConsumerWidget {
   const DashboardEncargadoScreen({super.key});
@@ -14,6 +15,7 @@ class DashboardEncargadoScreen extends ConsumerWidget {
     if (tiendaId == null) return const SizedBox.shrink();
 
     final resumenAsync = ref.watch(dashboardResumenProvider(tiendaId));
+    final modoOscuro = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Scaffold(
       backgroundColor: DashboardPalette.surface,
@@ -21,6 +23,15 @@ class DashboardEncargadoScreen extends ConsumerWidget {
         backgroundColor: DashboardPalette.brand,
         foregroundColor: Colors.white,
         title: const Text('Dashboard · Tienda'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              modoOscuro ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            ),
+            tooltip: modoOscuro ? 'Modo claro' : 'Modo oscuro',
+            onPressed: () => ref.read(themeModeProvider.notifier).alternar(),
+          ),
+        ],
       ),
       body: resumenAsync.when(
         data: (resumen) => _Contenido(tiendaId: tiendaId, resumen: resumen),

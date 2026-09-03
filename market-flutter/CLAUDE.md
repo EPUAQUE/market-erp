@@ -1586,6 +1586,27 @@ Verificado: `flutter analyze` limpio, `dart format --set-exit-if-changed .`
 limpio, `flutter test` 70/70 (8 tests nuevos: validaciones de
 `ForgotPasswordScreen`/`ResetPasswordScreen` sin llamar al backend, y el
 checkbox/precarga de `LoginScreen` con `SharedPreferences.setMockInitialValues`).
-**No verificado visualmente en Chrome/device** — misma inestabilidad de
-`flutter run -d web-server` que la fase anterior.
+
+**Verificado en Chrome contra el backend real** (`flutter run -d web-server`,
+segundo intento — la congelada de `flutter_run3.log` esta vez sí terminó de
+compilar tras esperar más, y la causa real de los intentos previos "en
+blanco" quedó identificada: no era el renderer, era CORS. `CORS_ALLOWED_ORIGINS`
+del backend solo traía `http://localhost:5173` por default — el `POST
+/auth/forgot-password` fallaba con "No se pudo conectar con el servidor" pese
+a que el backend respondía perfecto por `curl`. Reiniciado con
+`CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8765` y ya
+funcionó). Flujo real probado de punta a punta: login con "Recordarme"
+marcado → logout → recarga completa de página (no solo re-navegación SPA) →
+usuario y checkbox siguen precargados, confirmando que `SharedPreferences`
+persiste de verdad en el navegador. "¿Olvidaste tu contraseña?" → usuario
+`admin` → "Revisa tu correo" (llamada real, sin error). "Ya tengo un código" →
+las 3 validaciones de cliente (código vacío, contraseña corta, contraseñas
+que no coinciden) muestran su mensaje sin tocar la red; con un código
+inventado sí llama al backend real y muestra "El código es inválido o ya
+expiró" (400 real). No se pudo probar el canje de un token real: el usuario
+`admin` sembrado no tiene correo registrado (`correo: null`), así que el
+backend nunca genera token ni envía correo para él (mismo diseño no-op que
+usa para no filtrar qué usuarios existen) — probarlo de verdad requeriría un
+usuario con correo real, lo que dispararía un envío de correo real por el
+SMTP configurado; no se hizo sin que el cliente lo pida explícitamente.
 

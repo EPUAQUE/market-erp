@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/connectivity/connectivity_provider.dart';
 import '../../core/sync/sync_engine.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Indicador de conectividad — siempre visible, nunca bloquea la interacción
 /// (ver CLAUDE.md, "Flujos offline"). Observarlo aquí es lo que mantiene vivo
@@ -18,13 +19,11 @@ class ConnectivityBadge extends ConsumerWidget {
     final pendientes = ref.watch(pendientesSincronizarProvider).value ?? 0;
     final conError = ref.watch(pendientesConErrorProvider).value?.length ?? 0;
 
+    final colors = AppColors.of(context);
     final (color, texto) = switch (estado) {
-      EstadoConexion.conectado => (const Color(0xFF3BAA68), 'Conectado'),
-      EstadoConexion.sincronizando => (
-        const Color(0xFFF4B942),
-        'Sincronizando',
-      ),
-      EstadoConexion.sinConexion => (const Color(0xFFDC6B6B), 'Sin conexión'),
+      EstadoConexion.conectado => (colors.success, 'Conectado'),
+      EstadoConexion.sincronizando => (colors.pending, 'Sincronizando'),
+      EstadoConexion.sinConexion => (colors.danger, 'Sin conexión'),
     };
 
     return Tooltip(
@@ -59,9 +58,7 @@ class ConnectivityBadge extends ConsumerWidget {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: conError > 0
-                        ? const Color(0xFFDC6B6B)
-                        : Colors.white24,
+                    color: conError > 0 ? colors.danger : Colors.white24,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(

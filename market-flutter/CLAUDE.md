@@ -1519,3 +1519,32 @@ verified by code review, not click-tested. Needs a real login session next
 time to confirm the toggle actually flips `PosScreen`/dashboard chrome and
 that nothing renders unreadable in dark mode.
 
+### Modo oscuro fase 2 — el resto de las pantallas migradas a `AppColors`
+
+Cierra el alcance parcial de la fase anterior: `caja_screen.dart`,
+`cuentas_por_cobrar_screen.dart`, `pendientes_error_screen.dart`,
+`barcode_scanner_screen.dart`, `cobro_sheet.dart`,
+`cliente_selector_sheet.dart` y `connectivity_badge.dart` seguían con
+constantes locales `_brand`/`_primary`/`_danger`/`_warning` fijas
+(`const Color(0xFFxxxxxx)`) — ahora todas usan `AppColors.of(context)`
+(`core/theme/app_colors.dart`), mismo patrón que `login_screen.dart`/
+`pos_screen.dart`/los dos dashboards de la fase anterior: `final colors =
+AppColors.of(context)` dentro de cada `build`, incluyendo los widgets
+privados/`State` internos de cada archivo que también pintan color (cada uno
+con su propio `build(BuildContext context)`, no uno solo compartido).
+`connectivity_badge.dart` no tenía constantes `_brand`/`_primary` propias,
+pero sí 3 colores de estado hardcodeados (Conectado/Sincronizando/Sin
+conexión) — se mapearon a los campos semánticos ya existentes en
+`AppColors` (`success`/`pending`/`danger`, mismos hex) en vez de agregar
+tokens nuevos. `cliente_selector_sheet.dart` de paso migró un rojo de error
+que estaba hardcodeado sin ser `const _xxx` (mismo hueco de fondo).
+
+Con esto, TODAS las pantallas que pintan color propio ya responden al
+modo oscuro — no queda ninguna pantalla con paleta fija conocida.
+
+Verificado: `flutter analyze` limpio, `dart format --set-exit-if-changed .`
+limpio, `flutter test` 62/62. **No verificado visualmente en Chrome/device**
+esta vez — mismo motivo que la fase anterior (sin login funcionando contra
+el backend de esta sesión al momento de migrar); verificado solo por
+revisión de código y por los tres chequeos automatizados de arriba.
+

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/sync/sync_engine.dart';
-
-const _brand = Color(0xFF0F4C5C);
-const _primary = Color(0xFF2E8B57);
-const _danger = Color(0xFFDC6B6B);
+import '../../../core/theme/app_colors.dart';
 
 /// Lista los ítems de la cola offline (ventas, clientes, movimientos de caja)
 /// que el motor de sync marcó con `mensajeError` — un fallo de negocio, no de
@@ -16,12 +13,13 @@ class PendientesErrorScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
     final itemsAsync = ref.watch(pendientesConErrorProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.bg,
       appBar: AppBar(
-        backgroundColor: _brand,
+        backgroundColor: colors.brand,
         foregroundColor: Colors.white,
         title: const Text('Pendientes con error'),
       ),
@@ -46,7 +44,7 @@ class PendientesErrorScreen extends ConsumerWidget {
         error: (error, _) => Center(
           child: Text(
             'No se pudo cargar la lista: $error',
-            style: const TextStyle(color: _danger),
+            style: TextStyle(color: colors.danger),
           ),
         ),
       ),
@@ -61,6 +59,7 @@ class _ItemCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -74,21 +73,23 @@ class _ItemCard extends ConsumerWidget {
             const SizedBox(height: 2),
             Text(item.subtitulo, style: const TextStyle(color: Colors.black54)),
             const SizedBox(height: 6),
-            Text(item.mensajeError, style: const TextStyle(color: _danger)),
+            Text(item.mensajeError, style: TextStyle(color: colors.danger)),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
                   onPressed: () => _confirmarDescartar(context, ref),
-                  style: TextButton.styleFrom(foregroundColor: _danger),
+                  style: TextButton.styleFrom(foregroundColor: colors.danger),
                   child: const Text('DESCARTAR'),
                 ),
                 const SizedBox(width: 8),
                 FilledButton(
                   onPressed: () =>
                       ref.read(syncEngineProvider.notifier).reintentar(item),
-                  style: FilledButton.styleFrom(backgroundColor: _primary),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primary,
+                  ),
                   child: const Text('REINTENTAR'),
                 ),
               ],
@@ -100,6 +101,7 @@ class _ItemCard extends ConsumerWidget {
   }
 
   Future<void> _confirmarDescartar(BuildContext context, WidgetRef ref) async {
+    final colors = AppColors.of(context);
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -114,7 +116,7 @@ class _ItemCard extends ConsumerWidget {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: _danger),
+            style: FilledButton.styleFrom(backgroundColor: colors.danger),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Descartar'),
           ),

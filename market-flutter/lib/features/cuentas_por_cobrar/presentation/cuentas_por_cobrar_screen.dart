@@ -1,17 +1,13 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../auth/application/auth_notifier.dart';
 import '../../clientes/application/clientes_provider.dart';
 import '../../clientes/data/cliente.dart';
 import '../../ventas/application/checkout_notifier.dart';
 import '../../ventas/data/venta_api.dart';
 import '../application/cuentas_por_cobrar_provider.dart';
-
-const _brand = Color(0xFF0F4C5C);
-const _primary = Color(0xFF2E8B57);
-const _danger = Color(0xFFDC6B6B);
-const _warning = Color(0xFFF4B942);
 
 /// Cobros sueltos: pagar (parcial o total) una cuenta por cobrar ya
 /// existente, fuera del cobro automático que dispara `CheckoutNotifier` justo
@@ -38,6 +34,7 @@ class _CuentasPorCobrarScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final tiendaId = ref.watch(tiendaActivaProvider);
     if (tiendaId == null) return const SizedBox.shrink();
 
@@ -50,9 +47,9 @@ class _CuentasPorCobrarScreenState
     final puedeAnular = sesion?.can('CUENTAS_POR_COBRAR_ANULAR') ?? false;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.bg,
       appBar: AppBar(
-        backgroundColor: _brand,
+        backgroundColor: colors.brand,
         foregroundColor: Colors.white,
         title: const Text('Cuentas por cobrar'),
       ),
@@ -125,7 +122,7 @@ class _CuentasPorCobrarScreenState
               error: (error, _) => Center(
                 child: Text(
                   'No se pudieron cargar las cuentas por cobrar: $error',
-                  style: const TextStyle(color: _danger),
+                  style: TextStyle(color: colors.danger),
                 ),
               ),
             ),
@@ -153,6 +150,7 @@ class _CuentaCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
     return Card(
       child: ListTile(
         title: Text(nombreCliente),
@@ -160,7 +158,9 @@ class _CuentaCard extends ConsumerWidget {
           cuenta.vencida
               ? 'Vencida desde ${_formatearFecha(cuenta.fechaVencimiento)}'
               : 'Vence ${_formatearFecha(cuenta.fechaVencimiento)}',
-          style: TextStyle(color: cuenta.vencida ? _danger : Colors.black54),
+          style: TextStyle(
+            color: cuenta.vencida ? colors.danger : Colors.black54,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -171,21 +171,25 @@ class _CuentaCard extends ConsumerWidget {
               children: [
                 Text(
                   'Q ${cuenta.saldoPendiente}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: _primary,
+                    color: colors.primary,
                   ),
                 ),
                 if (cuenta.vencida)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Icon(Icons.warning_amber, size: 16, color: _warning),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.warning_amber,
+                      size: 16,
+                      color: colors.pending,
+                    ),
                   ),
               ],
             ),
             if (puedeAnular)
               IconButton(
-                icon: const Icon(Icons.cancel_outlined, color: _danger),
+                icon: Icon(Icons.cancel_outlined, color: colors.danger),
                 tooltip: 'Anular',
                 onPressed: () => _confirmarAnular(context, ref),
               ),
@@ -207,6 +211,7 @@ class _CuentaCard extends ConsumerWidget {
   }
 
   Future<void> _confirmarAnular(BuildContext context, WidgetRef ref) async {
+    final colors = AppColors.of(context);
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -221,7 +226,7 @@ class _CuentaCard extends ConsumerWidget {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: _danger),
+            style: FilledButton.styleFrom(backgroundColor: colors.danger),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Anular'),
           ),
@@ -237,11 +242,11 @@ class _CuentaCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
+          SnackBar(
+            content: const Text(
               'No se pudo anular — puede que ya tenga abonos registrados.',
             ),
-            backgroundColor: _danger,
+            backgroundColor: colors.danger,
           ),
         );
       }
@@ -331,6 +336,7 @@ class _RegistrarAbonoSheetState extends ConsumerState<RegistrarAbonoSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -360,7 +366,7 @@ class _RegistrarAbonoSheetState extends ConsumerState<RegistrarAbonoSheet> {
                 ChoiceChip(
                   label: Text(_labelMetodo(metodo)),
                   selected: _metodo == metodo,
-                  selectedColor: _primary.withValues(alpha: 0.15),
+                  selectedColor: colors.primary.withValues(alpha: 0.15),
                   onSelected: (_) => setState(() => _metodo = metodo),
                 ),
             ],
@@ -379,14 +385,14 @@ class _RegistrarAbonoSheetState extends ConsumerState<RegistrarAbonoSheet> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(color: _danger)),
+            Text(_error!, style: TextStyle(color: colors.danger)),
           ],
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: _primary,
+                backgroundColor: colors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: _guardando || !_puedeConfirmar ? null : _confirmar,

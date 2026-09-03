@@ -6,8 +6,7 @@ import '../../../core/db/local_store_provider.dart';
 import '../application/clientes_provider.dart';
 import '../data/cliente.dart';
 import '../data/cliente_pendiente_local.dart';
-
-const _primary = Color(0xFF2E8B57);
+import '../../../core/theme/app_colors.dart';
 
 /// Hoja de selección/alta rápida de cliente — usada por el flujo de venta a
 /// crédito. Devuelve un [ClienteSeleccionado] elegido/creado vía
@@ -279,7 +278,10 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
         ),
         if (_errorCrear != null) ...[
           const SizedBox(height: 8),
-          Text(_errorCrear!, style: const TextStyle(color: Color(0xFFDC6B6B))),
+          Text(
+            _errorCrear!,
+            style: TextStyle(color: AppColors.of(context).danger),
+          ),
         ],
         const SizedBox(height: 14),
         Row(
@@ -295,7 +297,9 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
             const SizedBox(width: 10),
             Expanded(
               child: FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: _primary),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.of(context).primary,
+                ),
                 onPressed: _guardando ? null : _guardarClienteNuevo,
                 child: _guardando
                     ? const SizedBox(

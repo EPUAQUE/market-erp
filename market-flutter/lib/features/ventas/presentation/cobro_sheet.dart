@@ -6,9 +6,7 @@ import '../../clientes/presentation/cliente_selector_sheet.dart';
 import '../application/checkout_notifier.dart';
 import '../data/venta_api.dart';
 import '../domain/carrito.dart';
-
-const _primary = Color(0xFF2E8B57);
-const _danger = Color(0xFFDC6B6B);
+import '../../../core/theme/app_colors.dart';
 
 class CobroSheet extends ConsumerStatefulWidget {
   const CobroSheet({super.key, required this.tiendaId, required this.total});
@@ -96,14 +94,15 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     ref.listen(checkoutProvider, (previous, next) {
       if (next.ventaCompletada) {
         ref.read(checkoutProvider.notifier).reset();
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Venta completada.'),
-            backgroundColor: _primary,
+          SnackBar(
+            content: const Text('Venta completada.'),
+            backgroundColor: colors.primary,
           ),
         );
       }
@@ -208,7 +207,9 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: _sumaMixto == widget.total ? _primary : _danger,
+                color: _sumaMixto == widget.total
+                    ? colors.primary
+                    : colors.danger,
               ),
             ),
           ],
@@ -241,14 +242,14 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
           ],
           if (checkout.error != null) ...[
             const SizedBox(height: 8),
-            Text(checkout.error!, style: const TextStyle(color: _danger)),
+            Text(checkout.error!, style: TextStyle(color: colors.danger)),
           ],
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: _primary,
+                backgroundColor: colors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: checkout.loading || !_puedeConfirmar
@@ -305,7 +306,7 @@ class _MetodoChip extends StatelessWidget {
     return ChoiceChip(
       label: Text(label),
       selected: activo,
-      selectedColor: _primary.withValues(alpha: 0.15),
+      selectedColor: AppColors.of(context).primary.withValues(alpha: 0.15),
       onSelected: (_) => onTap(metodo),
     );
   }

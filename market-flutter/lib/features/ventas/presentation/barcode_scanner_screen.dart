@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-
-const _primary = Color(0xFF2E8B57);
-const _brand = Color(0xFF0F4C5C);
+import '../../../core/theme/app_colors.dart';
 
 /// Pantalla completa de escaneo — devuelve el código detectado vía
 /// `Navigator.pop(context, codigo)`. Si la cámara no está disponible (permiso
@@ -50,10 +48,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: _brand,
+        backgroundColor: colors.brand,
         foregroundColor: Colors.white,
         title: const Text('Escanear código'),
       ),
@@ -94,14 +93,14 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   child: TextField(
                     controller: _manualController,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Ingresar código manual',
-                      hintStyle: TextStyle(color: Colors.white38),
-                      enabledBorder: OutlineInputBorder(
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      enabledBorder: const OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.white24),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _primary),
+                        borderSide: BorderSide(color: colors.primary),
                       ),
                     ),
                     onSubmitted: (_) => _confirmarManual(),
@@ -109,7 +108,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 ),
                 const SizedBox(width: 10),
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: _primary),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primary,
+                  ),
                   onPressed: _confirmarManual,
                   child: const Text('Buscar'),
                 ),

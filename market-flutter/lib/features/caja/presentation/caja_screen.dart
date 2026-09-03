@@ -1,13 +1,10 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../auth/application/auth_notifier.dart';
 import '../application/caja_provider.dart';
 import '../data/caja.dart';
-
-const _brand = Color(0xFF0F4C5C);
-const _primary = Color(0xFF2E8B57);
-const _danger = Color(0xFFDC6B6B);
 
 class CajaScreen extends ConsumerWidget {
   const CajaScreen({super.key});
@@ -18,11 +15,12 @@ class CajaScreen extends ConsumerWidget {
     if (tiendaId == null) return const SizedBox.shrink();
 
     final cajaAsync = ref.watch(cajaAbiertaProvider(tiendaId));
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.bg,
       appBar: AppBar(
-        backgroundColor: _brand,
+        backgroundColor: colors.brand,
         foregroundColor: Colors.white,
         title: const Text('Caja'),
       ),
@@ -67,6 +65,7 @@ class _AbrirCajaFormState extends ConsumerState<_AbrirCajaForm> {
   @override
   Widget build(BuildContext context) {
     final actions = ref.watch(cajaActionsProvider);
+    final colors = AppColors.of(context);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
@@ -96,12 +95,12 @@ class _AbrirCajaFormState extends ConsumerState<_AbrirCajaForm> {
                 ),
                 if (actions.error != null) ...[
                   const SizedBox(height: 8),
-                  Text(actions.error!, style: const TextStyle(color: _danger)),
+                  Text(actions.error!, style: TextStyle(color: colors.danger)),
                 ],
                 const SizedBox(height: 16),
                 FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: _primary,
+                    backgroundColor: colors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   onPressed: actions.loading ? null : _abrir,
@@ -165,6 +164,7 @@ class _CajaAbiertaView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actions = ref.watch(cajaActionsProvider);
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -185,10 +185,10 @@ class _CajaAbiertaView extends ConsumerWidget {
                       ),
                       Text(
                         'Q ${sesion.saldoEsperado}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: _primary,
+                          color: colors.primary,
                         ),
                       ),
                     ],
@@ -212,7 +212,7 @@ class _CajaAbiertaView extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  icon: const Icon(Icons.add_circle_outline, color: _primary),
+                  icon: Icon(Icons.add_circle_outline, color: colors.primary),
                   label: const Text('Ingreso'),
                   onPressed: actions.loading
                       ? null
@@ -226,7 +226,7 @@ class _CajaAbiertaView extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  icon: const Icon(Icons.remove_circle_outline, color: _danger),
+                  icon: Icon(Icons.remove_circle_outline, color: colors.danger),
                   label: const Text('Egreso'),
                   onPressed: actions.loading
                       ? null
@@ -241,7 +241,7 @@ class _CajaAbiertaView extends ConsumerWidget {
           ),
           if (actions.error != null) ...[
             const SizedBox(height: 8),
-            Text(actions.error!, style: const TextStyle(color: _danger)),
+            Text(actions.error!, style: TextStyle(color: colors.danger)),
           ],
           const SizedBox(height: 16),
           const Text(
@@ -261,13 +261,16 @@ class _CajaAbiertaView extends ConsumerWidget {
                     itemCount: sesion.movimientos.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
+                      final itemColors = AppColors.of(context);
                       final movimiento = sesion.movimientos[index];
                       final esIngreso =
                           movimiento.tipo == TipoMovimientoCaja.ingreso;
                       return ListTile(
                         leading: Icon(
                           esIngreso ? Icons.add_circle : Icons.remove_circle,
-                          color: esIngreso ? _primary : _danger,
+                          color: esIngreso
+                              ? itemColors.primary
+                              : itemColors.danger,
                         ),
                         title: Text(movimiento.concepto),
                         subtitle: Text(movimiento.fecha.toLocal().toString()),
@@ -275,7 +278,9 @@ class _CajaAbiertaView extends ConsumerWidget {
                           '${esIngreso ? '+' : '-'} Q ${movimiento.monto}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: esIngreso ? _primary : _danger,
+                            color: esIngreso
+                                ? itemColors.primary
+                                : itemColors.danger,
                           ),
                         ),
                       );
@@ -287,8 +292,8 @@ class _CajaAbiertaView extends ConsumerWidget {
             width: double.infinity,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: _danger,
-                side: const BorderSide(color: _danger),
+                foregroundColor: colors.danger,
+                side: BorderSide(color: colors.danger),
               ),
               onPressed: actions.loading ? null : () => _cerrar(context, ref),
               child: const Text('Cerrar caja'),
@@ -323,6 +328,7 @@ class _MovimientoDialogState extends State<_MovimientoDialog> {
   @override
   Widget build(BuildContext context) {
     final esIngreso = widget.tipo == TipoMovimientoCaja.ingreso;
+    final colors = AppColors.of(context);
     return AlertDialog(
       title: Text(esIngreso ? 'Registrar ingreso' : 'Registrar egreso'),
       content: Column(
@@ -354,7 +360,7 @@ class _MovimientoDialogState extends State<_MovimientoDialog> {
         ),
         FilledButton(
           style: FilledButton.styleFrom(
-            backgroundColor: esIngreso ? _primary : _danger,
+            backgroundColor: esIngreso ? colors.primary : colors.danger,
           ),
           onPressed: () {
             final concepto = _conceptoController.text.trim();
@@ -393,6 +399,7 @@ class _CerrarCajaDialogState extends State<_CerrarCajaDialog> {
   Widget build(BuildContext context) {
     final contado = Decimal.tryParse(_montoController.text.trim());
     final diferencia = contado != null ? contado - widget.saldoEsperado : null;
+    final colors = AppColors.of(context);
     return AlertDialog(
       title: const Text('Cerrar caja'),
       content: Column(
@@ -418,7 +425,9 @@ class _CerrarCajaDialogState extends State<_CerrarCajaDialog> {
               'Diferencia: Q $diferencia',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: diferencia == Decimal.zero ? _primary : _danger,
+                color: diferencia == Decimal.zero
+                    ? colors.primary
+                    : colors.danger,
               ),
             ),
         ],
@@ -429,7 +438,7 @@ class _CerrarCajaDialogState extends State<_CerrarCajaDialog> {
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: _danger),
+          style: FilledButton.styleFrom(backgroundColor: colors.danger),
           onPressed: contado == null || contado < Decimal.zero
               ? null
               : () => Navigator.of(context).pop(contado),

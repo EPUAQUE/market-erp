@@ -107,31 +107,6 @@ body {
     border-radius: 999px;
     background-color: currentColor;
   }
-  .mk-badge-success {
-    background-color: rgb(var(--mk-success) / 0.12);
-    color: rgb(var(--mk-success));
-  }
-  .mk-badge-pending {
-    background-color: rgb(var(--mk-pending) / 0.16);
-    color: rgb(180 130 20);
-  }
-  .mk-badge-overdue {
-    background-color: rgb(var(--mk-overdue) / 0.14);
-    color: rgb(var(--mk-overdue));
-  }
-  .mk-badge-danger {
-    background-color: rgb(var(--mk-danger) / 0.12);
-    color: rgb(var(--mk-danger));
-  }
-  .mk-badge-info {
-    background-color: rgb(var(--mk-info) / 0.12);
-    color: rgb(var(--mk-info));
-  }
-  .mk-badge-neutral {
-    background-color: rgb(var(--mk-text-muted) / 0.12);
-    color: rgb(var(--mk-text-muted));
-  }
-
   .mk-row-actions {
     display: flex;
     align-items: center;
@@ -163,6 +138,38 @@ body {
   .mk-row-btn-neutral {
     color: rgb(var(--mk-text-muted));
   }
+}
+
+/* Colores por variante de .mk-badge — fuera de @layer components a
+   propósito: por alguna razón, cuando estas reglas vivían dentro de
+   @layer components junto al override de modo oscuro de abajo (mismo
+   selector, fuera de cualquier @layer), Tailwind/PostCSS descartaba
+   silenciosamente el "color" de la regla clara del build (`pnpm build`
+   y `pnpm dev` por igual) — solo sobrevivía el "background-color" del
+   override oscuro. Sacarlas de @layer components lo resuelve. */
+.mk-badge-success {
+  background-color: rgb(var(--mk-success) / 0.12);
+  color: rgb(var(--mk-success));
+}
+.mk-badge-pending {
+  background-color: rgb(var(--mk-pending) / 0.16);
+  color: rgb(180 130 20);
+}
+.mk-badge-overdue {
+  background-color: rgb(var(--mk-overdue) / 0.14);
+  color: rgb(var(--mk-overdue));
+}
+.mk-badge-danger {
+  background-color: rgb(var(--mk-danger) / 0.12);
+  color: rgb(var(--mk-danger));
+}
+.mk-badge-info {
+  background-color: rgb(var(--mk-info) / 0.12);
+  color: rgb(var(--mk-info));
+}
+.mk-badge-neutral {
+  background-color: rgb(var(--mk-text-muted) / 0.12);
+  color: rgb(var(--mk-text-muted));
 }
 
 /* En oscuro, el mismo 0.12/0.14 de opacidad queda casi invisible contra un

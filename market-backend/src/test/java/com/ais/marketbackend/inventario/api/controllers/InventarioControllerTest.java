@@ -8,18 +8,25 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.ais.marketbackend.compras.application.dtos.CompraResumen;
+import com.ais.marketbackend.compras.application.services.interfaces.CompraService;
+import com.ais.marketbackend.compras.domain.model.EstadoCompra;
 import com.ais.marketbackend.inventario.api.mappers.InventarioApiMapper;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
 import com.ais.marketbackend.inventario.domain.exception.MovimientoNoPermitidoException;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
+import com.ais.marketbackend.proveedores.application.dtos.ProveedorResumen;
+import com.ais.marketbackend.proveedores.application.services.interfaces.ProveedorService;
+import com.ais.marketbackend.proveedores.domain.model.EstadoProveedor;
 import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.GlobalExceptionHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -29,12 +36,17 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class InventarioControllerTest {
 
     private InventarioService inventarioService;
+    private CompraService compraService;
+    private ProveedorService proveedorService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         inventarioService = mock(InventarioService.class);
-        InventarioController controller = new InventarioController(inventarioService, new InventarioApiMapper());
+        compraService = mock(CompraService.class);
+        proveedorService = mock(ProveedorService.class);
+        InventarioController controller =
+                new InventarioController(inventarioService, new InventarioApiMapper(compraService, proveedorService));
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();
@@ -56,11 +68,28 @@ class InventarioControllerTest {
     void listarMovimientosDevuelveKardexPaginado() throws Exception {
         when(inventarioService.listarMovimientos(1L, 2L, 0, 20)).thenReturn(new Pagina<>(List.of(
                 new MovimientoInventarioResumen(1L, Instant.parse("2026-01-01T00:00:00Z"), 1L, 2L,
-                        new BigDecimal("10.000"), new BigDecimal("5.0000"), TipoMovimiento.COMPRA)), 0, 20, 1, 1));
+                        new BigDecimal("10.000"), new BigDecimal("5.0000"), TipoMovimiento.COMPRA, 7L)), 0, 20, 1, 1));
+        when(compraService.obtener(1L, 7L)).thenReturn(
+                new CompraResumen(7L, 3L, 1L, Instant.now(), EstadoCompra.RECIBIDA, List.of(), BigDecimal.TEN));
+        when(proveedorService.obtener(3L)).thenReturn(Optional.of(
+                new ProveedorResumen(3L, "NIT123", "Distribuidora Test", null, null, null, EstadoProveedor.ACTIVO)));
 
         mockMvc.perform(get("/api/v1/inventario/tiendas/1/productos/2/movimientos"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.contenido[0].tipoMovimiento").value("COMPRA"));
+                .andExpect(jsonPath("$.contenido[0].tipoMovimiento").value("COMPRA"))
+                .andExpect(jsonPath("$.contenido[0].proveedorNombre").value("Distribuidora Test"));
+    }
+
+    @Test
+    void listarMovimientosDeVentaNoResuelveProveedor() throws Exception {
+        when(inventarioService.listarMovimientos(1L, 2L, 0, 20)).thenReturn(new Pagina<>(List.of(
+                new MovimientoInventarioResumen(1L, Instant.parse("2026-01-01T00:00:00Z"), 1L, 2L,
+                        new BigDecimal("4.000"), new BigDecimal("5.0000"), TipoMovimiento.VENTA, 9L)), 0, 20, 1, 1));
+
+        mockMvc.perform(get("/api/v1/inventario/tiendas/1/productos/2/movimientos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contenido[0].tipoMovimiento").value("VENTA"))
+                .andExpect(jsonPath("$.contenido[0].proveedorNombre").doesNotExist());
     }
 
     @Test

@@ -28,6 +28,7 @@
     <include file="db/changelog/modules/inventario/002-check-montos.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/inventario/003-cantidad-entera.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/inventario/004-monto-dos-decimales.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/inventario/005-origen-id.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/modules/proveedores/001-proveedor.xml" relativeToChangelogFile="false"/>
 

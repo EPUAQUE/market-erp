@@ -55,7 +55,7 @@ class InventarioServiceImplTest {
         when(productoTiendaService.obtener(2L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.registrarMovimiento(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA))
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -64,7 +64,7 @@ class InventarioServiceImplTest {
         when(productoTiendaService.obtener(2L, 1L)).thenReturn(Optional.of(configuracion(true, false)));
 
         assertThatThrownBy(() -> service.registrarMovimiento(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA))
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null))
                 .isInstanceOf(MovimientoNoPermitidoException.class);
 
         verify(inventarioRepository, org.mockito.Mockito.never()).save(any());
@@ -77,7 +77,7 @@ class InventarioServiceImplTest {
                 .thenReturn(Optional.of(Inventario.nuevo(1L, 2L)));
 
         assertThatThrownBy(() -> service.registrarMovimiento(
-                1L, 2L, new BigDecimal("1"), new BigDecimal("5.00"), TipoMovimiento.VENTA))
+                1L, 2L, new BigDecimal("1"), new BigDecimal("5.00"), TipoMovimiento.VENTA, null))
                 .isInstanceOf(MovimientoNoPermitidoException.class);
     }
 
@@ -87,7 +87,7 @@ class InventarioServiceImplTest {
         when(inventarioRepository.findByTiendaIdAndProductoIdConBloqueo(1L, 2L)).thenReturn(Optional.empty());
 
         InventarioResumen resultado = service.registrarMovimiento(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA);
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null);
 
         assertThat(resultado.existenciaActual()).isEqualByComparingTo(new BigDecimal("10"));
         assertThat(resultado.costoPromedioActual()).isEqualByComparingTo(new BigDecimal("5.0000"));
@@ -101,7 +101,7 @@ class InventarioServiceImplTest {
                 .thenReturn(Optional.of(Inventario.nuevo(1L, 2L)));
 
         assertThatThrownBy(() -> service.registrarMovimiento(
-                1L, 2L, new BigDecimal("1"), new BigDecimal("5.00"), TipoMovimiento.VENTA))
+                1L, 2L, new BigDecimal("1"), new BigDecimal("5.00"), TipoMovimiento.VENTA, null))
                 .isInstanceOf(StockInsuficienteException.class);
     }
 
@@ -115,7 +115,7 @@ class InventarioServiceImplTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         InventarioResumen resultado = service.registrarMovimiento(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA);
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null);
 
         assertThat(resultado.existenciaActual()).isEqualByComparingTo(new BigDecimal("10"));
         verify(inventarioRepository, org.mockito.Mockito.times(2)).save(any());
@@ -130,7 +130,7 @@ class InventarioServiceImplTest {
                 .thenThrow(new ReferenciaInvalidaException("La tienda o el producto indicado no existe."));
 
         assertThatThrownBy(() -> service.registrarMovimiento(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA))
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null))
                 .isInstanceOf(ReferenciaInvalidaException.class);
 
         verify(inventarioRepository, org.mockito.Mockito.times(2)).save(any());
@@ -159,7 +159,7 @@ class InventarioServiceImplTest {
     @Test
     void listarMovimientosPaginadoDelegaEnElRepositorioYMapeaElContenido() {
         MovimientoInventario movimiento = MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA);
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null);
         when(movimientoInventarioRepository.findByTiendaIdAndProductoIdOrderByFechaDesc(1L, 2L, 0, 20))
                 .thenReturn(new Pagina<>(List.of(movimiento), 0, 20, 1, 1));
 

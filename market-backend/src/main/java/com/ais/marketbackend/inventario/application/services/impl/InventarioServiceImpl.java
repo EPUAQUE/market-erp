@@ -25,7 +25,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * {@code productoTiendaService} es una dependencia cruzada de módulo permitida:
  * solo se usa el puerto {@code application.services.interfaces} de Productos, sin
- * tocar sus entidades JPA ni su capa de persistencia.
+ * tocar sus entidades JPA ni su capa de persistencia. Nótese que este servicio NO
+ * depende de {@code CompraService} (ni de {@code ProveedorService}) a propósito:
+ * {@code CompraServiceImpl} ya depende de {@code InventarioService}, así que hacerlo
+ * al revés crearía un ciclo de beans — la resolución del nombre de proveedor para el
+ * kardex vive en {@code InventarioApiMapper} (capa API), no aquí.
  */
 @Service
 public class InventarioServiceImpl implements InventarioService {
@@ -59,11 +63,18 @@ public class InventarioServiceImpl implements InventarioService {
      * se propaga tal cual — el límite de un solo reintento evita enmascarar errores reales.
      */
     @Override
+    public InventarioResumen registrarMovimiento(
+            Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario,
+            TipoMovimiento tipoMovimiento) {
+        return registrarMovimiento(tiendaId, productoId, cantidad, costoUnitario, tipoMovimiento, null);
+    }
+
+    @Override
     @Auditable(accion = "INVENTARIO_AJUSTADO", entidad = "INVENTARIO", tiendaIdParam = "tiendaId",
             entidadIdParam = "productoId")
     public InventarioResumen registrarMovimiento(
             Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario,
-            TipoMovimiento tipoMovimiento) {
+            TipoMovimiento tipoMovimiento, Long origenId) {
         ProductoTiendaResumen configuracion = productoTiendaService.obtener(productoId, tiendaId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "El producto " + productoId + " no está configurado en la tienda " + tiendaId + "."));
@@ -80,22 +91,22 @@ public class InventarioServiceImpl implements InventarioService {
         }
 
         try {
-            return transactionTemplate.execute(status ->
-                    intentarRegistrarMovimiento(tiendaId, productoId, cantidad, costoUnitario, tipoMovimiento));
+            return transactionTemplate.execute(status -> intentarRegistrarMovimiento(
+                    tiendaId, productoId, cantidad, costoUnitario, tipoMovimiento, origenId));
         } catch (ReferenciaInvalidaException colisionDeCreacionConcurrente) {
-            return transactionTemplate.execute(status ->
-                    intentarRegistrarMovimiento(tiendaId, productoId, cantidad, costoUnitario, tipoMovimiento));
+            return transactionTemplate.execute(status -> intentarRegistrarMovimiento(
+                    tiendaId, productoId, cantidad, costoUnitario, tipoMovimiento, origenId));
         }
     }
 
     private InventarioResumen intentarRegistrarMovimiento(
             Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario,
-            TipoMovimiento tipoMovimiento) {
+            TipoMovimiento tipoMovimiento, Long origenId) {
         Inventario inventario = inventarioRepository.findByTiendaIdAndProductoIdConBloqueo(tiendaId, productoId)
                 .orElseGet(() -> Inventario.nuevo(tiendaId, productoId));
 
-        MovimientoInventario movimiento =
-                MovimientoInventario.nuevo(tiendaId, productoId, cantidad, costoUnitario, tipoMovimiento);
+        MovimientoInventario movimiento = MovimientoInventario.nuevo(
+                tiendaId, productoId, cantidad, costoUnitario, tipoMovimiento, origenId);
         inventario.aplicar(movimiento);
 
         Inventario guardado = inventarioRepository.save(inventario);
@@ -149,6 +160,7 @@ public class InventarioServiceImpl implements InventarioService {
     private MovimientoInventarioResumen toResumen(MovimientoInventario movimiento) {
         return new MovimientoInventarioResumen(
                 movimiento.getId(), movimiento.getFecha(), movimiento.getTiendaId(), movimiento.getProductoId(),
-                movimiento.getCantidad(), movimiento.getCostoUnitario(), movimiento.getTipo());
+                movimiento.getCantidad(), movimiento.getCostoUnitario(), movimiento.getTipo(),
+                movimiento.getOrigenId());
     }
 }

@@ -15,4 +15,7 @@ public class MovimientoInventarioResponse {
     String cantidad;
     String costoUnitario;
     String tipoMovimiento;
+
+    /** Solo no-null para un movimiento COMPRA cuyo origen todavía resuelve a una compra/proveedor existentes. */
+    String proveedorNombre;
 }

@@ -61,7 +61,7 @@ public class CompraServiceImpl implements CompraService {
         for (LineaCompra linea : compra.getLineas()) {
             inventarioService.registrarMovimiento(
                     tiendaId, linea.getProductoId(), linea.getCantidad(), linea.getCostoUnitario(),
-                    TipoMovimiento.COMPRA);
+                    TipoMovimiento.COMPRA, id);
         }
         CompraResumen resumen = toResumen(compraRepository.save(compra));
         cuentaPorPagarService.crear(resumen.id(), resumen.proveedorId(), resumen.tiendaId(), resumen.total());

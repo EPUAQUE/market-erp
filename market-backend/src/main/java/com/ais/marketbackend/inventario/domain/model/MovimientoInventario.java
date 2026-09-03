@@ -19,10 +19,11 @@ public class MovimientoInventario {
     private final BigDecimal cantidad;
     private final BigDecimal costoUnitario;
     private final TipoMovimiento tipo;
+    private final Long origenId;
 
     public MovimientoInventario(
             Long id, Instant fecha, Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario,
-            TipoMovimiento tipo) {
+            TipoMovimiento tipo, Long origenId) {
         this.id = id;
         this.fecha = Objects.requireNonNull(fecha, "fecha");
         this.tiendaId = Objects.requireNonNull(tiendaId, "tiendaId");
@@ -41,11 +42,15 @@ public class MovimientoInventario {
         }
         this.cantidad = cantidad;
         this.costoUnitario = costoUnitario;
+        this.origenId = origenId;
     }
 
+    /** {@code origenId}: id de la compra/venta/traslado que originó el movimiento — {@code null} para ajustes manuales. */
     public static MovimientoInventario nuevo(
-            Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario, TipoMovimiento tipo) {
-        return new MovimientoInventario(null, Instant.now(), tiendaId, productoId, cantidad, costoUnitario, tipo);
+            Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario, TipoMovimiento tipo,
+            Long origenId) {
+        return new MovimientoInventario(
+                null, Instant.now(), tiendaId, productoId, cantidad, costoUnitario, tipo, origenId);
     }
 
     public Long getId() {
@@ -74,5 +79,9 @@ public class MovimientoInventario {
 
     public TipoMovimiento getTipo() {
         return tipo;
+    }
+
+    public Long getOrigenId() {
+        return origenId;
     }
 }

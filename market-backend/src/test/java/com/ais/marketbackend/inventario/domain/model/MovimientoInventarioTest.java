@@ -11,21 +11,21 @@ class MovimientoInventarioTest {
     @Test
     void cantidadCeroOMenorEsInvalida() {
         assertThatThrownBy(() -> MovimientoInventario.nuevo(
-                1L, 2L, BigDecimal.ZERO, new BigDecimal("5.00"), TipoMovimiento.COMPRA))
+                1L, 2L, BigDecimal.ZERO, new BigDecimal("5.00"), TipoMovimiento.COMPRA, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void cantidadFraccionariaEsInvalida() {
         assertThatThrownBy(() -> MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("2.5"), BigDecimal.ONE, TipoMovimiento.COMPRA))
+                1L, 2L, new BigDecimal("2.5"), BigDecimal.ONE, TipoMovimiento.COMPRA, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void costoUnitarioNegativoEsInvalido() {
         assertThatThrownBy(() -> MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("-1"), TipoMovimiento.COMPRA))
+                1L, 2L, new BigDecimal("10"), new BigDecimal("-1"), TipoMovimiento.COMPRA, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

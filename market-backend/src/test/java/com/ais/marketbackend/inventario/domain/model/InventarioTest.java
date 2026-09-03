@@ -21,7 +21,7 @@ class InventarioTest {
     void primeraCompraFijaCostoPromedioAlCostoDeEntrada() {
         Inventario inventario = Inventario.nuevo(1L, 2L);
         MovimientoInventario compra = MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA);
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null);
 
         inventario.aplicar(compra);
 
@@ -33,9 +33,9 @@ class InventarioTest {
     void segundaCompraRecalculaCostoPromedioPonderado() {
         Inventario inventario = Inventario.nuevo(1L, 2L);
         inventario.aplicar(MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA));
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null));
         inventario.aplicar(MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("7.00"), TipoMovimiento.COMPRA));
+                1L, 2L, new BigDecimal("10"), new BigDecimal("7.00"), TipoMovimiento.COMPRA, null));
 
         // (10*5 + 10*7) / 20 = 6.00
         assertThat(inventario.getExistenciaActual()).isEqualByComparingTo(new BigDecimal("20"));
@@ -46,10 +46,10 @@ class InventarioTest {
     void ventaDescuentaExistenciaSinAlterarCostoPromedio() {
         Inventario inventario = Inventario.nuevo(1L, 2L);
         inventario.aplicar(MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA));
+                1L, 2L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null));
 
         inventario.aplicar(MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("4"), new BigDecimal("5.00"), TipoMovimiento.VENTA));
+                1L, 2L, new BigDecimal("4"), new BigDecimal("5.00"), TipoMovimiento.VENTA, null));
 
         assertThat(inventario.getExistenciaActual()).isEqualByComparingTo(new BigDecimal("6"));
         assertThat(inventario.getCostoPromedioActual()).isEqualByComparingTo(new BigDecimal("5.0000"));
@@ -59,10 +59,10 @@ class InventarioTest {
     void egresoMayorQueExistenciaLanzaStockInsuficiente() {
         Inventario inventario = Inventario.nuevo(1L, 2L);
         inventario.aplicar(MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("5"), new BigDecimal("5.00"), TipoMovimiento.COMPRA));
+                1L, 2L, new BigDecimal("5"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, null));
 
         MovimientoInventario venta = MovimientoInventario.nuevo(
-                1L, 2L, new BigDecimal("6"), new BigDecimal("5.00"), TipoMovimiento.VENTA);
+                1L, 2L, new BigDecimal("6"), new BigDecimal("5.00"), TipoMovimiento.VENTA, null);
 
         assertThatThrownBy(() -> inventario.aplicar(venta)).isInstanceOf(StockInsuficienteException.class);
     }

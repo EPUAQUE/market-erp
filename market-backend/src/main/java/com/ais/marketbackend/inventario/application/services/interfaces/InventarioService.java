@@ -17,6 +17,11 @@ public interface InventarioService {
     InventarioResumen registrarMovimiento(
             Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario, TipoMovimiento tipoMovimiento);
 
+    /** {@code origenId}: id de la compra/venta/traslado que originó el movimiento — usado para resolver el proveedor en el kardex de una COMPRA. */
+    InventarioResumen registrarMovimiento(
+            Long tiendaId, Long productoId, BigDecimal cantidad, BigDecimal costoUnitario,
+            TipoMovimiento tipoMovimiento, Long origenId);
+
     InventarioResumen obtener(Long tiendaId, Long productoId);
 
     /** Sin paginar — uso interno (ej. agregados del dashboard). El endpoint público usa la variante paginada. */

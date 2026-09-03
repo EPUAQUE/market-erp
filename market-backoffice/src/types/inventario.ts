@@ -24,4 +24,6 @@ export interface MovimientoInventario {
   cantidad: string
   costoUnitario: string
   tipoMovimiento: TipoMovimiento
+  /** Solo viene con valor para un movimiento COMPRA cuyo origen todavía resuelve a un proveedor existente. */
+  proveedorNombre: string | null
 }

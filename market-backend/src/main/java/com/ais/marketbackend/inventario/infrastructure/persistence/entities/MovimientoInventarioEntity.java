@@ -47,4 +47,8 @@ public class MovimientoInventarioEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_movimiento", nullable = false, length = 30)
     private TipoMovimiento tipoMovimiento;
+
+    /** Id de la compra/venta/traslado que originó el movimiento — null para ajustes manuales. */
+    @Column(name = "origen_id")
+    private Long origenId;
 }

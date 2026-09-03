@@ -64,9 +64,9 @@ class CompraServiceImplTest {
 
         compraService.recibir(1L, 5L);
 
-        verify(inventarioService).registrarMovimiento(1L, 10L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA);
-        verify(inventarioService).registrarMovimiento(1L, 20L, new BigDecimal("3"), new BigDecimal("2.00"), TipoMovimiento.COMPRA);
-        verify(inventarioService, times(2)).registrarMovimiento(eq(1L), any(), any(), any(), eq(TipoMovimiento.COMPRA));
+        verify(inventarioService).registrarMovimiento(1L, 10L, new BigDecimal("10"), new BigDecimal("5.00"), TipoMovimiento.COMPRA, 5L);
+        verify(inventarioService).registrarMovimiento(1L, 20L, new BigDecimal("3"), new BigDecimal("2.00"), TipoMovimiento.COMPRA, 5L);
+        verify(inventarioService, times(2)).registrarMovimiento(eq(1L), any(), any(), any(), eq(TipoMovimiento.COMPRA), eq(5L));
     }
 
     @Test
@@ -84,7 +84,7 @@ class CompraServiceImplTest {
         Compra compra = Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)));
         when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
         org.mockito.Mockito.doThrow(new MovimientoNoPermitidoException("no permitido"))
-                .when(inventarioService).registrarMovimiento(any(), any(), any(), any(), any());
+                .when(inventarioService).registrarMovimiento(any(), any(), any(), any(), any(), any());
 
         assertThatThrownBy(() -> compraService.recibir(1L, 5L)).isInstanceOf(MovimientoNoPermitidoException.class);
         verify(cuentaPorPagarService, never()).crear(any(), any(), any(), any());
@@ -96,7 +96,7 @@ class CompraServiceImplTest {
         when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
 
         assertThatThrownBy(() -> compraService.recibir(99L, 5L)).isInstanceOf(ResourceNotFoundException.class);
-        verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any());
+        verify(inventarioService, never()).registrarMovimiento(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -104,7 +104,7 @@ class CompraServiceImplTest {
         Compra compra = Compra.nueva(2L, 1L, List.of(LineaCompra.nueva(10L, BigDecimal.ONE, BigDecimal.ONE)));
         when(compraRepository.findByIdConBloqueo(5L)).thenReturn(Optional.of(withId(compra, 5L, 1L)));
         org.mockito.Mockito.doThrow(new MovimientoNoPermitidoException("no permitido"))
-                .when(inventarioService).registrarMovimiento(any(), any(), any(), any(), any());
+                .when(inventarioService).registrarMovimiento(any(), any(), any(), any(), any(), any());
 
         assertThatThrownBy(() -> compraService.recibir(1L, 5L)).isInstanceOf(MovimientoNoPermitidoException.class);
     }

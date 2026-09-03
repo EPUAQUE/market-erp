@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Pedido del cliente: mostrar el proveedor en el kardex cuando el
+         movimiento venga de una compra. Hasta ahora movimiento_inventario no
+         guardaba ninguna referencia al documento de origen (compra/venta/
+         traslado) — origen_id la agrega de forma genérica (no solo para
+         compra, así sirve también para trazar venta/traslado a futuro) sin
+         FK explícita porque puede apuntar a compra, venta o traslado según
+         tipo_movimiento — una FK a una sola tabla no aplicaría para los tres
+         casos. Nullable y sin backfill: los movimientos ya registrados nunca
+         tuvieron esta referencia y no hay forma de reconstruirla; solo los
+         movimientos nuevos la traen. -->
+    <changeSet id="inventario-005-origen-id" author="market-backend">
+        <addColumn tableName="movimiento_inventario">
+            <column name="origen_id" type="BIGINT"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="movimiento_inventario" columnName="origen_id"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

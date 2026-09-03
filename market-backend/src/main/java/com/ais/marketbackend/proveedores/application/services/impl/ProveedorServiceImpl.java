@@ -8,6 +8,7 @@ import com.ais.marketbackend.proveedores.domain.repository.ProveedorRepository;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,12 @@ public class ProveedorServiceImpl implements ProveedorService {
 
     public ProveedorServiceImpl(ProveedorRepository proveedorRepository) {
         this.proveedorRepository = proveedorRepository;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ProveedorResumen> obtener(Long id) {
+        return proveedorRepository.findById(id).map(this::toResumen);
     }
 
     @Override

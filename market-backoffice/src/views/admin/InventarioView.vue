@@ -286,23 +286,25 @@ onMounted(async () => {
               <th class="px-4 py-2 font-medium">Tipo</th>
               <th class="mk-num px-4 py-2 font-medium">Cantidad</th>
               <th class="mk-num px-4 py-2 font-medium">Costo unitario</th>
+              <th class="px-4 py-2 font-medium">Proveedor</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="movimientosLoading">
-              <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
+              <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Cargando…</td>
             </tr>
             <tr v-else-if="movimientosError">
-              <td colspan="4" class="px-4 py-6 text-center text-mk-danger">{{ movimientosError }}</td>
+              <td colspan="5" class="px-4 py-6 text-center text-mk-danger">{{ movimientosError }}</td>
             </tr>
             <tr v-else-if="movimientos.length === 0">
-              <td colspan="4" class="px-4 py-6 text-center text-mk-text/60">Sin movimientos.</td>
+              <td colspan="5" class="px-4 py-6 text-center text-mk-text/60">Sin movimientos.</td>
             </tr>
             <tr v-for="mov in movimientos" :key="mov.id" class="border-b border-mk-border last:border-0">
               <td class="px-4 py-2">{{ new Date(mov.fecha).toLocaleString() }}</td>
               <td class="px-4 py-2">{{ mov.tipoMovimiento }}</td>
               <td class="mk-num px-4 py-2">{{ mov.cantidad }}</td>
               <td class="mk-num px-4 py-2">{{ formatCurrency(mov.costoUnitario) }}</td>
+              <td class="px-4 py-2">{{ mov.proveedorNombre ?? '—' }}</td>
             </tr>
           </tbody>
         </table>

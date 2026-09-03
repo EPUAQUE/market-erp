@@ -243,6 +243,15 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-2">
                 <div class="mk-row-actions">
+                  <RouterLink
+                    v-if="documento.estado === 'CERTIFICADO'"
+                    :to="`/fel/tiendas/${documento.tiendaId}/${documento.id}/factura`"
+                    target="_blank"
+                    class="mk-row-btn"
+                    title="Ver factura"
+                  >
+                    <ActionIcon name="eye" />
+                  </RouterLink>
                   <button
                     v-if="documento.estado === 'ERROR' && permissions.can('FEL_EMITIR')"
                     type="button"

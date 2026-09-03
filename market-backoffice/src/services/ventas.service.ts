@@ -17,6 +17,10 @@ class VentasService {
     })
   }
 
+  obtener(tiendaId: number, id: number, signal?: AbortSignal) {
+    return apiClient.get<Venta>(API_ENDPOINTS.ventas.porId(tiendaId, id), { signal })
+  }
+
   crear(
     tiendaId: number,
     clienteId: number,

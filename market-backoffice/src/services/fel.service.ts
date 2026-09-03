@@ -11,6 +11,10 @@ class FelService {
     })
   }
 
+  obtener(tiendaId: number, id: number, signal?: AbortSignal) {
+    return apiClient.get<DocumentoFel>(API_ENDPOINTS.fel.porId(tiendaId, id), { signal })
+  }
+
   emitir(tiendaId: number, ventaId: number) {
     return apiClient.post<DocumentoFel>(API_ENDPOINTS.fel.emitir(tiendaId, ventaId))
   }

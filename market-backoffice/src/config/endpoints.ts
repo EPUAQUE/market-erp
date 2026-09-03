@@ -86,6 +86,7 @@ export const API_ENDPOINTS = {
   },
   ventas: {
     porTienda: (tiendaId: number) => `/api/v1/ventas/tiendas/${tiendaId}`,
+    porId: (tiendaId: number, id: number) => `/api/v1/ventas/tiendas/${tiendaId}/${id}`,
     completar: (tiendaId: number, id: number) => `/api/v1/ventas/tiendas/${tiendaId}/${id}/completar`,
     anular: (tiendaId: number, id: number) => `/api/v1/ventas/tiendas/${tiendaId}/${id}/anular`,
   },
@@ -132,6 +133,7 @@ export const API_ENDPOINTS = {
   },
   fel: {
     porTienda: (tiendaId: number) => `/api/v1/fel/tiendas/${tiendaId}`,
+    porId: (tiendaId: number, id: number) => `/api/v1/fel/tiendas/${tiendaId}/${id}`,
     emitir: (tiendaId: number, ventaId: number) => `/api/v1/fel/tiendas/${tiendaId}/ventas/${ventaId}/emitir`,
     reintentar: (tiendaId: number, id: number) => `/api/v1/fel/tiendas/${tiendaId}/${id}/reintentar`,
     anular: (tiendaId: number, id: number) => `/api/v1/fel/tiendas/${tiendaId}/${id}/anular`,

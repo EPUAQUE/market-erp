@@ -28,6 +28,14 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    // Fuera de AdminLayout a propósito: es una página para imprimir
+    // (window.print()), no debe salir el sidebar/topbar en la hoja impresa.
+    path: '/fel/tiendas/:tiendaId/:documentoId/factura',
+    name: 'factura',
+    component: () => import('@/views/FacturaView.vue'),
+    meta: { requiresAuth: true, permission: 'FEL_VER' },
+  },
+  {
     path: '/forbidden',
     name: 'forbidden',
     component: () => import('@/views/ForbiddenView.vue'),

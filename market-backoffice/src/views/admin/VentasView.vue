@@ -11,6 +11,7 @@ import { formatCurrency, calcularSubtotal } from '@/utils/money'
 import { productosService } from '@/services/productos.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { MetodoPago, Venta } from '@/types/venta'
 import type { ProductoTienda } from '@/types/producto'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
@@ -492,29 +493,34 @@ onMounted(async () => {
             </td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(venta.total) }}</td>
             <td class="px-4 py-2">
-              <button
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="toggleDetalle(venta)"
-              >
-                {{ detalleAbiertoId === venta.id ? 'Ocultar' : 'Ver líneas' }}
-              </button>
-              <button
-                v-if="venta.estado === 'BORRADOR' && permissions.can('VENTAS_COMPLETAR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="onCompletar(venta)"
-              >
-                Completar
-              </button>
-              <button
-                v-if="venta.estado === 'BORRADOR' && permissions.can('VENTAS_ANULAR')"
-                type="button"
-                class="text-mk-danger hover:underline"
-                @click="onAnular(venta)"
-              >
-                Anular
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  type="button"
+                  class="mk-row-btn mk-row-btn-neutral"
+                  :title="detalleAbiertoId === venta.id ? 'Ocultar' : 'Ver líneas'"
+                  @click="toggleDetalle(venta)"
+                >
+                  <ActionIcon name="eye" />
+                </button>
+                <button
+                  v-if="venta.estado === 'BORRADOR' && permissions.can('VENTAS_COMPLETAR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-success"
+                  title="Completar"
+                  @click="onCompletar(venta)"
+                >
+                  <ActionIcon name="check" />
+                </button>
+                <button
+                  v-if="venta.estado === 'BORRADOR' && permissions.can('VENTAS_ANULAR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-danger"
+                  title="Anular"
+                  @click="onAnular(venta)"
+                >
+                  <ActionIcon name="x" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

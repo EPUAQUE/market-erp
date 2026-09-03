@@ -8,6 +8,7 @@ import { tiendasService } from '@/services/tiendas.service'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { ProductoTienda } from '@/types/producto'
 import type { Tienda } from '@/types/tienda'
 
@@ -316,22 +317,27 @@ onMounted(async () => {
               />
             </td>
             <td class="px-4 py-2 whitespace-nowrap">
-              <button
-                v-if="permissions.can('PRODUCTOS_EDITAR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="abrirEditar(pt)"
-              >
-                Editar
-              </button>
-              <button
-                v-if="permissions.can('PRODUCTOS_EDITAR')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="alternarEstado(pt)"
-              >
-                {{ pt.activo ? 'Desactivar' : 'Activar' }}
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  v-if="permissions.can('PRODUCTOS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  title="Editar"
+                  @click="abrirEditar(pt)"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+                <button
+                  v-if="permissions.can('PRODUCTOS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  :class="pt.activo ? 'mk-row-btn-danger' : 'mk-row-btn-success'"
+                  :title="pt.activo ? 'Desactivar' : 'Activar'"
+                  @click="alternarEstado(pt)"
+                >
+                  <ActionIcon name="power" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

@@ -7,6 +7,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Inventario, MovimientoInventario, TipoMovimiento } from '@/types/inventario'
 
 const {
@@ -313,13 +314,16 @@ onMounted(async () => {
             <td class="mk-num px-4 py-2">{{ inv.existenciaActual }}</td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(inv.costoPromedioActual) }}</td>
             <td class="px-4 py-2">
-              <button
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="verKardex(inv.productoId)"
-              >
-                Ver kardex
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  type="button"
+                  class="mk-row-btn mk-row-btn-neutral"
+                  title="Ver kardex"
+                  @click="verKardex(inv.productoId)"
+                >
+                  <ActionIcon name="eye" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

@@ -9,6 +9,7 @@ import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency, calcularSubtotal } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Compra } from '@/types/compra'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
 
@@ -377,29 +378,34 @@ onMounted(async () => {
             </td>
             <td class="mk-num px-4 py-2">{{ formatCurrency(compra.total) }}</td>
             <td class="px-4 py-2">
-              <button
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="toggleDetalle(compra)"
-              >
-                {{ detalleAbiertoId === compra.id ? 'Ocultar' : 'Ver líneas' }}
-              </button>
-              <button
-                v-if="compra.estado === 'BORRADOR' && permissions.can('COMPRAS_RECIBIR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="onRecibir(compra)"
-              >
-                Recibir
-              </button>
-              <button
-                v-if="compra.estado === 'BORRADOR' && permissions.can('COMPRAS_ANULAR')"
-                type="button"
-                class="text-mk-danger hover:underline"
-                @click="onAnular(compra)"
-              >
-                Anular
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  type="button"
+                  class="mk-row-btn mk-row-btn-neutral"
+                  :title="detalleAbiertoId === compra.id ? 'Ocultar' : 'Ver líneas'"
+                  @click="toggleDetalle(compra)"
+                >
+                  <ActionIcon name="eye" />
+                </button>
+                <button
+                  v-if="compra.estado === 'BORRADOR' && permissions.can('COMPRAS_RECIBIR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-success"
+                  title="Recibir"
+                  @click="onRecibir(compra)"
+                >
+                  <ActionIcon name="check" />
+                </button>
+                <button
+                  v-if="compra.estado === 'BORRADOR' && permissions.can('COMPRAS_ANULAR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-danger"
+                  title="Anular"
+                  @click="onAnular(compra)"
+                >
+                  <ActionIcon name="x" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

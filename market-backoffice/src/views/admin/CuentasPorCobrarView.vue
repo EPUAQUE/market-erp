@@ -7,6 +7,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { CuentaPorCobrar } from '@/types/cuentaPorCobrar'
 
 function estadoVisual(cuenta: CuentaPorCobrar) {
@@ -205,25 +206,29 @@ onMounted(async () => {
               <EstadoBadge :variant="estadoVisual(cuenta).variant" :label="estadoVisual(cuenta).label" />
             </td>
             <td class="px-4 py-2">
-              <button
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="toggleDetalle(cuenta)"
-              >
-                {{ detalleAbiertoId === cuenta.id ? 'Ocultar' : 'Ver cobros' }}
-              </button>
-              <button
-                v-if="
-                  cuenta.estado === 'PENDIENTE' &&
-                  cuenta.cobros.length === 0 &&
-                  permissions.can('CUENTAS_POR_COBRAR_ANULAR')
-                "
-                type="button"
-                class="text-mk-danger hover:underline"
-                @click="onAnular(cuenta)"
-              >
-                Anular
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  type="button"
+                  class="mk-row-btn mk-row-btn-neutral"
+                  :title="detalleAbiertoId === cuenta.id ? 'Ocultar' : 'Ver cobros'"
+                  @click="toggleDetalle(cuenta)"
+                >
+                  <ActionIcon name="eye" />
+                </button>
+                <button
+                  v-if="
+                    cuenta.estado === 'PENDIENTE' &&
+                    cuenta.cobros.length === 0 &&
+                    permissions.can('CUENTAS_POR_COBRAR_ANULAR')
+                  "
+                  type="button"
+                  class="mk-row-btn mk-row-btn-danger"
+                  title="Anular"
+                  @click="onAnular(cuenta)"
+                >
+                  <ActionIcon name="x" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

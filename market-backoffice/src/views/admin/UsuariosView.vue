@@ -8,6 +8,7 @@ import { usePermissionsStore } from '@/stores/permissions.store'
 import { rolesService } from '@/services/roles.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { EstadoUsuario, Usuario } from '@/types/usuario'
 import type { Rol } from '@/types/rol'
 
@@ -408,14 +409,17 @@ onMounted(async () => {
                 />
               </td>
               <td class="px-4 py-2">
-                <button
-                  v-if="permissions.canAny(['USUARIOS_ASIGNAR_TIENDA', 'USUARIOS_ASIGNAR_GRUPO'])"
-                  type="button"
-                  class="text-mk-primary hover:underline"
-                  @click="toggleTiendas(usuario)"
-                >
-                  {{ expandedUsuarioId === usuario.id ? 'Ocultar accesos' : 'Accesos' }}
-                </button>
+                <div class="mk-row-actions">
+                  <button
+                    v-if="permissions.canAny(['USUARIOS_ASIGNAR_TIENDA', 'USUARIOS_ASIGNAR_GRUPO'])"
+                    type="button"
+                    class="mk-row-btn mk-row-btn-neutral"
+                    :title="expandedUsuarioId === usuario.id ? 'Ocultar accesos' : 'Accesos'"
+                    @click="toggleTiendas(usuario)"
+                  >
+                    <ActionIcon name="key" />
+                  </button>
+                </div>
               </td>
             </tr>
             <tr v-if="expandedUsuarioId === usuario.id" class="border-b border-mk-border bg-mk-surface">

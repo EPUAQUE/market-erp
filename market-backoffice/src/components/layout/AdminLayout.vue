@@ -5,11 +5,13 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useUserStore } from '@/stores/user.store'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { useThemeStore } from '@/stores/theme.store'
+import NavIcon from '@/components/common/NavIcon.vue'
 
 interface NavItem {
   label: string
   path: string
   permission: string
+  icon: string
 }
 
 interface NavGroup {
@@ -28,41 +30,71 @@ const navGroups: NavGroup[] = [
   {
     label: 'Catálogo',
     items: [
-      { label: 'Categorías', path: '/categorias', permission: 'CATEGORIAS_VER' },
-      { label: 'Marcas', path: '/marcas', permission: 'MARCAS_VER' },
-      { label: 'Unidades de Medida', path: '/unidades-medida', permission: 'UNIDADES_MEDIDA_VER' },
-      { label: 'Productos', path: '/productos', permission: 'PRODUCTOS_VER' },
+      { label: 'Categorías', path: '/categorias', permission: 'CATEGORIAS_VER', icon: 'categorias' },
+      { label: 'Marcas', path: '/marcas', permission: 'MARCAS_VER', icon: 'marcas' },
+      {
+        label: 'Unidades de Medida',
+        path: '/unidades-medida',
+        permission: 'UNIDADES_MEDIDA_VER',
+        icon: 'unidades-medida',
+      },
+      { label: 'Productos', path: '/productos', permission: 'PRODUCTOS_VER', icon: 'productos' },
     ],
   },
   {
     label: 'Operación',
     items: [
-      { label: 'Inventario', path: '/inventario', permission: 'INVENTARIO_VER' },
-      { label: 'Proveedores', path: '/proveedores', permission: 'PROVEEDORES_VER' },
-      { label: 'Compras', path: '/compras', permission: 'COMPRAS_VER' },
-      { label: 'Cuentas por Pagar', path: '/cuentas-por-pagar', permission: 'CUENTAS_POR_PAGAR_VER' },
-      { label: 'Traslados', path: '/traslados', permission: 'TRASLADOS_VER' },
+      { label: 'Inventario', path: '/inventario', permission: 'INVENTARIO_VER', icon: 'inventario' },
+      { label: 'Proveedores', path: '/proveedores', permission: 'PROVEEDORES_VER', icon: 'proveedores' },
+      { label: 'Compras', path: '/compras', permission: 'COMPRAS_VER', icon: 'compras' },
+      {
+        label: 'Cuentas por Pagar',
+        path: '/cuentas-por-pagar',
+        permission: 'CUENTAS_POR_PAGAR_VER',
+        icon: 'cuentas-por-pagar',
+      },
+      { label: 'Traslados', path: '/traslados', permission: 'TRASLADOS_VER', icon: 'traslados' },
     ],
   },
   {
     label: 'Ventas',
     items: [
-      { label: 'Clientes', path: '/clientes', permission: 'CLIENTES_VER' },
-      { label: 'Ventas', path: '/ventas', permission: 'VENTAS_VER' },
-      { label: 'Cuentas por Cobrar', path: '/cuentas-por-cobrar', permission: 'CUENTAS_POR_COBRAR_VER' },
-      { label: 'Caja', path: '/caja', permission: 'CAJA_VER' },
-      { label: 'Facturación Electrónica', path: '/fel', permission: 'FEL_VER' },
+      { label: 'Clientes', path: '/clientes', permission: 'CLIENTES_VER', icon: 'clientes' },
+      { label: 'Ventas', path: '/ventas', permission: 'VENTAS_VER', icon: 'ventas' },
+      {
+        label: 'Cuentas por Cobrar',
+        path: '/cuentas-por-cobrar',
+        permission: 'CUENTAS_POR_COBRAR_VER',
+        icon: 'cuentas-por-cobrar',
+      },
+      { label: 'Caja', path: '/caja', permission: 'CAJA_VER', icon: 'caja' },
+      { label: 'Facturación Electrónica', path: '/fel', permission: 'FEL_VER', icon: 'fel' },
     ],
   },
   {
     label: 'Administración',
     items: [
-      { label: 'Tiendas', path: '/tiendas', permission: 'TIENDAS_VER' },
-      { label: 'Grupos de tiendas', path: '/grupos-tienda', permission: 'GRUPOS_TIENDA_VER' },
-      { label: 'Gastos Programados', path: '/gastos-programados', permission: 'GASTOS_PROGRAMADOS_VER' },
-      { label: 'Notificaciones', path: '/notificaciones', permission: 'NOTIFICACIONES_VER' },
-      { label: 'Reportes', path: '/reportes', permission: 'REPORTES_VER' },
-      { label: 'Usuarios', path: '/usuarios', permission: 'USUARIOS_VER' },
+      { label: 'Tiendas', path: '/tiendas', permission: 'TIENDAS_VER', icon: 'tiendas' },
+      {
+        label: 'Grupos de tiendas',
+        path: '/grupos-tienda',
+        permission: 'GRUPOS_TIENDA_VER',
+        icon: 'grupos-tienda',
+      },
+      {
+        label: 'Gastos Programados',
+        path: '/gastos-programados',
+        permission: 'GASTOS_PROGRAMADOS_VER',
+        icon: 'gastos-programados',
+      },
+      {
+        label: 'Notificaciones',
+        path: '/notificaciones',
+        permission: 'NOTIFICACIONES_VER',
+        icon: 'notificaciones',
+      },
+      { label: 'Reportes', path: '/reportes', permission: 'REPORTES_VER', icon: 'reportes' },
+      { label: 'Usuarios', path: '/usuarios', permission: 'USUARIOS_VER', icon: 'usuarios' },
     ],
   },
 ]
@@ -90,6 +122,8 @@ const tiendaLabel = computed(() => {
 })
 
 const moduleTitle = computed(() => (route.meta.title as string | undefined) ?? 'Inven365')
+
+const iniciales = computed(() => (userStore.username ?? '??').slice(0, 2).toUpperCase())
 
 const searchOpen = ref(false)
 const searchQuery = ref('')
@@ -157,12 +191,13 @@ async function onLogout() {
             v-for="item in group.items"
             :key="item.path"
             :to="item.path"
-            class="group relative flex items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+            class="group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
             active-class="!bg-white/12 !text-white"
           >
             <span
               class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-mk-accent opacity-0 transition-opacity group-[.router-link-active]:opacity-100"
             />
+            <NavIcon :name="item.icon" class="h-4 w-4 shrink-0 opacity-80" />
             {{ item.label }}
           </RouterLink>
         </div>
@@ -279,6 +314,12 @@ async function onLogout() {
 
           <div class="mx-1 h-6 w-px bg-mk-border" />
 
+          <div
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mk-accent text-xs font-extrabold text-mk-brand"
+            :title="userStore.username ?? ''"
+          >
+            {{ iniciales }}
+          </div>
           <span class="hidden text-sm text-mk-text-muted sm:inline">{{ userStore.username }}</span>
           <button type="button" class="mk-btn mk-btn-ghost px-3 py-1.5 text-sm" @click="onLogout">
             Salir

@@ -5,6 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Notificacion, TipoNotificacion } from '@/types/notificacion'
 
 const {
@@ -196,14 +197,17 @@ onMounted(async () => {
               />
             </td>
             <td class="px-4 py-2">
-              <button
-                v-if="!notificacion.leida && permissions.can('NOTIFICACIONES_MARCAR_LEIDA')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="tiendaId !== null && marcarLeida(tiendaId, notificacion)"
-              >
-                Marcar leída
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  v-if="!notificacion.leida && permissions.can('NOTIFICACIONES_MARCAR_LEIDA')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-success"
+                  title="Marcar leída"
+                  @click="tiendaId !== null && marcarLeida(tiendaId, notificacion)"
+                >
+                  <ActionIcon name="check" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

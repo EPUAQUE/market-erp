@@ -7,6 +7,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Traslado } from '@/types/traslado'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
 
@@ -318,29 +319,34 @@ onMounted(async () => {
               />
             </td>
             <td class="px-4 py-2">
-              <button
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="toggleDetalle(traslado)"
-              >
-                {{ detalleAbiertoId === traslado.id ? 'Ocultar' : 'Ver líneas' }}
-              </button>
-              <button
-                v-if="traslado.estado === 'BORRADOR' && permissions.can('TRASLADOS_COMPLETAR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="completar(traslado)"
-              >
-                Completar
-              </button>
-              <button
-                v-if="traslado.estado === 'BORRADOR' && permissions.can('TRASLADOS_ANULAR')"
-                type="button"
-                class="text-mk-danger hover:underline"
-                @click="anular(traslado)"
-              >
-                Anular
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  type="button"
+                  class="mk-row-btn mk-row-btn-neutral"
+                  :title="detalleAbiertoId === traslado.id ? 'Ocultar' : 'Ver líneas'"
+                  @click="toggleDetalle(traslado)"
+                >
+                  <ActionIcon name="eye" />
+                </button>
+                <button
+                  v-if="traslado.estado === 'BORRADOR' && permissions.can('TRASLADOS_COMPLETAR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-success"
+                  title="Completar"
+                  @click="completar(traslado)"
+                >
+                  <ActionIcon name="check" />
+                </button>
+                <button
+                  v-if="traslado.estado === 'BORRADOR' && permissions.can('TRASLADOS_ANULAR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-danger"
+                  title="Anular"
+                  @click="anular(traslado)"
+                >
+                  <ActionIcon name="x" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

@@ -4,6 +4,7 @@ import { useMarcas } from '@/composables/useMarcas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Marca } from '@/types/marca'
 
 const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } = useMarcas()
@@ -141,14 +142,17 @@ onMounted(cargar)
           <tr v-for="marca in filtered" :key="marca.id" class="border-b border-mk-border last:border-0">
             <td class="px-4 py-2">{{ marca.nombre }}</td>
             <td class="px-4 py-2">
-              <button
-                v-if="permissions.can('MARCAS_EDITAR')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="abrirEditar(marca)"
-              >
-                Editar
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  v-if="permissions.can('MARCAS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  title="Editar"
+                  @click="abrirEditar(marca)"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

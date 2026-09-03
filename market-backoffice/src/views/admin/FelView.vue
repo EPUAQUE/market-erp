@@ -5,6 +5,7 @@ import { useTiendas } from '@/composables/useTiendas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { DocumentoFel } from '@/types/fel'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
 
@@ -241,22 +242,26 @@ onMounted(async () => {
                 />
               </td>
               <td class="px-4 py-2">
-                <button
-                  v-if="documento.estado === 'ERROR' && permissions.can('FEL_EMITIR')"
-                  type="button"
-                  class="mr-3 text-mk-primary hover:underline"
-                  @click="onReintentar(documento)"
-                >
-                  Reintentar
-                </button>
-                <button
-                  v-if="documento.estado === 'CERTIFICADO' && permissions.can('FEL_ANULAR')"
-                  type="button"
-                  class="text-mk-danger hover:underline"
-                  @click="abrirAnular(documento)"
-                >
-                  {{ anulandoId === documento.id ? 'Cancelar' : 'Anular' }}
-                </button>
+                <div class="mk-row-actions">
+                  <button
+                    v-if="documento.estado === 'ERROR' && permissions.can('FEL_EMITIR')"
+                    type="button"
+                    class="mk-row-btn"
+                    title="Reintentar"
+                    @click="onReintentar(documento)"
+                  >
+                    <ActionIcon name="refresh" />
+                  </button>
+                  <button
+                    v-if="documento.estado === 'CERTIFICADO' && permissions.can('FEL_ANULAR')"
+                    type="button"
+                    class="mk-row-btn mk-row-btn-danger"
+                    :title="anulandoId === documento.id ? 'Cancelar' : 'Anular'"
+                    @click="abrirAnular(documento)"
+                  >
+                    <ActionIcon name="x" />
+                  </button>
+                </div>
               </td>
             </tr>
             <tr

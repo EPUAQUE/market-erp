@@ -9,6 +9,7 @@ import { unidadesMedidaService } from '@/services/unidadesMedida.service'
 import { resolverImagenUrl } from '@/utils/imagenUrl'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Producto } from '@/types/producto'
 import type { Categoria } from '@/types/categoria'
 import type { Marca } from '@/types/marca'
@@ -450,29 +451,35 @@ onMounted(async () => {
               />
             </td>
             <td class="px-4 py-2 whitespace-nowrap">
-              <RouterLink
-                v-if="permissions.can('PRODUCTOS_VER')"
-                :to="`/productos/${producto.id}/tiendas`"
-                class="mr-3 text-mk-primary hover:underline"
-              >
-                Tiendas
-              </RouterLink>
-              <button
-                v-if="permissions.can('PRODUCTOS_EDITAR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="abrirEditar(producto)"
-              >
-                Editar
-              </button>
-              <button
-                v-if="permissions.can('PRODUCTOS_EDITAR')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="alternarEstado(producto)"
-              >
-                {{ producto.activo ? 'Desactivar' : 'Activar' }}
-              </button>
+              <div class="mk-row-actions">
+                <RouterLink
+                  v-if="permissions.can('PRODUCTOS_VER')"
+                  :to="`/productos/${producto.id}/tiendas`"
+                  class="mk-row-btn"
+                  title="Ver tiendas"
+                >
+                  <ActionIcon name="store" />
+                </RouterLink>
+                <button
+                  v-if="permissions.can('PRODUCTOS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  title="Editar"
+                  @click="abrirEditar(producto)"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+                <button
+                  v-if="permissions.can('PRODUCTOS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  :class="producto.activo ? 'mk-row-btn-danger' : 'mk-row-btn-success'"
+                  :title="producto.activo ? 'Desactivar' : 'Activar'"
+                  @click="alternarEstado(producto)"
+                >
+                  <ActionIcon name="power" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

@@ -124,6 +124,38 @@ body {
     background-color: rgb(var(--mk-text-muted) / 0.12);
     color: rgb(var(--mk-text-muted));
   }
+
+  .mk-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .mk-row-btn {
+    display: inline-flex;
+    height: 1.625rem;
+    width: 1.625rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.4375rem;
+    border-width: 1px;
+    border-color: rgb(var(--mk-border));
+    background-color: rgb(var(--mk-surface));
+    color: rgb(var(--mk-info));
+  }
+  .mk-row-btn svg {
+    height: 0.8125rem;
+    width: 0.8125rem;
+  }
+  .mk-row-btn-danger {
+    color: rgb(var(--mk-danger));
+  }
+  .mk-row-btn-success {
+    color: rgb(var(--mk-success));
+  }
+  .mk-row-btn-neutral {
+    color: rgb(var(--mk-text-muted));
+  }
 }
 
 /* En oscuro, el mismo 0.12/0.14 de opacidad queda casi invisible contra un

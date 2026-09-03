@@ -7,6 +7,7 @@ import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { FrecuenciaGasto, GastoProgramado } from '@/types/gastoProgramado'
 
 const {
@@ -300,45 +301,52 @@ onMounted(async () => {
               />
             </td>
             <td class="px-4 py-2">
-              <button
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="toggleDetalle(gasto)"
-              >
-                {{ detalleAbiertoId === gasto.id ? 'Ocultar' : 'Ver pagos' }}
-              </button>
-              <button
-                v-if="permissions.can('GASTOS_PROGRAMADOS_EDITAR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="abrirEditar(gasto)"
-              >
-                Editar
-              </button>
-              <button
-                v-if="puedeGenerarPago(gasto) && permissions.can('GASTOS_PROGRAMADOS_GENERAR_PAGO')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="tiendaId !== null && generarPago(tiendaId, gasto)"
-              >
-                Generar pago
-              </button>
-              <button
-                v-if="gasto.activo && permissions.can('GASTOS_PROGRAMADOS_EDITAR')"
-                type="button"
-                class="text-mk-danger hover:underline"
-                @click="tiendaId !== null && desactivar(tiendaId, gasto)"
-              >
-                Desactivar
-              </button>
-              <button
-                v-else-if="permissions.can('GASTOS_PROGRAMADOS_EDITAR')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="tiendaId !== null && activar(tiendaId, gasto)"
-              >
-                Activar
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  type="button"
+                  class="mk-row-btn mk-row-btn-neutral"
+                  :title="detalleAbiertoId === gasto.id ? 'Ocultar' : 'Ver pagos'"
+                  @click="toggleDetalle(gasto)"
+                >
+                  <ActionIcon name="eye" />
+                </button>
+                <button
+                  v-if="permissions.can('GASTOS_PROGRAMADOS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  title="Editar"
+                  @click="abrirEditar(gasto)"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+                <button
+                  v-if="puedeGenerarPago(gasto) && permissions.can('GASTOS_PROGRAMADOS_GENERAR_PAGO')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-success"
+                  title="Generar pago"
+                  @click="tiendaId !== null && generarPago(tiendaId, gasto)"
+                >
+                  <ActionIcon name="cash" />
+                </button>
+                <button
+                  v-if="gasto.activo && permissions.can('GASTOS_PROGRAMADOS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-danger"
+                  title="Desactivar"
+                  @click="tiendaId !== null && desactivar(tiendaId, gasto)"
+                >
+                  <ActionIcon name="power" />
+                </button>
+                <button
+                  v-else-if="permissions.can('GASTOS_PROGRAMADOS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn mk-row-btn-success"
+                  title="Activar"
+                  @click="tiendaId !== null && activar(tiendaId, gasto)"
+                >
+                  <ActionIcon name="power" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

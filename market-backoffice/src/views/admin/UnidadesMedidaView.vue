@@ -4,6 +4,7 @@ import { useUnidadesMedida } from '@/composables/useUnidadesMedida'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { UnidadMedida } from '@/types/unidadMedida'
 
 const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } =
@@ -168,14 +169,17 @@ onMounted(cargar)
             <td class="px-4 py-2">{{ unidad.nombre }}</td>
             <td class="px-4 py-2">{{ unidad.abreviacion }}</td>
             <td class="px-4 py-2">
-              <button
-                v-if="permissions.can('UNIDADES_MEDIDA_EDITAR')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="abrirEditar(unidad)"
-              >
-                Editar
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  v-if="permissions.can('UNIDADES_MEDIDA_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  title="Editar"
+                  @click="abrirEditar(unidad)"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

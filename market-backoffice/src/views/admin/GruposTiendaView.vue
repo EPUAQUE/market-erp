@@ -5,6 +5,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { GrupoTienda } from '@/types/grupoTienda'
 
 const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado } =
@@ -209,22 +210,27 @@ onMounted(cargar)
               />
             </td>
             <td class="px-4 py-2">
-              <button
-                v-if="permissions.can('GRUPOS_TIENDA_EDITAR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="abrirEditar(grupo)"
-              >
-                Editar
-              </button>
-              <button
-                v-if="permissions.can('GRUPOS_TIENDA_EDITAR')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="alternarEstado(grupo)"
-              >
-                {{ grupo.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  v-if="permissions.can('GRUPOS_TIENDA_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  title="Editar"
+                  @click="abrirEditar(grupo)"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+                <button
+                  v-if="permissions.can('GRUPOS_TIENDA_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  :class="grupo.estado === 'ACTIVO' ? 'mk-row-btn-danger' : 'mk-row-btn-success'"
+                  :title="grupo.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'"
+                  @click="alternarEstado(grupo)"
+                >
+                  <ActionIcon name="power" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

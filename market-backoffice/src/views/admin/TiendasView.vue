@@ -6,6 +6,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
+import ActionIcon from '@/components/common/ActionIcon.vue'
 import type { Tienda } from '@/types/tienda'
 
 const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar, alternarEstado } =
@@ -285,22 +286,27 @@ onMounted(() => {
               />
             </td>
             <td class="px-4 py-2">
-              <button
-                v-if="permissions.can('TIENDAS_EDITAR')"
-                type="button"
-                class="mr-3 text-mk-primary hover:underline"
-                @click="abrirEditar(tienda)"
-              >
-                Editar
-              </button>
-              <button
-                v-if="permissions.can('TIENDAS_EDITAR')"
-                type="button"
-                class="text-mk-primary hover:underline"
-                @click="alternarEstado(tienda)"
-              >
-                {{ tienda.estado === 'ACTIVA' ? 'Desactivar' : 'Activar' }}
-              </button>
+              <div class="mk-row-actions">
+                <button
+                  v-if="permissions.can('TIENDAS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  title="Editar"
+                  @click="abrirEditar(tienda)"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+                <button
+                  v-if="permissions.can('TIENDAS_EDITAR')"
+                  type="button"
+                  class="mk-row-btn"
+                  :class="tienda.estado === 'ACTIVA' ? 'mk-row-btn-danger' : 'mk-row-btn-success'"
+                  :title="tienda.estado === 'ACTIVA' ? 'Desactivar' : 'Activar'"
+                  @click="alternarEstado(tienda)"
+                >
+                  <ActionIcon name="power" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

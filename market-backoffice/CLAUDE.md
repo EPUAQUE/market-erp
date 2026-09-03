@@ -212,15 +212,23 @@ cualquier cálculo de caja.
 ## Design system
 
 Real brand as of the latest redesign (verde petróleo / esmeralda / ámbar ERP look —
-not the old generic blue). Light-only (no dark mode — deliberately dropped when the
-palette was set; the old `tokens.css` had a `prefers-color-scheme: dark` block, this
-one doesn't).
+not the old generic blue). **Light + dark mode** (added 2026-09-02, based on client-
+supplied Avalon/PrimeVue reference screenshots in `market-design/`): light is always
+the default on load, never follows OS `prefers-color-scheme`; each user opts into dark
+via a toggle, persisted in `localStorage` (`inven365-tema`) and owned by `theme.store.ts`
+(Pinia). Theme is applied via `data-theme="dark"|"light"` on `<html>`, not a `.dark`
+class — set synchronously by an inline script in `index.html`'s `<head>` (before the
+Vue bundle loads) to avoid a flash on reload.
 
 - Tokens in `src/styles/tokens.css` are **RGB channels** (`--mk-*`) so Tailwind opacity
   works: `rgb(var(--mk-primary) / <alpha>)`. Key ones: `--mk-brand` (petróleo #0F4C5C —
   sidebar), `--mk-primary` (esmeralda #2E8B57 — buttons/active state), `--mk-accent`
   (ámbar #D9A441), `--mk-bg` (#F8FAFC), plus semantic state tokens `--mk-success`,
-  `--mk-pending`, `--mk-overdue`, `--mk-danger`, `--mk-info`.
+  `--mk-pending`, `--mk-overdue`, `--mk-danger`, `--mk-info`. A `:root[data-theme='dark']`
+  block redefines the surface/text/border/semantic tokens for dark mode — `--mk-brand`/
+  `--mk-primary`/`--mk-accent` are deliberately NOT redefined, so brand color stays
+  identical in both themes. `main.css` adds flat (non-nested) dark-mode overrides for
+  `.mk-badge-*` opacity, since dark badges need a higher fill opacity to stay legible.
 - Font: **Plus Jakarta Sans** (loaded via Google Fonts `@import` in `main.css`) for
   everything — no separate mono/serif face.
 - Reusable component classes in `src/styles/main.css` `@layer components`: `mk-card`
@@ -228,6 +236,14 @@ one doesn't).
   `mk-btn-ghost` / `mk-btn-danger`, `mk-input`, `mk-num` (tabular figures), `mk-scroll-x`,
   and `mk-badge` / `mk-badge-{success,pending,overdue,danger,info,neutral}` — soft pill
   status tags. Prefer these over ad-hoc utility soup.
+- **Create/edit forms**: the 14 modules with a real "create/edit this entity" form use
+  the shared `src/components/common/ModalDialog.vue` (`v-model` + `:title`, `Teleport`
+  to `body`) instead of an inline `v-if` block — close only via its X button or an
+  explicit Cancelar button inside the form (no backdrop-click or Escape close, by
+  design, to avoid losing typed data). Deliberately NOT converted: CxP/CxC's
+  cobro/pago sub-forms (embedded in an existing account's detail, not a create-the-
+  entity form), Caja's turno actions, and FEL's persistent emitir form — none match
+  the "Nuevo X" pattern.
 - **Status badges**: every module that renders an `estado`/`activo` column uses the
   shared `src/components/common/EstadoBadge.vue` (`:variant` + `:label` props) instead
   of raw text — map each module's own enum values to one of the 6 variants locally in

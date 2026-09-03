@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inven365 · Backoffice</title>
+    <script>
+      // Se aplica antes de pintar para que un usuario que ya eligió oscuro
+      // no vea un parpadeo a claro al recargar — theme.store.ts usa la misma
+      // clave y solo confirma este valor al montar, nunca lo pisa.
+      try {
+        if (localStorage.getItem('inven365-tema') === 'oscuro') {
+          document.documentElement.setAttribute('data-theme', 'dark')
+        }
+      } catch (e) {}
+    </script>
     <link
       rel="icon"
       type="image/svg+xml"

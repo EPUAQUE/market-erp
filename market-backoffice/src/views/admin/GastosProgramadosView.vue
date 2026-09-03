@@ -6,6 +6,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { FrecuenciaGasto, GastoProgramado } from '@/types/gastoProgramado'
 
 const {
@@ -80,6 +81,8 @@ function puedeGenerarPago(gasto: GastoProgramado): boolean {
   return gasto.activo && new Date(gasto.proximaFecha).getTime() <= Date.now()
 }
 
+const modalTitle = computed(() => (editandoId.value !== null ? 'Editar gasto' : 'Nuevo gasto'))
+
 const COLUMNAS_FILTRO: FiltroColumna<GastoProgramado>[] = [
   { clave: 'concepto', tipo: 'texto', valor: (g) => g.concepto },
   {
@@ -141,63 +144,74 @@ onMounted(async () => {
         v-if="permissions.can('GASTOS_PROGRAMADOS_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirCrear()"
+        @click="abrirCrear()"
       >
-        {{ showForm && editandoId === null ? 'Cancelar' : 'Nuevo gasto' }}
+        Nuevo gasto
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Concepto</label>
-          <input
-            v-model="form.concepto"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
+    <ModalDialog v-model="showForm" :title="modalTitle">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Concepto</label>
+            <input
+              v-model="form.concepto"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Monto</label>
+            <input
+              v-model="form.monto"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Frecuencia</label>
+            <select
+              v-model="form.frecuencia"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option v-for="f in FRECUENCIAS" :key="f" :value="f">{{ f }}</option>
+            </select>
+          </div>
+          <div v-if="editandoId === null" class="space-y-1">
+            <label class="text-sm font-medium">Fecha de inicio</label>
+            <input
+              v-model="form.fechaInicio"
+              type="datetime-local"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Monto</label>
-          <input
-            v-model="form.monto"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Frecuencia</label>
-          <select
-            v-model="form.frecuencia"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          >
-            <option v-for="f in FRECUENCIAS" :key="f" :value="f">{{ f }}</option>
-          </select>
-        </div>
-        <div v-if="editandoId === null" class="space-y-1">
-          <label class="text-sm font-medium">Fecha de inicio</label>
-          <input
-            v-model="form.fechaInicio"
-            type="datetime-local"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-      </div>
 
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Guardando…' : editandoId !== null ? 'Guardar cambios' : 'Crear' }}
-      </button>
-    </form>
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ saveLoading ? 'Guardando…' : editandoId !== null ? 'Guardar cambios' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
 
     <div class="flex items-center gap-2">
       <input

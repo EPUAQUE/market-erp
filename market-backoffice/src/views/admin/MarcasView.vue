@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useMarcas } from '@/composables/useMarcas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { Marca } from '@/types/marca'
 
 const { items, listLoading, listError, saveLoading, saveError, cargar, crear, actualizar } = useMarcas()
@@ -20,6 +21,8 @@ const {
   limpiarFiltros,
   hayFiltrosActivos,
 } = useFiltrosTabla(items, COLUMNAS_FILTRO)
+
+const modalTitle = computed(() => (editingId.value !== null ? 'Editar marca' : 'Nueva marca'))
 
 function abrirCrear() {
   editingId.value = null
@@ -69,31 +72,42 @@ onMounted(cargar)
         v-if="permissions.can('MARCAS_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirCrear()"
+        @click="abrirCrear()"
       >
-        {{ showForm ? 'Cancelar' : 'Nueva marca' }}
+        Nueva marca
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="space-y-1">
-        <label class="text-sm font-medium">Nombre</label>
-        <input
-          v-model="nombre"
-          type="text"
-          required
-          class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
-        />
-      </div>
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear' }}
-      </button>
-    </form>
+    <ModalDialog v-model="showForm" :title="modalTitle">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="space-y-1">
+          <label class="text-sm font-medium">Nombre</label>
+          <input
+            v-model="nombre"
+            type="text"
+            required
+            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+          />
+        </div>
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
 
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">

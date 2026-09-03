@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useUserStore } from '@/stores/user.store'
 import { usePermissionsStore } from '@/stores/permissions.store'
+import { useThemeStore } from '@/stores/theme.store'
 
 interface NavItem {
   label: string
@@ -21,6 +22,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const permissions = usePermissionsStore()
+const theme = useThemeStore()
 
 const navGroups: NavGroup[] = [
   {
@@ -222,6 +224,42 @@ async function onLogout() {
               {{ action.label }}
             </RouterLink>
           </div>
+
+          <button
+            type="button"
+            class="mk-btn-ghost flex h-9 w-9 items-center justify-center rounded-md"
+            :title="theme.tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+            @click="theme.alternar()"
+          >
+            <svg
+              v-if="theme.tema === 'oscuro'"
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+                stroke-linecap="round"
+              />
+            </svg>
+            <svg
+              v-else
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
 
           <RouterLink
             v-if="permissions.can('NOTIFICACIONES_VER')"

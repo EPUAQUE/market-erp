@@ -125,3 +125,27 @@ body {
     color: rgb(var(--mk-text-muted));
   }
 }
+
+/* En oscuro, el mismo 0.12/0.14 de opacidad queda casi invisible contra un
+   fondo ya oscuro — se sube el piso de opacidad solo para las variantes de
+   badge, sin tocar el resto de componentes que ya heredan bien de los
+   tokens. */
+:root[data-theme='dark'] .mk-badge-success {
+  background-color: rgb(var(--mk-success) / 0.18);
+}
+:root[data-theme='dark'] .mk-badge-pending {
+  background-color: rgb(var(--mk-pending) / 0.2);
+  color: rgb(var(--mk-pending));
+}
+:root[data-theme='dark'] .mk-badge-overdue {
+  background-color: rgb(var(--mk-overdue) / 0.2);
+}
+:root[data-theme='dark'] .mk-badge-danger {
+  background-color: rgb(var(--mk-danger) / 0.18);
+}
+:root[data-theme='dark'] .mk-badge-info {
+  background-color: rgb(var(--mk-info) / 0.2);
+}
+:root[data-theme='dark'] .mk-badge-neutral {
+  background-color: rgb(var(--mk-text-muted) / 0.18);
+}

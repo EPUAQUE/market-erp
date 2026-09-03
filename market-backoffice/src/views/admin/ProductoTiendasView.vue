@@ -7,6 +7,7 @@ import { usePermissionsStore } from '@/stores/permissions.store'
 import { tiendasService } from '@/services/tiendas.service'
 import { formatCurrency } from '@/utils/money'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { ProductoTienda } from '@/types/producto'
 import type { Tienda } from '@/types/tienda'
 
@@ -77,6 +78,8 @@ const {
   hayFiltrosActivos,
 } = useFiltrosTabla(items, COLUMNAS_FILTRO)
 
+const modalTitle = computed(() => (editingId.value !== null ? 'Editar configuración' : 'Asignar a tienda'))
+
 function abrirAsignar() {
   editingId.value = null
   form.value = {
@@ -137,74 +140,85 @@ onMounted(async () => {
         v-if="permissions.can('PRODUCTOS_EDITAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirAsignar()"
+        @click="abrirAsignar()"
       >
-        {{ showForm ? 'Cancelar' : 'Asignar a tienda' }}
+        Asignar a tienda
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Tienda</label>
-          <select
-            v-model="form.tiendaId"
-            required
-            :disabled="editingId !== null"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 disabled:opacity-50"
+    <ModalDialog v-model="showForm" :title="modalTitle">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Tienda</label>
+            <select
+              v-model="form.tiendaId"
+              required
+              :disabled="editingId !== null"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 disabled:opacity-50"
+            >
+              <option value="" disabled>Seleccione…</option>
+              <option v-for="t in tiendasDisponibles" :key="t.id" :value="t.id">{{ t.nombre }}</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Precio de venta</label>
+            <input
+              v-model="form.precioVenta"
+              type="text"
+              inputmode="decimal"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Stock mínimo</label>
+            <input
+              v-model="form.stockMinimo"
+              type="text"
+              inputmode="decimal"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Stock máximo</label>
+            <input
+              v-model="form.stockMaximo"
+              type="text"
+              inputmode="decimal"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="permitirVenta" v-model="form.permitirVenta" type="checkbox" />
+            <label for="permitirVenta" class="text-sm">Permite venta</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="permitirIngreso" v-model="form.permitirIngreso" type="checkbox" />
+            <label for="permitirIngreso" class="text-sm">Permite ingreso de inventario</label>
+          </div>
+        </div>
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
           >
-            <option value="" disabled>Seleccione…</option>
-            <option v-for="t in tiendasDisponibles" :key="t.id" :value="t.id">{{ t.nombre }}</option>
-          </select>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Asignar' }}
+          </button>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Precio de venta</label>
-          <input
-            v-model="form.precioVenta"
-            type="text"
-            inputmode="decimal"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Stock mínimo</label>
-          <input
-            v-model="form.stockMinimo"
-            type="text"
-            inputmode="decimal"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Stock máximo</label>
-          <input
-            v-model="form.stockMaximo"
-            type="text"
-            inputmode="decimal"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <input id="permitirVenta" v-model="form.permitirVenta" type="checkbox" />
-          <label for="permitirVenta" class="text-sm">Permite venta</label>
-        </div>
-        <div class="flex items-center gap-2">
-          <input id="permitirIngreso" v-model="form.permitirIngreso" type="checkbox" />
-          <label for="permitirIngreso" class="text-sm">Permite ingreso de inventario</label>
-        </div>
-      </div>
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Asignar' }}
-      </button>
-    </form>
+      </form>
+    </ModalDialog>
 
     <div class="flex items-center gap-2">
       <input

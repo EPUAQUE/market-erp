@@ -6,6 +6,7 @@ import { useProductos } from '@/composables/useProductos'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { Traslado } from '@/types/traslado'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
 
@@ -138,85 +139,100 @@ onMounted(async () => {
         v-if="permissions.can('TRASLADOS_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirCrear()"
+        @click="abrirCrear()"
       >
-        {{ showForm ? 'Cancelar' : 'Nuevo traslado' }}
+        Nuevo traslado
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Tienda origen</label>
-          <select
-            v-model="form.tiendaOrigenId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          >
-            <option value="" disabled>Seleccione…</option>
-            <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Tienda destino</label>
-          <select
-            v-model="form.tiendaDestinoId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          >
-            <option value="" disabled>Seleccione…</option>
-            <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="space-y-2">
-        <label class="text-sm font-medium">Líneas</label>
-        <div v-for="(linea, index) in form.lineas" :key="index" class="grid gap-3 sm:grid-cols-3">
-          <select
-            v-model="linea.productoId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
-          >
-            <option value="" disabled>Producto…</option>
-            <option v-for="producto in productos" :key="producto.id" :value="producto.id">
-              {{ producto.nombre }}
-            </option>
-          </select>
-          <div class="flex gap-2">
-            <input
-              v-model="linea.cantidad"
-              type="number"
-              step="1"
-              min="1"
+    <ModalDialog v-model="showForm" title="Nuevo traslado" max-width="max-w-2xl">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Tienda origen</label>
+            <select
+              v-model="form.tiendaOrigenId"
               required
-              placeholder="Cantidad"
               class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-            />
-            <button
-              type="button"
-              class="text-mk-danger disabled:opacity-40"
-              :disabled="form.lineas.length <= 1"
-              @click="quitarLinea(index)"
             >
-              Quitar
-            </button>
+              <option value="" disabled>Seleccione…</option>
+              <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">
+                {{ tienda.nombre }}
+              </option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Tienda destino</label>
+            <select
+              v-model="form.tiendaDestinoId"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="" disabled>Seleccione…</option>
+              <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">
+                {{ tienda.nombre }}
+              </option>
+            </select>
           </div>
         </div>
-        <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
-          + Agregar línea
-        </button>
-      </div>
 
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Guardando…' : 'Crear' }}
-      </button>
-    </form>
+        <div class="space-y-2">
+          <label class="text-sm font-medium">Líneas</label>
+          <div v-for="(linea, index) in form.lineas" :key="index" class="grid gap-3 sm:grid-cols-3">
+            <select
+              v-model="linea.productoId"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+            >
+              <option value="" disabled>Producto…</option>
+              <option v-for="producto in productos" :key="producto.id" :value="producto.id">
+                {{ producto.nombre }}
+              </option>
+            </select>
+            <div class="flex gap-2">
+              <input
+                v-model="linea.cantidad"
+                type="number"
+                step="1"
+                min="1"
+                required
+                placeholder="Cantidad"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+              />
+              <button
+                type="button"
+                class="text-mk-danger disabled:opacity-40"
+                :disabled="form.lineas.length <= 1"
+                @click="quitarLinea(index)"
+              >
+                Quitar
+              </button>
+            </div>
+          </div>
+          <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
+            + Agregar línea
+          </button>
+        </div>
+
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ saveLoading ? 'Guardando…' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
 
     <div class="flex items-center gap-2">
       <input

@@ -10,6 +10,7 @@ import { resolverImagenUrl } from '@/utils/imagenUrl'
 import { formatCurrency, calcularSubtotal } from '@/utils/money'
 import { productosService } from '@/services/productos.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { MetodoPago, Venta } from '@/types/venta'
 import type { ProductoTienda } from '@/types/producto'
 import type { EstadoBadgeVariant } from '@/components/common/EstadoBadge.vue'
@@ -274,127 +275,138 @@ onMounted(async () => {
         v-if="permissions.can('VENTAS_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirCrear()"
+        @click="abrirCrear()"
       >
-        {{ showForm ? 'Cancelar' : 'Nueva venta' }}
+        Nueva venta
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="space-y-1">
-        <label class="text-sm font-medium">Cliente</label>
-        <input
-          v-model="busquedaCliente"
-          type="text"
-          placeholder="Buscar por NIT o nombre…"
-          class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
-        />
-        <select
-          v-model="form.clienteId"
-          required
-          class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
-        >
-          <option value="" disabled>Seleccione…</option>
-          <option v-for="cliente in clientesFiltrados" :key="cliente.id" :value="cliente.id">
-            {{ cliente.nombre }}{{ cliente.nit ? ` — NIT: ${cliente.nit}` : '' }}
-          </option>
-        </select>
-      </div>
+    <ModalDialog v-model="showForm" title="Nueva venta" max-width="max-w-3xl">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="space-y-1">
+          <label class="text-sm font-medium">Cliente</label>
+          <input
+            v-model="busquedaCliente"
+            type="text"
+            placeholder="Buscar por NIT o nombre…"
+            class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
+          />
+          <select
+            v-model="form.clienteId"
+            required
+            class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
+          >
+            <option value="" disabled>Seleccione…</option>
+            <option v-for="cliente in clientesFiltrados" :key="cliente.id" :value="cliente.id">
+              {{ cliente.nombre }}{{ cliente.nit ? ` — NIT: ${cliente.nit}` : '' }}
+            </option>
+          </select>
+        </div>
 
-      <div class="space-y-1">
-        <label class="text-sm font-medium">Método de pago</label>
-        <select
-          v-model="form.metodoPago"
-          required
-          class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
-        >
-          <option value="" disabled>Seleccione…</option>
-          <option v-for="metodo in METODOS_PAGO" :key="metodo.valor" :value="metodo.valor">
-            {{ metodo.etiqueta }}
-          </option>
-        </select>
-      </div>
+        <div class="space-y-1">
+          <label class="text-sm font-medium">Método de pago</label>
+          <select
+            v-model="form.metodoPago"
+            required
+            class="mk-input w-full max-w-sm rounded border border-mk-border bg-transparent px-3 py-2"
+          >
+            <option value="" disabled>Seleccione…</option>
+            <option v-for="metodo in METODOS_PAGO" :key="metodo.valor" :value="metodo.valor">
+              {{ metodo.etiqueta }}
+            </option>
+          </select>
+        </div>
 
-      <div class="space-y-2">
-        <label class="text-sm font-medium">Líneas</label>
-        <div
-          v-for="(linea, index) in form.lineas"
-          :key="index"
-          class="grid items-center gap-3 sm:grid-cols-12"
-        >
-          <div class="flex items-center gap-2 sm:col-span-4">
-            <img
-              v-if="linea.productoId && imagenProducto(Number(linea.productoId))"
-              :src="imagenProducto(Number(linea.productoId))"
-              alt=""
-              class="h-9 w-9 shrink-0 rounded border border-mk-border object-cover"
-            />
-            <select
-              v-model="linea.productoId"
+        <div class="space-y-2">
+          <label class="text-sm font-medium">Líneas</label>
+          <div
+            v-for="(linea, index) in form.lineas"
+            :key="index"
+            class="grid items-center gap-3 sm:grid-cols-12"
+          >
+            <div class="flex items-center gap-2 sm:col-span-4">
+              <img
+                v-if="linea.productoId && imagenProducto(Number(linea.productoId))"
+                :src="imagenProducto(Number(linea.productoId))"
+                alt=""
+                class="h-9 w-9 shrink-0 rounded border border-mk-border object-cover"
+              />
+              <select
+                v-model="linea.productoId"
+                required
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+                @change="onSeleccionarProducto(index)"
+              >
+                <option value="" disabled>Producto…</option>
+                <option v-for="producto in productos" :key="producto.id" :value="producto.id">
+                  {{ producto.nombre }}
+                </option>
+              </select>
+            </div>
+            <input
+              v-model="linea.cantidad"
+              type="number"
+              step="1"
+              min="1"
               required
-              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-              @change="onSeleccionarProducto(index)"
+              placeholder="Cantidad"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+              @input="onCantidadOPrecioUnitarioInput(linea)"
+            />
+            <input
+              v-model="linea.precioUnitario"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              placeholder="Precio unitario"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+              @input="onCantidadOPrecioUnitarioInput(linea)"
+            />
+            <input
+              v-model="linea.subtotal"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Subtotal"
+              class="mk-input mk-num w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
+              @input="onSubtotalInput(linea)"
+              @blur="onSubtotalBlur(linea)"
+            />
+            <button
+              type="button"
+              class="text-mk-danger disabled:opacity-40 sm:col-span-2"
+              :disabled="form.lineas.length <= 1"
+              @click="quitarLinea(index)"
             >
-              <option value="" disabled>Producto…</option>
-              <option v-for="producto in productos" :key="producto.id" :value="producto.id">
-                {{ producto.nombre }}
-              </option>
-            </select>
+              Quitar
+            </button>
           </div>
-          <input
-            v-model="linea.cantidad"
-            type="number"
-            step="1"
-            min="1"
-            required
-            placeholder="Cantidad"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
-            @input="onCantidadOPrecioUnitarioInput(linea)"
-          />
-          <input
-            v-model="linea.precioUnitario"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-            placeholder="Precio unitario"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
-            @input="onCantidadOPrecioUnitarioInput(linea)"
-          />
-          <input
-            v-model="linea.subtotal"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Subtotal"
-            class="mk-input mk-num w-full rounded border border-mk-border bg-transparent px-3 py-2 sm:col-span-2"
-            @input="onSubtotalInput(linea)"
-            @blur="onSubtotalBlur(linea)"
-          />
+          <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
+            + Agregar línea
+          </button>
+          <p class="mk-num text-sm font-semibold">Total: {{ formatCurrency(totalFormulario) }}</p>
+        </div>
+
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
           <button
             type="button"
-            class="text-mk-danger disabled:opacity-40 sm:col-span-2"
-            :disabled="form.lineas.length <= 1"
-            @click="quitarLinea(index)"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
           >
-            Quitar
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ saveLoading ? 'Guardando…' : 'Crear' }}
           </button>
         </div>
-        <button type="button" class="text-sm text-mk-primary hover:underline" @click="agregarLinea">
-          + Agregar línea
-        </button>
-        <p class="mk-num text-sm font-semibold">Total: {{ formatCurrency(totalFormulario) }}</p>
-      </div>
-
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Guardando…' : 'Crear' }}
-      </button>
-    </form>
+      </form>
+    </ModalDialog>
 
     <div class="flex items-center gap-2">
       <input

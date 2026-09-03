@@ -29,3 +29,27 @@
   --mk-danger: 220 107 107; /* #DC6B6B — Error */
   --mk-info: 100 116 139; /* Informativo (azul grisáceo) */
 }
+
+/*
+ * Modo oscuro: solo redefine superficies/texto — la marca (sidebar, botón
+ * primario, acento) se mantiene igual en los dos temas a propósito, para
+ * que el logo/color de marca sea reconocible sin importar el tema elegido.
+ * Activado por ThemeStore vía [data-theme="dark"] en <html> — nunca sigue
+ * el tema del sistema operativo (decisión del cliente: siempre abre claro).
+ */
+:root[data-theme='dark'] {
+  --mk-bg: 16 23 26; /* #10171A */
+  --mk-surface: 23 31 34; /* #171F22 */
+  --mk-surface-2: 35 43 46; /* #232B2E */
+
+  --mk-text: 231 237 236; /* #E7EDEC */
+  --mk-text-muted: 147 163 162; /* #93A3A2 */
+
+  --mk-border: 42 52 55; /* #2A3437 */
+
+  --mk-success: 85 199 138; /* #55C78A */
+  --mk-pending: 232 185 105; /* #E8B969 */
+  --mk-overdue: 232 158 105;
+  --mk-danger: 242 137 125; /* #F2897D */
+  --mk-info: 148 163 184;
+}

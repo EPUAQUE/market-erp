@@ -6,6 +6,7 @@ import { useProductos } from '@/composables/useProductos'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { formatCurrency } from '@/utils/money'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { Inventario, MovimientoInventario, TipoMovimiento } from '@/types/inventario'
 
 const {
@@ -179,68 +180,79 @@ onMounted(async () => {
         v-if="permissions.can('INVENTARIO_AJUSTAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirRegistrarMovimiento()"
+        @click="abrirRegistrarMovimiento()"
       >
-        {{ showForm ? 'Cancelar' : 'Registrar movimiento' }}
+        Registrar movimiento
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="grid gap-3 sm:grid-cols-4">
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Producto</label>
-          <select
-            v-model="form.productoId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+    <ModalDialog v-model="showForm" title="Registrar movimiento">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Producto</label>
+            <select
+              v-model="form.productoId"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="" disabled>Seleccione…</option>
+              <option v-for="producto in productos" :key="producto.id" :value="producto.id">
+                {{ producto.nombre }}
+              </option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Tipo</label>
+            <select
+              v-model="form.tipoMovimiento"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option v-for="tipo in TIPOS_MOVIMIENTO" :key="tipo" :value="tipo">{{ tipo }}</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Cantidad</label>
+            <input
+              v-model="form.cantidad"
+              type="number"
+              step="1"
+              min="1"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Costo unitario</label>
+            <input
+              v-model="form.costoUnitario"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+        </div>
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
           >
-            <option value="" disabled>Seleccione…</option>
-            <option v-for="producto in productos" :key="producto.id" :value="producto.id">
-              {{ producto.nombre }}
-            </option>
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Tipo</label>
-          <select
-            v-model="form.tipoMovimiento"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            <option v-for="tipo in TIPOS_MOVIMIENTO" :key="tipo" :value="tipo">{{ tipo }}</option>
-          </select>
+            {{ saveLoading ? 'Registrando…' : 'Registrar' }}
+          </button>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Cantidad</label>
-          <input
-            v-model="form.cantidad"
-            type="number"
-            step="1"
-            min="1"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Costo unitario</label>
-          <input
-            v-model="form.costoUnitario"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-      </div>
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Registrando…' : 'Registrar' }}
-      </button>
-    </form>
+      </form>
+    </ModalDialog>
 
     <div class="flex items-center gap-2">
       <input

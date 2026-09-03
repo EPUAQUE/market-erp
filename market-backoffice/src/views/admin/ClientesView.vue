@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useClientes } from '@/composables/useClientes'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { Cliente } from '@/types/cliente'
 
 const {
@@ -55,6 +56,8 @@ const {
   limpiarFiltros,
   hayFiltrosActivos,
 } = useFiltrosTabla(items, COLUMNAS_FILTRO)
+
+const modalTitle = computed(() => (editingId.value !== null ? 'Editar cliente' : 'Nuevo cliente'))
 
 function abrirCrear() {
   editingId.value = null
@@ -127,67 +130,78 @@ onMounted(cargar)
         v-if="permissions.can('CLIENTES_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirCrear()"
+        @click="abrirCrear()"
       >
-        {{ showForm ? 'Cancelar' : 'Nuevo cliente' }}
+        Nuevo cliente
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-sm font-medium">NIT</label>
-          <input
-            v-model="form.nit"
-            type="text"
-            placeholder="Opcional — vacío para Consumidor Final"
-            :disabled="editingId !== null"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 disabled:opacity-50"
-          />
+    <ModalDialog v-model="showForm" :title="modalTitle">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">NIT</label>
+            <input
+              v-model="form.nit"
+              type="text"
+              placeholder="Opcional — vacío para Consumidor Final"
+              :disabled="editingId !== null"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 disabled:opacity-50"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Nombre</label>
+            <input
+              v-model="form.nombre"
+              type="text"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Dirección</label>
+            <input
+              v-model="form.direccion"
+              type="text"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Teléfono</label>
+            <input
+              v-model="form.telefono"
+              type="text"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1 sm:col-span-2">
+            <label class="text-sm font-medium">Correo</label>
+            <input
+              v-model="form.correo"
+              type="email"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Nombre</label>
-          <input
-            v-model="form.nombre"
-            type="text"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear' }}
+          </button>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Dirección</label>
-          <input
-            v-model="form.direccion"
-            type="text"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Teléfono</label>
-          <input
-            v-model="form.telefono"
-            type="text"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1 sm:col-span-2">
-          <label class="text-sm font-medium">Correo</label>
-          <input
-            v-model="form.correo"
-            type="email"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-      </div>
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear' }}
-      </button>
-    </form>
+      </form>
+    </ModalDialog>
 
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">

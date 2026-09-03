@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useProductos } from '@/composables/useProductos'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
@@ -8,6 +8,7 @@ import { marcasService } from '@/services/marcas.service'
 import { unidadesMedidaService } from '@/services/unidadesMedida.service'
 import { resolverImagenUrl } from '@/utils/imagenUrl'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { Producto } from '@/types/producto'
 import type { Categoria } from '@/types/categoria'
 import type { Marca } from '@/types/marca'
@@ -106,6 +107,8 @@ function resetImagenForm() {
   archivoImagen.value = null
   previewImagen.value = null
 }
+
+const modalTitle = computed(() => (editingId.value !== null ? 'Editar producto' : 'Nuevo producto'))
 
 function abrirCrear() {
   editingId.value = null
@@ -216,122 +219,133 @@ onMounted(async () => {
         v-if="permissions.can('PRODUCTOS_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showForm ? (showForm = false) : abrirCrear()"
+        @click="abrirCrear()"
       >
-        {{ showForm ? 'Cancelar' : 'Nuevo producto' }}
+        Nuevo producto
       </button>
     </div>
 
-    <form v-if="showForm" class="space-y-3 rounded border border-mk-border p-4" @submit.prevent="onSubmit">
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Código interno</label>
-          <input
-            v-model="form.codigoInterno"
-            type="text"
-            required
-            :disabled="editingId !== null"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 disabled:opacity-50"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Código de barras</label>
-          <input
-            v-model="form.codigoBarras"
-            type="text"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1 sm:col-span-2">
-          <label class="text-sm font-medium">Nombre</label>
-          <input
-            v-model="form.nombre"
-            type="text"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1 sm:col-span-2">
-          <label class="text-sm font-medium">Descripción</label>
-          <input
-            v-model="form.descripcion"
-            type="text"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1 sm:col-span-2">
-          <label class="text-sm font-medium">Descripción corta</label>
-          <input
-            v-model="form.descripcionCorta"
-            type="text"
-            maxlength="100"
-            placeholder="Para imprimir en factura/recibo y mostrar en el POS"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Categoría</label>
-          <select
-            v-model="form.categoriaId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          >
-            <option value="" disabled>Seleccione…</option>
-            <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Marca</label>
-          <select
-            v-model="form.marcaId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          >
-            <option value="" disabled>Seleccione…</option>
-            <option v-for="m in marcas" :key="m.id" :value="m.id">{{ m.nombre }}</option>
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Unidad de medida</label>
-          <select
-            v-model="form.unidadMedidaId"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          >
-            <option value="" disabled>Seleccione…</option>
-            <option v-for="u in unidades" :key="u.id" :value="u.id">
-              {{ u.nombre }} ({{ u.abreviacion }})
-            </option>
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Imagen</label>
-          <div class="flex items-center gap-3">
-            <img
-              v-if="previewImagen || imagenActualUrl"
-              :src="previewImagen ?? resolverImagenUrl(imagenActualUrl)"
-              alt=""
-              class="h-14 w-14 rounded border border-mk-border object-cover"
-            />
+    <ModalDialog v-model="showForm" :title="modalTitle" max-width="max-w-2xl">
+      <form class="space-y-3" @submit.prevent="onSubmit">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Código interno</label>
             <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
-              @change="onArchivoImagenSeleccionado"
+              v-model="form.codigoInterno"
+              type="text"
+              required
+              :disabled="editingId !== null"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 disabled:opacity-50"
             />
           </div>
-          <p class="text-xs text-mk-text/60">JPG, PNG o WEBP — máximo 5MB.</p>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Código de barras</label>
+            <input
+              v-model="form.codigoBarras"
+              type="text"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1 sm:col-span-2">
+            <label class="text-sm font-medium">Nombre</label>
+            <input
+              v-model="form.nombre"
+              type="text"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1 sm:col-span-2">
+            <label class="text-sm font-medium">Descripción</label>
+            <input
+              v-model="form.descripcion"
+              type="text"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1 sm:col-span-2">
+            <label class="text-sm font-medium">Descripción corta</label>
+            <input
+              v-model="form.descripcionCorta"
+              type="text"
+              maxlength="100"
+              placeholder="Para imprimir en factura/recibo y mostrar en el POS"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Categoría</label>
+            <select
+              v-model="form.categoriaId"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="" disabled>Seleccione…</option>
+              <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Marca</label>
+            <select
+              v-model="form.marcaId"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="" disabled>Seleccione…</option>
+              <option v-for="m in marcas" :key="m.id" :value="m.id">{{ m.nombre }}</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Unidad de medida</label>
+            <select
+              v-model="form.unidadMedidaId"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="" disabled>Seleccione…</option>
+              <option v-for="u in unidades" :key="u.id" :value="u.id">
+                {{ u.nombre }} ({{ u.abreviacion }})
+              </option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Imagen</label>
+            <div class="flex items-center gap-3">
+              <img
+                v-if="previewImagen || imagenActualUrl"
+                :src="previewImagen ?? resolverImagenUrl(imagenActualUrl)"
+                alt=""
+                class="h-14 w-14 rounded border border-mk-border object-cover"
+              />
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+                @change="onArchivoImagenSeleccionado"
+              />
+            </div>
+            <p class="text-xs text-mk-text/60">JPG, PNG o WEBP — máximo 5MB.</p>
+          </div>
         </div>
-      </div>
-      <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
-      <button
-        type="submit"
-        :disabled="saveLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear' }}
-      </button>
-    </form>
+        <p v-if="saveError" class="text-sm text-mk-danger" role="alert">{{ saveError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showForm = false"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saveLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ saveLoading ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
 
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">

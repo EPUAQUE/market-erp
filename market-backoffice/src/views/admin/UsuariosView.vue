@@ -7,6 +7,7 @@ import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTab
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { rolesService } from '@/services/roles.service'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
+import ModalDialog from '@/components/common/ModalDialog.vue'
 import type { EstadoUsuario, Usuario } from '@/types/usuario'
 import type { Rol } from '@/types/rol'
 
@@ -223,99 +224,108 @@ onMounted(async () => {
         v-if="permissions.can('USUARIOS_CREAR')"
         type="button"
         class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="showCreateForm ? (showCreateForm = false) : abrirCrear()"
+        @click="abrirCrear()"
       >
-        {{ showCreateForm ? 'Cancelar' : 'Nuevo usuario' }}
+        Nuevo usuario
       </button>
     </div>
 
-    <form
-      v-if="showCreateForm"
-      class="space-y-3 rounded border border-mk-border p-4"
-      @submit.prevent="onCrear"
-    >
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Nombre</label>
-          <input
-            v-model="newNombre"
-            type="text"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
+    <ModalDialog v-model="showCreateForm" title="Nuevo usuario" max-width="max-w-2xl">
+      <form class="space-y-3" @submit.prevent="onCrear">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Nombre</label>
+            <input
+              v-model="newNombre"
+              type="text"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Teléfono</label>
+            <input
+              v-model="newTelefono"
+              type="tel"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1 sm:col-span-2">
+            <label class="text-sm font-medium">Correo electrónico</label>
+            <input
+              v-model="newCorreo"
+              type="email"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Usuario</label>
+            <input
+              v-model="newUsername"
+              type="text"
+              required
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+            <p class="text-xs text-mk-text/60">Código con el que ingresa a la aplicación.</p>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Contraseña</label>
+            <input
+              v-model="newPassword"
+              type="password"
+              required
+              minlength="12"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Tienda</label>
+            <select
+              v-model="newTiendaId"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="">— Sin asignar por ahora —</option>
+              <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">
+                {{ tienda.nombre }}
+              </option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Rol</label>
+            <select
+              v-model="newRolId"
+              class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            >
+              <option value="">— Sin asignar por ahora —</option>
+              <option v-for="rol in roles" :key="rol.id" :value="rol.id">{{ rol.nombre }}</option>
+            </select>
+            <p class="text-xs text-mk-text/60">
+              ADMIN no necesita tienda. Encargado y Cajero (vendedor) sí — sin una no pueden ingresar.
+            </p>
+          </div>
         </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Teléfono</label>
-          <input
-            v-model="newTelefono"
-            type="tel"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1 sm:col-span-2">
-          <label class="text-sm font-medium">Correo electrónico</label>
-          <input
-            v-model="newCorreo"
-            type="email"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Usuario</label>
-          <input
-            v-model="newUsername"
-            type="text"
-            required
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-          <p class="text-xs text-mk-text/60">Código con el que ingresa a la aplicación.</p>
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Contraseña</label>
-          <input
-            v-model="newPassword"
-            type="password"
-            required
-            minlength="12"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Tienda</label>
-          <select
-            v-model="newTiendaId"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+        <p v-if="createError" class="text-sm text-mk-danger" role="alert">{{ createError }}</p>
+        <p v-if="asignarError" class="text-sm text-mk-danger" role="alert">{{ asignarError }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showCreateForm = false"
           >
-            <option value="">— Sin asignar por ahora —</option>
-            <option v-for="tienda in tiendas" :key="tienda.id" :value="tienda.id">{{ tienda.nombre }}</option>
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-sm font-medium">Rol</label>
-          <select
-            v-model="newRolId"
-            class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2"
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="createLoading || asignarLoading"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            <option value="">— Sin asignar por ahora —</option>
-            <option v-for="rol in roles" :key="rol.id" :value="rol.id">{{ rol.nombre }}</option>
-          </select>
-          <p class="text-xs text-mk-text/60">
-            ADMIN no necesita tienda. Encargado y Cajero (vendedor) sí — sin una no pueden ingresar.
-          </p>
+            {{ createLoading ? 'Creando…' : asignarLoading ? 'Asignando tienda…' : 'Crear' }}
+          </button>
         </div>
-      </div>
-      <p v-if="createError" class="text-sm text-mk-danger" role="alert">{{ createError }}</p>
-      <p v-if="asignarError" class="text-sm text-mk-danger" role="alert">{{ asignarError }}</p>
-      <button
-        type="submit"
-        :disabled="createLoading || asignarLoading"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
-        {{ createLoading ? 'Creando…' : asignarLoading ? 'Asignando tienda…' : 'Crear' }}
-      </button>
-    </form>
+      </form>
+    </ModalDialog>
 
     <div class="mk-scroll-x overflow-x-auto rounded border border-mk-border">
       <table class="w-full text-left text-sm">

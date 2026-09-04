@@ -422,7 +422,24 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
   `test/support/venta_sync_fakes.dart` los fakes de `VentaApi`/`LocalStore`
   que ya usaba `sync_engine_test.dart` (Fase 2, ítem anterior), en vez de
   duplicarlos una tercera vez.
-- [ ] Dos dispositivos generan operaciones simultáneamente.
+- [x] Dos dispositivos generan operaciones simultáneamente — cubierto
+  (2026-09-04) en la parte que le toca a este cliente. La concurrencia de
+  stock/saldos en sí ya está probada exhaustivamente contra Postgres real
+  del lado del backend (Fase 3, `market-backend/docs/plan-mejoras.md`:
+  `VentaCreditoConcurrenciaIT`, `CajaConcurrenciaIT`,
+  `CuentaPorCobrarConcurrenciaIT`, etc., y 8 `POST /ventas` concurrentes
+  reales con el mismo `correlationId` devolviendo la misma venta). Nuevo
+  `checkout_notifier_concurrencia_test.dart`: dos `ProviderContainer`
+  (cada uno = un dispositivo, carrito/estado aislados) apuntando a la
+  MISMA instancia de `FakeVentaApiServidor` (un backend compartido),
+  disparando `confirmar()` con `Future.wait` para que de verdad se
+  entrelacen. Dos casos: `correlationId` distintos (dos ventas
+  independientes, ninguna se pisa) y una coincidencia de `correlationId`
+  entre ambos (cada dispositivo genera el suyo con UUID v4 —
+  astronómicamente improbable, no imposible): termina en una sola venta
+  real, y el segundo dispositivo ve éxito, no error, gracias a la misma
+  reconciliación `ventaYaQuedoCompletada` agregada para la respuesta
+  perdida. Solo unitario — no son dos procesos ni dos dispositivos reales.
 - [x] Movimiento de caja procesado con respuesta perdida no se duplica — cubierto con
   tests unitarios (`CajaServiceImplTest`, incluida la colisión de creación
   concurrente simulada) y, desde 2026-08-31, un test de concurrencia real contra

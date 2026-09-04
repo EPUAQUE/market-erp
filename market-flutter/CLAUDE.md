@@ -1373,6 +1373,28 @@ support forcing a transient network failure, which the kill-the-app tests
 don't use (default `0`, i.e. no induced failure). `flutter analyze`/
 `flutter test` clean (79/79).
 
+**Update 2026-09-04 — "dos dispositivos generan operaciones
+simultáneamente" covered for this client's actual share of that risk.**
+Stock/saldo concurrency itself is already proven exhaustively against real
+Postgres on the backend side (Fase 3, `market-backend/docs/plan-mejoras.md`)
+— nothing new needed there. What's genuinely this client's responsibility:
+that two devices with different `correlationId`s never step on each other,
+and that a `correlationId` collision between them (each device generates
+its own via UUID v4 — astronomically unlikely, not impossible) never leaves
+either device showing a failed sale. New
+`test/features/ventas/application/checkout_notifier_concurrencia_test.dart`:
+two `ProviderContainer`s (each a stand-in for one device — separate
+carrito/checkout state) pointed at the SAME `FakeVentaApiServidor` instance
+(one shared backend), firing `confirmar()` via `Future.wait` so the calls
+actually interleave on the event loop instead of running one after the
+other. Distinct `correlationId`s → two independent ventas, neither
+interferes. Same `correlationId` on both → exactly one real venta, and the
+second device's `completar()` hits the identical `409
+ESTADO_VENTA_INVALIDO` race already covered by `ventaYaQuedoCompletada` —
+so both devices see success, not one erroring out. `flutter analyze`/
+`flutter test` clean (81/81). Unit-level only, no two real devices or
+processes involved.
+
 **Pending-with-error visibility — the other plan item, built.** Before this
 phase, `mensajeError`-marked ventas/clientes/movimientos-de-caja were
 excluded from the sync retry (`local_store_io.dart`'s `mensajeErrorIsNull()`

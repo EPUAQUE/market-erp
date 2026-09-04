@@ -1355,6 +1355,24 @@ before awaiting `backendAlcanzableProvider.future`). `flutter analyze`/
 against fakes, not a real killed process on a device with a real Isar file
 on disk.
 
+**Update 2026-09-04 — "cambio entre Wi-Fi y datos durante sincronización"
+covered too, same fakes reused.** New `test/core/sync/sync_engine_reconexion_test.dart`:
+since `backendAlcanzableProvider` only ever exposes "el backend responde o
+no" (never which interface), the only thing that matters about switching
+Wi-Fi↔datos is the transient outage the switch itself causes. Drives the
+override `Stream` by hand — connected (first `crear()` forced to fail with
+a network error, standing in for the switch-in-progress) → disconnected →
+reconnected — and confirms the venta stays queued with no `mensajeError`
+during the gap and syncs exactly once on reconnect (no duplicate from the
+failed attempt). The `VentaApi`/`LocalStore` fakes from the kill-the-app
+tests above were extracted to `test/support/venta_sync_fakes.dart`
+(`FakeVentaApiServidor`, `FakeLocalStoreConVentaPendiente`,
+`ventaPendienteFake`) instead of writing a third copy — `FakeVentaApiServidor`
+gained `fallosDeRedRestantesEnCrear`/`fallosDeRedRestantesEnCompletar` to
+support forcing a transient network failure, which the kill-the-app tests
+don't use (default `0`, i.e. no induced failure). `flutter analyze`/
+`flutter test` clean (79/79).
+
 **Pending-with-error visibility — the other plan item, built.** Before this
 phase, `mensajeError`-marked ventas/clientes/movimientos-de-caja were
 excluded from the sync retry (`local_store_io.dart`'s `mensajeErrorIsNull()`

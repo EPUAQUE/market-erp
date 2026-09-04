@@ -408,7 +408,20 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
   `ProviderContainer` — no es la prueba en tablet Android real con Wi-Fi
   físicamente activo y backend caído de verdad (esa sigue pendiente, ver
   "Pruebas en tablet Android real" más abajo).
-- [ ] Cambio entre Wi-Fi y datos durante sincronización.
+- [x] Cambio entre Wi-Fi y datos durante sincronización — cubierto
+  (2026-09-04) con `sync_engine_reconexion_test.dart`.
+  `backendAlcanzableProvider` no distingue Wi-Fi de datos móviles, solo "el
+  backend responde o no" — lo único que le importa a `SyncEngineNotifier`
+  de ese cambio de interfaz es el corte transitorio que produce mientras el
+  dispositivo conmuta. Simulado manejando a mano el `Stream` que ese
+  provider expondría: conectado (el primer `crear()` falla por red, la
+  conmutación en curso) → sin conexión → reconectado (ya en la otra
+  interfaz). El resultado: la venta queda en la cola sin marcarse con error
+  durante el corte, y al reconectar se sincroniza exactamente una vez (sin
+  duplicar el intento fallido). De paso se extrajeron a
+  `test/support/venta_sync_fakes.dart` los fakes de `VentaApi`/`LocalStore`
+  que ya usaba `sync_engine_test.dart` (Fase 2, ítem anterior), en vez de
+  duplicarlos una tercera vez.
 - [ ] Dos dispositivos generan operaciones simultáneamente.
 - [x] Movimiento de caja procesado con respuesta perdida no se duplica — cubierto con
   tests unitarios (`CajaServiceImplTest`, incluida la colisión de creación

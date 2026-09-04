@@ -5,6 +5,7 @@ import 'package:decimal/decimal.dart';
 class ClientePendienteLocal {
   const ClientePendienteLocal({
     required this.id,
+    required this.correlationId,
     required this.nombre,
     required this.telefono,
     required this.nit,
@@ -15,6 +16,7 @@ class ClientePendienteLocal {
   });
 
   final int id;
+  final String? correlationId;
   final String nombre;
   final String? telefono;
   final String? nit;
@@ -29,6 +31,7 @@ class ClientePendienteLocal {
 /// Datos de un cliente nuevo por encolar — sin `id` todavía.
 class NuevoClientePendiente {
   const NuevoClientePendiente({
+    required this.correlationId,
     required this.nombre,
     required this.telefono,
     required this.nit,
@@ -36,6 +39,7 @@ class NuevoClientePendiente {
     required this.creadaEn,
   });
 
+  final String correlationId;
   final String nombre;
   final String? telefono;
   final String? nit;

@@ -678,6 +678,59 @@ combined with `LocalStore.disponible` being hardcoded `false` on web
 regardless, offline queuing for these two actions needs verification on a
 real Android device/emulator, same as the rest of the offline story.
 
+**Update 2026-09-04 — real idempotency gap found and closed: neither of
+these two ever sent a `correlationId`.** The backend has accepted an
+optional `correlationId` for `AbrirCajaRequest`/`RegistrarMovimientoCajaRequest`/
+`CerrarCajaRequest`/`CrearClienteRequest` since Fase 2 (see the `docs/plan-mejoras.md`
+Fase 2 "Tareas de backend" entry above) — but the "Tareas de Flutter" half
+of that same phase only ever wired it up for ventas
+(`checkout_notifier.dart`'s `nuevoCorrelationId()`). `CajaApi`/`ClientesApi`
+and everything above stayed exactly as first built this phase: zero
+idempotency key, ever. The real, live risk: a `registrarMovimiento()` whose
+response is lost after actually succeeding server-side, then retried
+automatically by `SyncEngineNotifier` on the next reconnect (the queued
+item is retried verbatim, with no key distinguishing "this exact attempt"
+from "a new one") — got processed as a brand-new ingreso/egreso, silently
+doubling real cash in the till. Same shape of bug as the "Sync retry bug"
+already fixed for ventas above, just never extended here.
+
+Fixed: `nuevoCorrelationId()` moved out of `checkout_notifier.dart` into
+`core/util/correlation_id.dart` (still re-exported from
+`checkout_notifier.dart` for `CobroSheet`'s existing import) so
+caja/clientes can reuse it without a features-importing-features tangle.
+`CajaApi.abrir/registrarMovimiento/cerrar` and `ClientesApi.crear` all gained
+an optional `correlationId` param, sent through to the backend.
+`CajaActionsNotifier` generates one fresh per call (`abrir`/
+`registrarMovimiento`/`cerrar` each get their own — there's no "same sheet,
+manual retry" concept for caja's plain dialogs the way `CobroSheet` has for
+ventas, so reuse-across-retry isn't meaningful here; what actually matters
+is that the *offline-queued* copy keeps the *same* key across every
+automatic `SyncEngine` retry, which it now does). `ClienteSelectorSheet`
+does the same for its one `_guardarClienteNuevo()` attempt.
+`MovimientoCajaPendienteIsar`/`ClientePendienteIsar` (and their plain
+`...Local`/`Nuevo...Pendiente` mirrors) gained a nullable `correlationId`
+field — additive-only per this file's Isar migration policy (see "Versión
+de esquema local Isar" below), no version bump needed —
+`local_store_io.dart`'s mapping in both directions, and
+`SyncEngineNotifier._sincronizarMovimientoCaja`/`_sincronizarCliente` now
+forward the stored key on every retry instead of calling the API with none.
+
+New `test/features/caja/application/caja_actions_notifier_test.dart` (the
+first test this feature has ever had): Wi-Fi-with-backend-down queues the
+movimiento with a non-empty `correlationId` and never touches the online
+API; two separate dialog submissions get two independent keys (documenting
+the "no manual-retry reuse" design choice above, not a bug); the online
+path actually sends a distinct key for each of `abrir`/`registrarMovimiento`/
+`cerrar`. `flutter analyze`/`flutter test` clean (84/84). **Clientes got
+the same fix but no new test** — `ClienteSelectorSheet` is a
+`StatefulWidget` with no isolated notifier the way `CajaActionsNotifier`
+is, so verifying it needs new widget-test infrastructure (`pumpWidget` +
+`ProviderScope` overrides), not a direct extension of the fakes-on-a-
+`ProviderContainer` pattern used everywhere else this phase — left as
+follow-up. `ApiClient._refresh()`'s single-flight refresh logic remains
+untested too, same reason: it needs a `Dio` test double, a different kind
+of fake than anything built so far.
+
 ### Dependencias de cola offline — built this phase (Fase 2 parte C, PLAN_MEJORAS.md)
 
 Closes the gap above: a cliente created offline **can now be used

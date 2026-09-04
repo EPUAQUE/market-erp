@@ -252,6 +252,7 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
             telefono: cliente.telefono,
             nit: cliente.nit,
             limiteCredito: cliente.limiteCredito,
+            correlationId: cliente.correlationId,
           );
       ref.invalidate(clientesProvider);
       // No se borra (a diferencia de ventas/movimientos): una venta
@@ -279,6 +280,7 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
             tipo: movimiento.tipo,
             concepto: movimiento.concepto,
             monto: movimiento.monto,
+            correlationId: movimiento.correlationId,
           );
       ref.invalidate(cajaAbiertaProvider(movimiento.tiendaId));
       await store.eliminarMovimientoCajaPendiente(movimiento.id);

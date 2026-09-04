@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/connectivity/backend_reachability_provider.dart';
 import '../../../core/db/local_store_provider.dart';
+import '../../../core/util/correlation_id.dart';
 import '../application/clientes_provider.dart';
 import '../data/cliente.dart';
 import '../data/cliente_pendiente_local.dart';
@@ -61,9 +62,11 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
       _limiteCreditoController.text.trim(),
     );
 
+    final correlationId = nuevoCorrelationId();
     final hayRed = ref.read(backendAlcanzableProvider).value ?? true;
     if (!hayRed) {
       await _guardarClienteNuevoOffline(
+        correlationId: correlationId,
         nombre: nombre,
         telefono: telefono,
         nit: nit,
@@ -80,6 +83,7 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
             telefono: telefono,
             nit: nit,
             limiteCredito: limiteCredito,
+            correlationId: correlationId,
           );
       ref.invalidate(clientesProvider);
       if (mounted) {
@@ -101,6 +105,7 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
   /// y `SyncEngineNotifier` la resuelve al id real una vez que este cliente
   /// sincronice (clientes siempre se drenan antes que ventas).
   Future<void> _guardarClienteNuevoOffline({
+    required String correlationId,
     required String nombre,
     required String? telefono,
     required String? nit,
@@ -118,6 +123,7 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
       }
       final pendienteLocalId = await store.encolarClientePendiente(
         NuevoClientePendiente(
+          correlationId: correlationId,
           nombre: nombre,
           telefono: telefono,
           nit: nit,

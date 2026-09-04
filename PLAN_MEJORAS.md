@@ -966,10 +966,33 @@ de mocking en ese proyecto). Pruebas contractuales de DTOs quedan pendientes.
   que es específicamente un límite de autorización, no un efecto colateral
   de "no hay caja".
 - [ ] Tests Flutter para carrito, checkout, cola, refresh, caja y parsers.
-  Carrito y parsers ya cubiertos en Fase 9; checkout/cola/refresh siguen
-  bloqueados (ver nota de Fase 9: `CheckoutNotifier`/`SyncEngineNotifier`
-  acoplados a `ApiClient.instance`/Isar, sin librería de mocking en ese
-  proyecto).
+  Nota original desactualizada (2026-09-04): "checkout/cola bloqueados, sin
+  librería de mocking" ya no es cierto — resuelto con fakes escritos a mano
+  (sin librería nueva) durante el trabajo de Fase 2 de esta sesión.
+  Carrito y parsers: cubiertos en Fase 9. Checkout: cubierto
+  (`checkout_notifier_test.dart`, `checkout_notifier_concurrencia_test.dart`).
+  Cola (`SyncEngineNotifier`): cubierta (`sync_engine_test.dart`,
+  `sync_engine_reconexion_test.dart`) — primera cobertura que existe de esa
+  clase. Caja: cubierta (`caja_actions_notifier_test.dart`) — de paso se
+  encontró y arregló un gap real: ni `CajaApi` ni `ClientesApi` mandaban
+  `correlationId` desde Flutter pese a que el backend lo soporta desde esta
+  misma fase (`AbrirCajaRequest`/`RegistrarMovimientoCajaRequest`/
+  `CerrarCajaRequest`/`CrearClienteRequest`) — solo ventas quedó conectada en
+  su momento. Un movimiento de caja cuya respuesta se perdiera, reintentado
+  automáticamente por `SyncEngine` al reconectar, se habría procesado como
+  un ingreso/egreso nuevo, duplicando el monto. Arreglado: nuevo
+  `core/util/correlation_id.dart` (`nuevoCorrelationId()`, extraído de
+  `checkout_notifier.dart` para reusarlo desde caja/clientes),
+  `CajaApi`/`ClientesApi` mandan la clave, `CajaActionsNotifier`/
+  `ClienteSelectorSheet` la generan por intento, `MovimientoCajaPendienteIsar`/
+  `ClientePendienteIsar` la persisten (campo nuevo, nullable — aditivo, sin
+  bump de versión de esquema) y `SyncEngine` la reenvía en cada reintento
+  automático del ítem encolado. **Solo Flutter probó caja con tests
+  (clientes quedó arreglado pero sin test nuevo — es un `StatefulWidget` sin
+  notifier aislado, necesitaría infraestructura de widget test nueva para
+  este feature, no una extensión directa del patrón ya usado)**. Refresh
+  (`ApiClient._refresh()`, single-flight) sigue sin cobertura — haría falta
+  un doble de `Dio`, distinto al patrón de fakes usado para lo demás.
 - [x] Tests Vue para guards, refresh, permisos y principales composables.
   `guards.spec.ts` (7 casos: `requiresAuth: false`, refresh silencioso
   exitoso/fallido, `loadAuthorization` fallido, permiso faltante/presente, no

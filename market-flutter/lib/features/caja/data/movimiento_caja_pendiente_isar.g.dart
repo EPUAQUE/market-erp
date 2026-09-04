@@ -23,19 +23,24 @@ const MovimientoCajaPendienteIsarSchema = CollectionSchema(
       name: r'concepto',
       type: IsarType.string,
     ),
-    r'creadaEn': PropertySchema(
+    r'correlationId': PropertySchema(
       id: 1,
+      name: r'correlationId',
+      type: IsarType.string,
+    ),
+    r'creadaEn': PropertySchema(
+      id: 2,
       name: r'creadaEn',
       type: IsarType.dateTime,
     ),
     r'mensajeError': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'mensajeError',
       type: IsarType.string,
     ),
-    r'monto': PropertySchema(id: 3, name: r'monto', type: IsarType.string),
-    r'tiendaId': PropertySchema(id: 4, name: r'tiendaId', type: IsarType.long),
-    r'tipo': PropertySchema(id: 5, name: r'tipo', type: IsarType.string),
+    r'monto': PropertySchema(id: 4, name: r'monto', type: IsarType.string),
+    r'tiendaId': PropertySchema(id: 5, name: r'tiendaId', type: IsarType.long),
+    r'tipo': PropertySchema(id: 6, name: r'tipo', type: IsarType.string),
   },
 
   estimateSize: _movimientoCajaPendienteIsarEstimateSize,
@@ -61,6 +66,12 @@ int _movimientoCajaPendienteIsarEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.concepto.length * 3;
   {
+    final value = object.correlationId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.mensajeError;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -78,11 +89,12 @@ void _movimientoCajaPendienteIsarSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.concepto);
-  writer.writeDateTime(offsets[1], object.creadaEn);
-  writer.writeString(offsets[2], object.mensajeError);
-  writer.writeString(offsets[3], object.monto);
-  writer.writeLong(offsets[4], object.tiendaId);
-  writer.writeString(offsets[5], object.tipo);
+  writer.writeString(offsets[1], object.correlationId);
+  writer.writeDateTime(offsets[2], object.creadaEn);
+  writer.writeString(offsets[3], object.mensajeError);
+  writer.writeString(offsets[4], object.monto);
+  writer.writeLong(offsets[5], object.tiendaId);
+  writer.writeString(offsets[6], object.tipo);
 }
 
 MovimientoCajaPendienteIsar _movimientoCajaPendienteIsarDeserialize(
@@ -93,12 +105,13 @@ MovimientoCajaPendienteIsar _movimientoCajaPendienteIsarDeserialize(
 ) {
   final object = MovimientoCajaPendienteIsar();
   object.concepto = reader.readString(offsets[0]);
-  object.creadaEn = reader.readDateTime(offsets[1]);
+  object.correlationId = reader.readStringOrNull(offsets[1]);
+  object.creadaEn = reader.readDateTime(offsets[2]);
   object.id = id;
-  object.mensajeError = reader.readStringOrNull(offsets[2]);
-  object.monto = reader.readString(offsets[3]);
-  object.tiendaId = reader.readLong(offsets[4]);
-  object.tipo = reader.readString(offsets[5]);
+  object.mensajeError = reader.readStringOrNull(offsets[3]);
+  object.monto = reader.readString(offsets[4]);
+  object.tiendaId = reader.readLong(offsets[5]);
+  object.tipo = reader.readString(offsets[6]);
   return object;
 }
 
@@ -112,14 +125,16 @@ P _movimientoCajaPendienteIsarDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
-    case 2:
       return (reader.readStringOrNull(offset)) as P;
+    case 2:
+      return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
+      return (reader.readLong(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -442,6 +457,213 @@ extension MovimientoCajaPendienteIsarQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'concepto', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'correlationId'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'correlationId'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'correlationId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'correlationId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'correlationId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'correlationId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'correlationId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'correlationId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'correlationId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'correlationId',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'correlationId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterFilterCondition
+  >
+  correlationIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'correlationId', value: ''),
       );
     });
   }
@@ -1279,6 +1501,28 @@ extension MovimientoCajaPendienteIsarQuerySortBy
     MovimientoCajaPendienteIsar,
     QAfterSortBy
   >
+  sortByCorrelationId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'correlationId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterSortBy
+  >
+  sortByCorrelationIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'correlationId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterSortBy
+  >
   sortByCreadaEn() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'creadaEn', Sort.asc);
@@ -1411,6 +1655,28 @@ extension MovimientoCajaPendienteIsarQuerySortThenBy
   thenByConceptoDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'concepto', Sort.desc);
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterSortBy
+  >
+  thenByCorrelationId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'correlationId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QAfterSortBy
+  >
+  thenByCorrelationIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'correlationId', Sort.desc);
     });
   }
 
@@ -1570,6 +1836,20 @@ extension MovimientoCajaPendienteIsarQueryWhereDistinct
     MovimientoCajaPendienteIsar,
     QDistinct
   >
+  distinctByCorrelationId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'correlationId',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<
+    MovimientoCajaPendienteIsar,
+    MovimientoCajaPendienteIsar,
+    QDistinct
+  >
   distinctByCreadaEn() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'creadaEn');
@@ -1639,6 +1919,13 @@ extension MovimientoCajaPendienteIsarQueryProperty
   conceptoProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'concepto');
+    });
+  }
+
+  QueryBuilder<MovimientoCajaPendienteIsar, String?, QQueryOperations>
+  correlationIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'correlationId');
     });
   }
 

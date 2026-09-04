@@ -1,6 +1,5 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 import '../../../core/connectivity/backend_reachability_provider.dart';
 import '../../../core/db/local_store_provider.dart';
 import '../../../core/network/api_client.dart';
@@ -10,6 +9,8 @@ import '../data/venta_pendiente_local.dart';
 import 'carrito_notifier.dart';
 import '../data/venta_api.dart';
 import '../domain/carrito.dart';
+
+export '../../../core/util/correlation_id.dart' show nuevoCorrelationId;
 
 final ventaApiProvider = Provider<VentaApi>(
   (ref) => VentaApi(ApiClient.instance),
@@ -26,19 +27,6 @@ final cuentaPorCobrarApiProvider = Provider<CuentaPorCobrarApi>(
 /// mejor apuesta razonable (primer registro insertado en instalación fresca),
 /// no una garantía. Ver CLAUDE.md.
 int _clienteConsumidorFinalIdCacheado = 1;
-
-/// UUID v4 criptográficamente aleatorio para toda venta, online u offline —
-/// antes solo la cola offline generaba uno (con
-/// `DateTime.now().microsecondsSinceEpoch`, no aleatorio de verdad: dos
-/// dispositivos con relojes cercanos podían, en teoría, colisionar). Expuesto
-/// para que quien llama a [CheckoutNotifier.confirmar] (una sola vez por
-/// intento de cobro, ver `CobroSheet`) genere la clave de idempotencia antes
-/// del primer request y la reutilice si el usuario reintenta manualmente tras
-/// un error — regenerarla en cada reintento anularía la protección contra
-/// duplicados que esto existe para dar.
-final _uuid = Uuid();
-
-String nuevoCorrelationId() => _uuid.v4();
 
 class CheckoutState {
   const CheckoutState({

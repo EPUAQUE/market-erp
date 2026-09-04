@@ -37,11 +37,15 @@ class ClientesApi {
     );
   }
 
+  /// [correlationId] evita que un reintento (respuesta perdida, o el propio
+  /// `SyncEngine` reintentando un alta encolada sin conexión) cree un
+  /// segundo cliente en el servidor — ver `core/util/correlation_id.dart`.
   Future<Cliente> crear({
     required String nombre,
     String? telefono,
     String? nit,
     Decimal? limiteCredito,
+    String? correlationId,
   }) {
     return _client.post<Cliente>(
       '/api/v1/clientes',
@@ -50,6 +54,7 @@ class ClientesApi {
         'telefono': telefono,
         'nit': nit,
         'limiteCredito': limiteCredito?.toString(),
+        'correlationId': correlationId,
       },
       parser: (data) => Cliente.fromJson(data as Map<String, dynamic>),
     );

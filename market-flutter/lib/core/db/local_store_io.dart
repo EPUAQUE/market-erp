@@ -209,6 +209,7 @@ class IsarLocalStore implements LocalStore {
     NuevoMovimientoCajaPendiente movimiento,
   ) async {
     final pendiente = MovimientoCajaPendienteIsar()
+      ..correlationId = movimiento.correlationId
       ..tiendaId = movimiento.tiendaId
       ..tipo = movimiento.tipo.name
       ..concepto = movimiento.concepto
@@ -280,6 +281,7 @@ class IsarLocalStore implements LocalStore {
   ) {
     return MovimientoCajaPendienteLocal(
       id: m.id,
+      correlationId: m.correlationId,
       tiendaId: m.tiendaId,
       tipo: TipoMovimientoCaja.values.byName(m.tipo),
       concepto: m.concepto,
@@ -292,6 +294,7 @@ class IsarLocalStore implements LocalStore {
   @override
   Future<int> encolarClientePendiente(NuevoClientePendiente cliente) async {
     final pendiente = ClientePendienteIsar()
+      ..correlationId = cliente.correlationId
       ..nombre = cliente.nombre
       ..telefono = cliente.telefono
       ..nit = cliente.nit
@@ -407,6 +410,7 @@ class IsarLocalStore implements LocalStore {
   ClientePendienteLocal _aPlanoCliente(ClientePendienteIsar c) {
     return ClientePendienteLocal(
       id: c.id,
+      correlationId: c.correlationId,
       nombre: c.nombre,
       telefono: c.telefono,
       nit: c.nit,

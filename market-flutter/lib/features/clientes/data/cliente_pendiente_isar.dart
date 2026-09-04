@@ -18,6 +18,13 @@ class ClientePendienteIsar {
   String? limiteCredito;
   late DateTime creadaEn;
 
+  /// Clave de idempotencia (ver `core/util/correlation_id.dart`) — permite
+  /// que un reintento de `SyncEngine` sobre esta misma fila no cree un
+  /// segundo cliente en el servidor. Nullable solo porque Isar exige que un
+  /// campo agregado a una colección existente lo sea; nunca es `null` para
+  /// un ítem encolado por `ClienteSelectorSheet` después de este cambio.
+  String? correlationId;
+
   /// Mismo contrato que `VentaPendienteIsar.mensajeError`.
   String? mensajeError;
 

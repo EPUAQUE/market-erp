@@ -18,6 +18,14 @@ class MovimientoCajaPendienteIsar {
   late String monto;
   late DateTime creadaEn;
 
+  /// Clave de idempotencia (ver `core/util/correlation_id.dart`) — permite
+  /// que un reintento de `SyncEngine` sobre esta misma fila (respuesta
+  /// perdida, corte de red) no duplique el movimiento en el servidor.
+  /// Nullable solo porque Isar exige que un campo agregado a una colección
+  /// existente lo sea (ver `local_schema_version.dart`); nunca es `null`
+  /// para un ítem encolado por `CajaActionsNotifier` después de este cambio.
+  String? correlationId;
+
   /// Mismo contrato que `VentaPendienteIsar.mensajeError` — `null` = sigue
   /// pendiente/reintentable, no-nulo = fallo de negocio para revisión manual.
   String? mensajeError;

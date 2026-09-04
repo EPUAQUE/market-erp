@@ -22,13 +22,22 @@ class CajaApi {
     }
   }
 
+  /// [correlationId] es opcional por compatibilidad con llamadores internos
+  /// del service layer (ver `venta_api.dart`), pero `CajaActionsNotifier`
+  /// siempre manda uno — evita que un reintento (respuesta perdida, o el
+  /// propio `SyncEngine` reintentando un movimiento encolado) duplique el
+  /// ingreso/egreso o la apertura/cierre en el servidor.
   Future<CajaSesion> abrir({
     required int tiendaId,
     required Decimal montoInicial,
+    String? correlationId,
   }) {
     return _client.post<CajaSesion>(
       '/api/v1/caja/tiendas/$tiendaId/abrir',
-      data: {'montoInicial': montoInicial.toString()},
+      data: {
+        'montoInicial': montoInicial.toString(),
+        'correlationId': correlationId,
+      },
       parser: (data) => CajaSesion.fromJson(data as Map<String, dynamic>),
     );
   }
@@ -38,6 +47,7 @@ class CajaApi {
     required TipoMovimientoCaja tipo,
     required String concepto,
     required Decimal monto,
+    String? correlationId,
   }) {
     return _client.post<CajaSesion>(
       '/api/v1/caja/tiendas/$tiendaId/movimientos',
@@ -45,6 +55,7 @@ class CajaApi {
         'tipo': tipoMovimientoCajaToJson(tipo),
         'concepto': concepto,
         'monto': monto.toString(),
+        'correlationId': correlationId,
       },
       parser: (data) => CajaSesion.fromJson(data as Map<String, dynamic>),
     );
@@ -53,10 +64,14 @@ class CajaApi {
   Future<CajaSesion> cerrar({
     required int tiendaId,
     required Decimal montoFinalContado,
+    String? correlationId,
   }) {
     return _client.post<CajaSesion>(
       '/api/v1/caja/tiendas/$tiendaId/cerrar',
-      data: {'montoFinalContado': montoFinalContado.toString()},
+      data: {
+        'montoFinalContado': montoFinalContado.toString(),
+        'correlationId': correlationId,
+      },
       parser: (data) => CajaSesion.fromJson(data as Map<String, dynamic>),
     );
   }

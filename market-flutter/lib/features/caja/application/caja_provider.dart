@@ -4,6 +4,7 @@ import '../../../core/connectivity/backend_reachability_provider.dart';
 import '../../../core/db/local_store_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/util/correlation_id.dart';
 import '../data/caja.dart';
 import '../data/caja_api.dart';
 import '../data/movimiento_caja_pendiente_local.dart';
@@ -29,11 +30,16 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
   CajaActionsState build() => const CajaActionsState();
 
   Future<bool> abrir({required int tiendaId, required Decimal montoInicial}) {
+    final correlationId = nuevoCorrelationId();
     return _ejecutar(
       tiendaId,
       () => ref
           .read(cajaApiProvider)
-          .abrir(tiendaId: tiendaId, montoInicial: montoInicial),
+          .abrir(
+            tiendaId: tiendaId,
+            montoInicial: montoInicial,
+            correlationId: correlationId,
+          ),
     );
   }
 
@@ -43,12 +49,21 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
   /// venta, un movimiento offline no se refleja de inmediato en
   /// `cajaAbiertaProvider` (esa vista viene del servidor) — el saldo y la
   /// lista de movimientos del turno se actualizan recién al sincronizar.
+  ///
+  /// [correlationId]: una clave por intento, generada acá mismo — no hay
+  /// concepto de "reintento manual sobre la misma clave" para caja como sí
+  /// existe en `CobroSheet` (cada envío del diálogo es un intento nuevo, no
+  /// una reapertura del mismo). Donde esto sí protege de verdad es contra el
+  /// reintento AUTOMÁTICO de `SyncEngine` sobre un mismo ítem ya encolado
+  /// (ver `_registrarMovimientoOffline`), que reutiliza la clave grabada en
+  /// ese momento en cada intento de sincronizar.
   Future<bool> registrarMovimiento({
     required int tiendaId,
     required TipoMovimientoCaja tipo,
     required String concepto,
     required Decimal monto,
   }) async {
+    final correlationId = nuevoCorrelationId();
     final hayRed = ref.read(backendAlcanzableProvider).value ?? true;
     if (!hayRed) {
       return _registrarMovimientoOffline(
@@ -56,6 +71,7 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
         tipo: tipo,
         concepto: concepto,
         monto: monto,
+        correlationId: correlationId,
       );
     }
     return _ejecutar(
@@ -67,6 +83,7 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
             tipo: tipo,
             concepto: concepto,
             monto: monto,
+            correlationId: correlationId,
           ),
     );
   }
@@ -76,6 +93,7 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
     required TipoMovimientoCaja tipo,
     required String concepto,
     required Decimal monto,
+    required String correlationId,
   }) async {
     state = const CajaActionsState(loading: true);
     try {
@@ -89,6 +107,7 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
       }
       await store.encolarMovimientoCajaPendiente(
         NuevoMovimientoCajaPendiente(
+          correlationId: correlationId,
           tiendaId: tiendaId,
           tipo: tipo,
           concepto: concepto,
@@ -110,11 +129,16 @@ class CajaActionsNotifier extends Notifier<CajaActionsState> {
     required int tiendaId,
     required Decimal montoFinalContado,
   }) {
+    final correlationId = nuevoCorrelationId();
     return _ejecutar(
       tiendaId,
       () => ref
           .read(cajaApiProvider)
-          .cerrar(tiendaId: tiendaId, montoFinalContado: montoFinalContado),
+          .cerrar(
+            tiendaId: tiendaId,
+            montoFinalContado: montoFinalContado,
+            correlationId: correlationId,
+          ),
     );
   }
 

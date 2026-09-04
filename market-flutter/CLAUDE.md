@@ -1330,6 +1330,31 @@ error). `flutter analyze`/`flutter test` clean (75/75). Same
 unverified-on-a-real-device gap as the rest of this file — this is a unit
 test against a fake, not a real dropped connection on a tablet.
 
+**Update 2026-09-04 — `SyncEngineNotifier` has unit test coverage for the
+first time**, closing the gap this file used to note right above (`no
+unit test covers SyncEngineNotifier`). New `test/core/sync/sync_engine_test.dart`
+covers Fase 2's "reintento tras matar la app durante cada estado":
+`VentaPendienteLocal` only ever persists the full original request, never
+an intermediate "already created, not yet completed" marker, so surviving a
+kill depends entirely on a freshly-built `SyncEngineNotifier` (a
+`ProviderContainer` built from scratch stands in for a relaunched app, with
+no memory of which call got out before the kill) reconstructing the right
+outcome purely from what the backend actually has for that
+`correlationId`. Three fake-`VentaApi` seedings, one test each: the backend
+never saw the venta (drains normally), the kill landed right after `crear()`
+(retry doesn't duplicate), and right after `completar()` (retry recognizes
+`COMPLETADA` via `ventaYaQuedoCompletada` instead of marking it
+`mensajeError`) — all three converge to exactly one `COMPLETADA` venta and
+an empty queue. The reactive trigger itself (`ref.listen(backendAlcanzableProvider, ...)`
+inside `build()`, no `fireImmediately`) was also exercised for the first
+time this way and does fire on the loading→data transition as long as
+something has already read `syncEngineProvider` before that first value
+resolves — same pattern the test uses (`container.listen(syncEngineProvider, ...)`
+before awaiting `backendAlcanzableProvider.future`). `flutter analyze`/
+`flutter test` clean (78/78). Still only a `ProviderContainer` unit test
+against fakes, not a real killed process on a device with a real Isar file
+on disk.
+
 **Pending-with-error visibility — the other plan item, built.** Before this
 phase, `mensajeError`-marked ventas/clientes/movimientos-de-caja were
 excluded from the sync retry (`local_store_io.dart`'s `mensajeErrorIsNull()`

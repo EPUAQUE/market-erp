@@ -377,7 +377,24 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
   perdida justo después de `completar()` (el reintento ya no muestra error).
   Solo unitario sobre `ProviderContainer` con un `VentaApi` fake que simula
   el estado del servidor — no contra el backend real ni en tablet Android.
-- [ ] Reintento tras matar la app durante cada estado.
+- [x] Reintento tras matar la app durante cada estado — cubierto (2026-09-04)
+  con `sync_engine_test.dart`, la primera prueba que existe de
+  `SyncEngineNotifier` (antes sin cobertura, ver `market-flutter/CLAUDE.md`).
+  No hay forma de persistir un estado intermedio real del lado del
+  cliente — `VentaPendienteLocal` es un único registro con el payload
+  completo, nunca "ya se creó, falta completar" — así que la resiliencia
+  ante un kill depende enteramente de que un `SyncEngineNotifier` nuevo
+  (equivalente a relanzar la app) reconstruya el resultado correcto sin
+  memoria de qué llamada alcanzó a salir antes del kill. Tres escenarios,
+  variando únicamente en qué encontró el backend al reintentar desde cero
+  para la misma clave: (1) nunca vio la venta — la crea y completa normal;
+  (2) el kill fue justo después de `crear()` — el reintento no duplica
+  (`crear()` es idempotente por `correlationId`); (3) el kill fue justo
+  después de `completar()` — el reintento la reconoce como ya `COMPLETADA`
+  en vez de marcarla con error (mismo mecanismo de `ventaYaQuedoCompletada`
+  agregado arriba). Los tres terminan con exactamente una venta `COMPLETADA`
+  y la cola local vacía. Solo unitario contra un `VentaApi`/`LocalStore`
+  fake — no es matar el proceso real de una app instalada en una tablet.
 - [x] Wi-Fi activo con backend caído — cubierto (2026-09-04) con tests unitarios
   nuevos en `checkout_notifier_test.dart` (`market-flutter`): con
   `backendAlcanzableProvider` forzado a `false` (interfaz arriba, sonda de

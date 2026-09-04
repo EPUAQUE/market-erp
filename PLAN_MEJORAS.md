@@ -357,7 +357,19 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
 
 - [ ] Respuesta perdida después de crear y después de completar una venta.
 - [ ] Reintento tras matar la app durante cada estado.
-- [ ] Wi-Fi activo con backend caído.
+- [x] Wi-Fi activo con backend caído — cubierto (2026-09-04) con tests unitarios
+  nuevos en `checkout_notifier_test.dart` (`market-flutter`): con
+  `backendAlcanzableProvider` forzado a `false` (interfaz arriba, sonda de
+  `/actuator/health` fallando), `CheckoutNotifier.confirmar` nunca llama a
+  `VentaApi` (verificado con un `VentaApi` fake que lanza si se le llama),
+  encola la venta localmente con el mismo `correlationId` recibido, y un
+  reintento manual con la misma clave sigue sin tocar la red y conserva la
+  clave (nunca genera una identidad nueva). Un tercer caso cubre el límite:
+  sin almacenamiento local disponible (web) falla explícito en vez de
+  fingir éxito o perder la venta en silencio. Solo unitario, sobre
+  `ProviderContainer` — no es la prueba en tablet Android real con Wi-Fi
+  físicamente activo y backend caído de verdad (esa sigue pendiente, ver
+  "Pruebas en tablet Android real" más abajo).
 - [ ] Cambio entre Wi-Fi y datos durante sincronización.
 - [ ] Dos dispositivos generan operaciones simultáneamente.
 - [x] Movimiento de caja procesado con respuesta perdida no se duplica — cubierto con

@@ -179,7 +179,11 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
     } on ApiException catch (error) {
       if (error.isNetworkError) return false;
       if (error.code == 'ESTADO_VENTA_INVALIDO' &&
-          await _yaQuedoCompletada(ventaApi, venta.tiendaId, creada.id)) {
+          await ventaYaQuedoCompletada(
+            ventaApi,
+            tiendaId: venta.tiendaId,
+            ventaId: creada.id,
+          )) {
         // Un `completar()` de un intento anterior probablemente sí tuvo
         // éxito en el servidor y solo se perdió la respuesta por la red —
         // reintentar completar() sobre una venta ya COMPLETADA lanza este
@@ -234,25 +238,6 @@ class SyncEngineNotifier extends Notifier<EstadoConexion> {
       return const _ClientePendienteAunNoListo();
     }
     return _ClientePendienteResuelto(clienteServidorId);
-  }
-
-  /// `null` (red caída al confirmar) se trata igual que "no, no está
-  /// completada" — el llamador la marca con error y un encargado la revisa a
-  /// mano; más seguro que asumir éxito sin poder confirmarlo.
-  Future<bool> _yaQuedoCompletada(
-    VentaApi ventaApi,
-    int tiendaId,
-    int ventaId,
-  ) async {
-    try {
-      final actual = await ventaApi.obtener(
-        tiendaId: tiendaId,
-        ventaId: ventaId,
-      );
-      return actual.estado == 'COMPLETADA';
-    } on ApiException {
-      return false;
-    }
   }
 
   Future<bool> _sincronizarCliente(

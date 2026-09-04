@@ -355,7 +355,28 @@ mismo patrón ya usado en los otros dos (`contenidoDePagina()` +
 
 ### Pruebas requeridas
 
-- [ ] Respuesta perdida después de crear y después de completar una venta.
+- [x] Respuesta perdida después de crear y después de completar una venta —
+  cubierto (2026-09-04). **Bug real encontrado y corregido, no solo un
+  test**: `CheckoutNotifier._confirmarOnline` (venta online directa, sin
+  pasar por la cola offline) nunca tenía la reconciliación que
+  `SyncEngine._sincronizarVenta` ya tenía desde una fase anterior ("Sync
+  retry bug" en `market-flutter/CLAUDE.md") — si `completar()` tenía éxito
+  real en el servidor pero la respuesta se perdía por la red, un reintento
+  manual con el mismo `correlationId` volvía a llamar `completar()` sobre
+  una venta ya `COMPLETADA`, el backend respondía `409
+  ESTADO_VENTA_INVALIDO`, y el vendedor veía "venta fallida" aunque ya
+  estuviera cobrada. Se extrajo la lógica de reconciliación a una función
+  compartida `ventaYaQuedoCompletada` (`venta_api.dart`, antes duplicada
+  como método privado en `SyncEngine`) y ahora `_confirmarOnline` también la
+  usa: ante `ESTADO_VENTA_INVALIDO`, consulta `GET
+  /ventas/tiendas/{id}/{id}` y, si ya está `COMPLETADA`, trata la operación
+  como éxito en vez de mostrar error. Cubierto con dos tests unitarios en
+  `checkout_notifier_test.dart`: respuesta perdida justo después de
+  `crear()` (el reintento no crea una segunda venta, gracias a la
+  idempotencia por `correlationId` ya existente en el backend) y respuesta
+  perdida justo después de `completar()` (el reintento ya no muestra error).
+  Solo unitario sobre `ProviderContainer` con un `VentaApi` fake que simula
+  el estado del servidor — no contra el backend real ni en tablet Android.
 - [ ] Reintento tras matar la app durante cada estado.
 - [x] Wi-Fi activo con backend caído — cubierto (2026-09-04) con tests unitarios
   nuevos en `checkout_notifier_test.dart` (`market-flutter`): con

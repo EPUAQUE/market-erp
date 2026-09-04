@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/network/paginacion.dart';
 import '../domain/carrito.dart';
 import 'venta.dart';
@@ -73,6 +74,27 @@ class VentaApi {
       '/api/v1/ventas/tiendas/$tiendaId/$ventaId',
       parser: (data) => Venta.fromJson(data as Map<String, dynamic>),
     );
+  }
+}
+
+/// Ante un `409 ESTADO_VENTA_INVALIDO` al llamar `completar()`, distingue si
+/// fue un `completar()` anterior el que sí tuvo éxito en el servidor (la
+/// respuesta solo se perdió por la red) de un estado genuinamente inválido
+/// (ej. `ANULADA`) — usado tanto por `SyncEngine` (venta sincronizada desde
+/// la cola offline) como por `CheckoutNotifier` (venta online directa),
+/// nunca duplicado entre los dos. `false` ante cualquier fallo al consultar
+/// (red caída de nuevo) — más seguro tratarlo como "no, no está completada"
+/// que asumir éxito sin poder confirmarlo.
+Future<bool> ventaYaQuedoCompletada(
+  VentaApi ventaApi, {
+  required int tiendaId,
+  required int ventaId,
+}) async {
+  try {
+    final actual = await ventaApi.obtener(tiendaId: tiendaId, ventaId: ventaId);
+    return actual.estado == 'COMPLETADA';
+  } on ApiException {
+    return false;
   }
 }
 

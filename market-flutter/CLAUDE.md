@@ -1307,6 +1307,29 @@ clean; no unit test covers `SyncEngineNotifier` (none did before this phase
 either — it's Isar/Riverpod-coupled and this project has no existing
 pattern for testing it, same gap as the rest of the offline queue).
 
+**Update 2026-09-04 — the same bug existed on the direct online path too,
+found while writing Fase 2's "respuesta perdida" test.** This fix above only
+ever landed in `SyncEngine._sincronizarVenta` (the offline-queue drain
+path). `CheckoutNotifier._confirmarOnline` — the direct online checkout, the
+common case, never queued — called `crear()` then `completar()` with no
+such reconciliation at all: a lost response right after a real
+`completar()` success, followed by the vendedor pressing confirm again
+(same `correlationId`, same as any manual retry this app relies on), hit
+the identical `409 ESTADO_VENTA_INVALIDO` and surfaced as "no se pudo
+completar la venta" even though the sale was already done and paid. Fixed
+by extracting the reconciliation into a shared top-level function,
+`ventaYaQuedoCompletada` (`venta_api.dart`) — used by both
+`SyncEngine._sincronizarVenta` (replacing its former private
+`_yaQuedoCompletada`) and the new `try`/`catch` around `completar()` in
+`_confirmarOnline`. Covered by two new unit tests in
+`checkout_notifier_test.dart` (a fake `VentaApi` simulating server-side
+state): a lost response right after `crear()` (retry doesn't create a
+second venta, relying on the backend's existing `correlationId`
+idempotency) and right after `completar()` (retry no longer shows an
+error). `flutter analyze`/`flutter test` clean (75/75). Same
+unverified-on-a-real-device gap as the rest of this file — this is a unit
+test against a fake, not a real dropped connection on a tablet.
+
 **Pending-with-error visibility — the other plan item, built.** Before this
 phase, `mensajeError`-marked ventas/clientes/movimientos-de-caja were
 excluded from the sync retry (`local_store_io.dart`'s `mensajeErrorIsNull()`

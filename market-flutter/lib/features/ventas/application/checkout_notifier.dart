@@ -155,11 +155,28 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       metodoPago: metodo,
       correlationId: correlationId,
     );
-    await ventaApi.completar(
-      tiendaId: tiendaId,
-      ventaId: creada.id,
-      pagosInmediatos: metodo == MetodoPago.mixto ? desglose : null,
-    );
+    try {
+      await ventaApi.completar(
+        tiendaId: tiendaId,
+        ventaId: creada.id,
+        pagosInmediatos: metodo == MetodoPago.mixto ? desglose : null,
+      );
+    } on ApiException catch (error) {
+      // Mismo caso que resuelve `SyncEngine._sincronizarVenta`: un
+      // `completar()` anterior (ej. de un reintento manual tras perder la
+      // respuesta) puede haber tenido éxito real en el servidor —
+      // reintentar completar() sobre una venta ya `COMPLETADA` lanza este
+      // mismo error de negocio, que sin esta comprobación se le mostraría
+      // al vendedor como venta fallida aunque ya esté cobrada.
+      final yaCompletada =
+          error.code == 'ESTADO_VENTA_INVALIDO' &&
+          await ventaYaQuedoCompletada(
+            ventaApi,
+            tiendaId: tiendaId,
+            ventaId: creada.id,
+          );
+      if (!yaCompletada) rethrow;
+    }
   }
 
   Future<void> _confirmarOffline({

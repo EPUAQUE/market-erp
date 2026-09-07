@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../application/auth_notifier.dart';
+import 'auth_brand_mark.dart';
 import 'auth_pill_decoration.dart';
 
 /// Misma clave lógica que `USUARIO_RECORDADO_KEY` en `LoginView.vue` del
@@ -98,27 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [colors.brand, colors.primary],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'i365',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
+                        const AuthBrandMark(),
                         const SizedBox(height: 18),
                         Text(
                           'Bienvenido de nuevo',
@@ -149,47 +130,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onSubmitted: (_) => _onSubmit(),
                         ),
                         const SizedBox(height: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+                        // `Wrap` en vez de `Row`: a este ancho (tarjeta de
+                        // login, max 360px) "Recordarme" + "¿Olvidaste tu
+                        // contraseña?" casi no caben en una sola línea —
+                        // un `Row` con spaceBetween desborda (RenderFlex
+                        // overflowed), y `WrapAlignment.spaceBetween` sin
+                        // `spacing` los deja pegados (cero aire entre
+                        // textos) cuando el espacio libre es casi nulo.
+                        // `spacing` fijo garantiza un separador mínimo
+                        // siempre, y sigue bajando de línea sin romper si
+                        // algún día no cabe.
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 4,
                           children: [
-                            SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: Checkbox(
-                                value: _recordarme,
-                                activeColor: colors.primary,
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                                onChanged: (value) => setState(
-                                  () => _recordarme = value ?? false,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
                             GestureDetector(
                               onTap: () =>
                                   setState(() => _recordarme = !_recordarme),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: Checkbox(
+                                      value: _recordarme,
+                                      activeColor: colors.primary,
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      onChanged: (value) => setState(
+                                        () => _recordarme = value ?? false,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Recordarme',
+                                    style: TextStyle(color: colors.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () => context.push('/olvide-password'),
                               child: Text(
-                                'Recordarme',
-                                style: TextStyle(color: colors.textMuted),
+                                '¿Olvidaste tu contraseña?',
+                                style: TextStyle(color: colors.primary),
                               ),
                             ),
                           ],
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: () => context.push('/olvide-password'),
-                            child: Text(
-                              '¿Olvidaste tu contraseña?',
-                              style: TextStyle(color: colors.primary),
-                            ),
-                          ),
                         ),
                         if (_errorMessage != null) ...[
                           const SizedBox(height: 14),

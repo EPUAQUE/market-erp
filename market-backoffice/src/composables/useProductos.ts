@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { productosService, type DatosProducto } from '@/services/productos.service'
 import { ApiClientError } from '@/services/http/ApiClient'
-import type { Producto } from '@/types/producto'
+import type { ImportacionProductosResultado, Producto } from '@/types/producto'
 
 /**
  * `tamano` por defecto es grande a propósito: además de `ProductosView` (que
@@ -17,6 +17,8 @@ export function useProductos() {
   const listError = ref<string | null>(null)
   const saveLoading = ref(false)
   const saveError = ref<string | null>(null)
+  const importarLoading = ref(false)
+  const importarError = ref<string | null>(null)
 
   const pagina = ref(1)
   const tamano = ref(TAMANO_CATALOGO_COMPLETO)
@@ -91,6 +93,22 @@ export function useProductos() {
     }
   }
 
+  /** Devuelve el resultado (aunque haya errores fila a fila) o null si la petición completa falló. */
+  async function importar(archivo: File): Promise<ImportacionProductosResultado | null> {
+    importarLoading.value = true
+    importarError.value = null
+    try {
+      const resultado = await productosService.importar(archivo)
+      if (resultado.creados > 0) await cargar()
+      return resultado
+    } catch (error) {
+      importarError.value = error instanceof ApiClientError ? error.message : 'No se pudo importar el archivo.'
+      return null
+    } finally {
+      importarLoading.value = false
+    }
+  }
+
   async function alternarEstado(producto: Producto) {
     try {
       if (producto.activo) {
@@ -111,6 +129,8 @@ export function useProductos() {
     listError,
     saveLoading,
     saveError,
+    importarLoading,
+    importarError,
     pagina,
     tamano,
     totalElementos,
@@ -119,6 +139,7 @@ export function useProductos() {
     crear,
     actualizar,
     subirImagen,
+    importar,
     alternarEstado,
   }
 }

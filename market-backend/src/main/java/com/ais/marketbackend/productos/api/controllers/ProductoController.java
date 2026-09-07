@@ -2,14 +2,21 @@ package com.ais.marketbackend.productos.api.controllers;
 
 import com.ais.marketbackend.productos.api.dtos.requests.ActualizarProductoRequest;
 import com.ais.marketbackend.productos.api.dtos.requests.CrearProductoRequest;
+import com.ais.marketbackend.productos.api.dtos.responses.ImportacionFilaErrorResponse;
+import com.ais.marketbackend.productos.api.dtos.responses.ImportacionProductosResponse;
 import com.ais.marketbackend.productos.api.dtos.responses.ProductoResponse;
 import com.ais.marketbackend.productos.api.mappers.ProductoApiMapper;
+import com.ais.marketbackend.productos.application.dtos.ImportacionFilaResultado;
+import com.ais.marketbackend.productos.application.services.interfaces.ProductoImportacionService;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoService;
+import com.ais.marketbackend.productos.domain.exception.ArchivoImportacionInvalidoException;
 import com.ais.marketbackend.productos.infrastructure.storage.ImagenProductoAlmacenamientoService;
 import com.ais.marketbackend.seguridad.infrastructure.security.RequiresPermission;
 import com.ais.marketbackend.shared.api.PaginacionParams;
 import com.ais.marketbackend.shared.responses.PaginaResponse;
 import jakarta.validation.Valid;
+import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ProductoController {
 
     private final ProductoService productoService;
+    private final ProductoImportacionService productoImportacionService;
     private final ProductoApiMapper mapper;
     private final ImagenProductoAlmacenamientoService imagenAlmacenamientoService;
 
@@ -60,6 +68,23 @@ public class ProductoController {
                 id, request.codigoBarras(), request.nombre(), request.descripcion(), request.descripcionCorta(),
                 request.categoriaId(), request.marcaId(), request.unidadMedidaId(), request.imagenUrl()));
         return ResponseEntity.ok(actualizado);
+    }
+
+    @PostMapping(value = "/importar", consumes = "multipart/form-data")
+    @RequiresPermission("PRODUCTOS_CREAR")
+    public ResponseEntity<ImportacionProductosResponse> importar(@RequestParam("archivo") MultipartFile archivo) {
+        List<ImportacionFilaResultado> resultados;
+        try {
+            resultados = productoImportacionService.importar(archivo.getInputStream());
+        } catch (IOException e) {
+            throw new ArchivoImportacionInvalidoException("No se pudo leer el archivo enviado.");
+        }
+        List<ImportacionFilaErrorResponse> errores = resultados.stream()
+                .filter(r -> !r.creado())
+                .map(r -> new ImportacionFilaErrorResponse(r.fila(), r.codigoInterno(), r.mensaje()))
+                .toList();
+        int creados = resultados.size() - errores.size();
+        return ResponseEntity.ok(new ImportacionProductosResponse(resultados.size(), creados, errores.size(), errores));
     }
 
     @PostMapping(value = "/{id}/imagen", consumes = "multipart/form-data")

@@ -1,6 +1,6 @@
 import { apiClient } from '@/services/http/ApiClient'
 import { API_ENDPOINTS } from '@/config/endpoints'
-import type { Producto, ProductoTienda } from '@/types/producto'
+import type { ImportacionProductosResultado, Producto, ProductoTienda } from '@/types/producto'
 import type { Pagina } from '@/types/pagina'
 
 export interface DatosProducto {
@@ -42,6 +42,12 @@ class ProductosService {
     const formData = new FormData()
     formData.append('archivo', archivo)
     return apiClient.post<Producto>(API_ENDPOINTS.productos.imagen(id), formData)
+  }
+
+  importar(archivo: File) {
+    const formData = new FormData()
+    formData.append('archivo', archivo)
+    return apiClient.post<ImportacionProductosResultado>(API_ENDPOINTS.productos.importar, formData)
   }
 
   activar(id: number) {

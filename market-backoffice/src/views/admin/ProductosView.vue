@@ -11,7 +11,7 @@ import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
 import PaginacionTabla from '@/components/common/PaginacionTabla.vue'
-import type { Producto } from '@/types/producto'
+import type { ImportacionProductosResultado, Producto } from '@/types/producto'
 import type { Categoria } from '@/types/categoria'
 import type { Marca } from '@/types/marca'
 import type { UnidadMedida } from '@/types/unidadMedida'
@@ -22,6 +22,8 @@ const {
   listError,
   saveLoading,
   saveError,
+  importarLoading,
+  importarError,
   pagina,
   tamano,
   totalElementos,
@@ -30,6 +32,7 @@ const {
   crear,
   actualizar,
   subirImagen,
+  importar,
   alternarEstado,
 } = useProductos()
 
@@ -65,6 +68,34 @@ function onArchivoImagenSeleccionado(event: Event) {
   archivoImagen.value = archivo
   if (previewImagen.value) URL.revokeObjectURL(previewImagen.value)
   previewImagen.value = archivo ? URL.createObjectURL(archivo) : null
+}
+
+const showImportar = ref(false)
+const archivoImportar = ref<File | null>(null)
+const resultadoImportar = ref<ImportacionProductosResultado | null>(null)
+
+function abrirImportar() {
+  archivoImportar.value = null
+  resultadoImportar.value = null
+  showImportar.value = true
+}
+
+function onArchivoImportarSeleccionado(event: Event) {
+  const input = event.target as HTMLInputElement
+  archivoImportar.value = input.files?.[0] ?? null
+}
+
+async function onSubmitImportar() {
+  if (!archivoImportar.value) return
+  resultadoImportar.value = await importar(archivoImportar.value)
+  // La importación puede haber creado categorías/marcas/unidades nuevas "al vuelo"
+  // (ver ProductoImportacionServiceImpl) — sin este refresh, la tabla las muestra
+  // como el id crudo hasta el próximo reload de la página.
+  await Promise.all([
+    categoriasService.listar().then((r) => (categorias.value = r)),
+    marcasService.listar().then((r) => (marcas.value = r)),
+    unidadesMedidaService.listar().then((r) => (unidades.value = r)),
+  ])
 }
 
 function nombreCategoria(id: number) {
@@ -194,7 +225,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-6 p-6">
+  <div class="w-full space-y-6 p-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Productos</h1>
       <p class="text-sm text-mk-text/70">Catálogo global de productos.</p>
@@ -217,15 +248,87 @@ onMounted(async () => {
           Limpiar filtros
         </button>
       </div>
-      <button
-        v-if="permissions.can('PRODUCTOS_CREAR')"
-        type="button"
-        class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
-        @click="abrirCrear()"
-      >
-        Nuevo producto
-      </button>
+      <div v-if="permissions.can('PRODUCTOS_CREAR')" class="flex items-center gap-2">
+        <button
+          type="button"
+          class="mk-btn mk-btn-outline rounded border border-mk-border px-4 py-2 text-sm font-medium"
+          @click="abrirImportar()"
+        >
+          Cargar Excel
+        </button>
+        <button
+          type="button"
+          class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white"
+          @click="abrirCrear()"
+        >
+          Nuevo producto
+        </button>
+      </div>
     </div>
+
+    <ModalDialog v-model="showImportar" title="Cargar productos desde Excel" max-width="max-w-xl">
+      <form class="space-y-3" @submit.prevent="onSubmitImportar">
+        <p class="text-sm text-mk-text/70">
+          Archivo .xlsx con hoja "Productos": Código interno, Código de barras, Nombre, Descripción,
+          Descripción corta, Categoría, Marca, Unidad de medida. Categoría, marca y unidad de medida se
+          crean automáticamente si el nombre todavía no existe en el catálogo.
+        </p>
+        <input
+          type="file"
+          accept=".xlsx"
+          required
+          class="mk-input w-full rounded border border-mk-border bg-transparent px-3 py-2 text-sm"
+          @change="onArchivoImportarSeleccionado"
+        />
+        <p v-if="importarError" class="text-sm text-mk-danger" role="alert">{{ importarError }}</p>
+
+        <div v-if="resultadoImportar" class="space-y-2 rounded border border-mk-border p-3 text-sm">
+          <p>
+            {{ resultadoImportar.totalFilas }} fila(s) procesadas —
+            <span class="text-mk-success">{{ resultadoImportar.creados }} creado(s)</span>,
+            <span v-if="resultadoImportar.omitidos" class="text-mk-danger">
+              {{ resultadoImportar.omitidos }} omitido(s)
+            </span>
+            <span v-else>0 omitidos</span>.
+          </p>
+          <div v-if="resultadoImportar.errores.length" class="mk-scroll-x max-h-48 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-mk-border">
+                  <th class="py-1 pr-2 font-medium">Fila</th>
+                  <th class="py-1 pr-2 font-medium">Código interno</th>
+                  <th class="py-1 font-medium">Motivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="e in resultadoImportar.errores" :key="e.fila" class="border-b border-mk-border last:border-0">
+                  <td class="py-1 pr-2">{{ e.fila }}</td>
+                  <td class="py-1 pr-2">{{ e.codigoInterno || '—' }}</td>
+                  <td class="py-1 text-mk-danger">{{ e.motivo }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="mk-btn mk-btn-ghost rounded px-4 py-2 text-sm"
+            @click="showImportar = false"
+          >
+            Cerrar
+          </button>
+          <button
+            type="submit"
+            :disabled="importarLoading || !archivoImportar"
+            class="mk-btn mk-btn-primary rounded bg-mk-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {{ importarLoading ? 'Importando…' : 'Importar' }}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
 
     <ModalDialog v-model="showForm" :title="modalTitle" max-width="max-w-2xl">
       <form class="space-y-3" @submit.prevent="onSubmit">

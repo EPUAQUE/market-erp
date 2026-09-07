@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.ais.marketbackend.productos.api.dtos.responses.ProductoResponse;
 import com.ais.marketbackend.productos.api.mappers.ProductoApiMapper;
 import com.ais.marketbackend.productos.application.dtos.ProductoResumen;
+import com.ais.marketbackend.productos.application.services.interfaces.ProductoImportacionService;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoService;
 import com.ais.marketbackend.productos.domain.exception.ImagenInvalidaException;
 import com.ais.marketbackend.productos.domain.exception.ProductoDuplicadoException;
@@ -31,12 +32,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class ProductoControllerTest {
 
     private ProductoService productoService;
+    private ProductoImportacionService productoImportacionService;
     private ImagenProductoAlmacenamientoService imagenAlmacenamientoService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         productoService = mock(ProductoService.class);
+        productoImportacionService = mock(ProductoImportacionService.class);
         imagenAlmacenamientoService = mock(ImagenProductoAlmacenamientoService.class);
         ProductoApiMapper mapper = resumen -> ProductoResponse.builder()
                 .id(resumen.id())
@@ -52,7 +55,8 @@ class ProductoControllerTest {
                 .activo(resumen.activo())
                 .build();
 
-        ProductoController controller = new ProductoController(productoService, mapper, imagenAlmacenamientoService);
+        ProductoController controller = new ProductoController(
+                productoService, productoImportacionService, mapper, imagenAlmacenamientoService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler(new SimpleMeterRegistry(), (tipo, correlationId, detalle) -> { }))
                 .build();

@@ -12,6 +12,19 @@ export interface Producto {
   activo: boolean
 }
 
+export interface ImportacionProductosFilaError {
+  fila: number
+  codigoInterno: string
+  motivo: string
+}
+
+export interface ImportacionProductosResultado {
+  totalFilas: number
+  creados: number
+  omitidos: number
+  errores: ImportacionProductosFilaError[]
+}
+
 export interface ProductoTienda {
   id: number
   productoId: number

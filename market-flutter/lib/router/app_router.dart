@@ -8,6 +8,7 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/tienda_picker_screen.dart';
 import '../features/caja/presentation/caja_screen.dart';
 import '../features/cuentas_por_cobrar/presentation/cuentas_por_cobrar_screen.dart';
+import '../features/cuentas_por_pagar/presentation/cuentas_por_pagar_screen.dart';
 import '../features/dashboard/presentation/dashboard_router_screen.dart';
 import '../features/sync/presentation/pendientes_error_screen.dart';
 import '../features/ventas/presentation/pos_screen.dart';
@@ -64,6 +65,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/pos';
       }
 
+      if (state.matchedLocation == '/cuentas-por-pagar' &&
+          !sesion.can('CUENTAS_POR_PAGAR_VER')) {
+        return '/pos';
+      }
+
       return null;
     },
     routes: [
@@ -89,6 +95,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/cuentas-por-cobrar',
         builder: (context, state) => const CuentasPorCobrarScreen(),
+      ),
+      GoRoute(
+        path: '/cuentas-por-pagar',
+        builder: (context, state) => const CuentasPorPagarScreen(),
       ),
       GoRoute(
         path: '/pendientes-error',

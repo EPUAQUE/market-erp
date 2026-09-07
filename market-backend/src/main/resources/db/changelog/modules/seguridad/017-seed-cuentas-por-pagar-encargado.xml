@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- CUENTAS_POR_PAGAR_* y PROVEEDORES_VER solo estaban seedeados para
+         ADMIN (cuentasporpagar/001-cuenta-por-pagar.xml, proveedores/001-proveedor.xml)
+         — el módulo nunca pasó por el catch-up de roles operativos de
+         seguridad-006, igual que le pasó a Gastos Programados (ver
+         seguridad-015). Se agrega la pantalla "Cuentas por pagar" al POS
+         (market-flutter) para que el encargado de tienda pueda pagar
+         proveedores sin depender del backoffice — decisión explícita del
+         cliente: solo ENCARGADO_TIENDA y ADMIN, CAJERO no. PROVEEDORES_VER
+         hace falta para resolver el nombre del proveedor en la pantalla
+         (mismo patrón que CLIENTES_VER ya tiene para Cuentas por Cobrar). -->
+    <changeSet id="seguridad-017-encargado-cuentas-por-pagar" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_VER')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_PAGAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_ANULAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PROVEEDORES_VER')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

@@ -106,4 +106,5 @@
     <include file="db/changelog/modules/seguridad/014-seed-permiso-cambiar-estado-usuario.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/015-seed-gastos-programados-encargado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/016-password-reset-token.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/017-seed-cuentas-por-pagar-encargado.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

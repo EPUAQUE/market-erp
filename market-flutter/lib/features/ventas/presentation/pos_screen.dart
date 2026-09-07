@@ -42,6 +42,8 @@ class PosScreen extends ConsumerWidget {
     final puedeVerDashboard = sesion?.can('DASHBOARD_VER') ?? false;
     final puedeVerCuentasPorCobrar =
         sesion?.can('CUENTAS_POR_COBRAR_VER') ?? false;
+    final puedeVerCuentasPorPagar =
+        sesion?.can('CUENTAS_POR_PAGAR_VER') ?? false;
     final modoRapido = ref.watch(modoVentaRapidaProvider);
     final modoOscuro = ref.watch(themeModeProvider) == ThemeMode.dark;
     final colors = AppColors.of(context);
@@ -70,6 +72,12 @@ class PosScreen extends ConsumerWidget {
           icono: Icons.request_quote_outlined,
           etiqueta: 'Cuentas por cobrar',
           onTap: () => context.push('/cuentas-por-cobrar'),
+        ),
+      if (puedeVerCuentasPorPagar)
+        _AccionPos(
+          icono: Icons.payments_outlined,
+          etiqueta: 'Cuentas por pagar',
+          onTap: () => context.push('/cuentas-por-pagar'),
         ),
       _AccionPos(
         icono: Icons.logout,

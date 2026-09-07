@@ -21,6 +21,11 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
+    public ProductoResumen obtener(Long id) {
+        return toResumen(obtenerORequerido(id));
+    }
+
+    @Override
     @Transactional
     public ProductoResumen crear(
             String codigoInterno, String codigoBarras, String nombre, String descripcion, String descripcionCorta,

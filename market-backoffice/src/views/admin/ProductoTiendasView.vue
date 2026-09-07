@@ -5,11 +5,14 @@ import { useProductoTiendas } from '@/composables/useProductoTiendas'
 import { useFiltrosTabla, type FiltroColumna } from '@/composables/useFiltrosTabla'
 import { usePermissionsStore } from '@/stores/permissions.store'
 import { tiendasService } from '@/services/tiendas.service'
+import { productosService } from '@/services/productos.service'
+import { ApiClientError } from '@/services/http/ApiClient'
 import { formatCurrency } from '@/utils/money'
+import { resolverImagenUrl } from '@/utils/imagenUrl'
 import EstadoBadge from '@/components/common/EstadoBadge.vue'
 import ModalDialog from '@/components/common/ModalDialog.vue'
 import ActionIcon from '@/components/common/ActionIcon.vue'
-import type { ProductoTienda } from '@/types/producto'
+import type { Producto, ProductoTienda } from '@/types/producto'
 import type { Tienda } from '@/types/tienda'
 
 const route = useRoute()
@@ -20,6 +23,21 @@ const { items, listLoading, listError, saveLoading, saveError, cargar, asignar, 
 const permissions = usePermissionsStore()
 
 const tiendas = ref<Tienda[]>([])
+const producto = ref<Producto | null>(null)
+const productoLoading = ref(false)
+const productoError = ref<string | null>(null)
+
+async function cargarProducto() {
+  productoLoading.value = true
+  productoError.value = null
+  try {
+    producto.value = await productosService.obtener(productoId)
+  } catch (error) {
+    productoError.value = error instanceof ApiClientError ? error.message : 'No se pudo cargar el producto.'
+  } finally {
+    productoLoading.value = false
+  }
+}
 
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
@@ -122,7 +140,7 @@ async function onSubmit() {
 }
 
 onMounted(async () => {
-  await Promise.all([cargar(), tiendasService.listar().then((r) => (tiendas.value = r))])
+  await Promise.all([cargar(), cargarProducto(), tiendasService.listar().then((r) => (tiendas.value = r))])
 })
 </script>
 
@@ -134,6 +152,20 @@ onMounted(async () => {
       <p class="text-sm text-mk-text/70">
         Precio, stock y si permite venta/ingreso de inventario en cada tienda.
       </p>
+      <div v-if="productoLoading" class="text-sm text-mk-text/60">Cargando producto…</div>
+      <p v-else-if="productoError" class="text-sm text-mk-danger" role="alert">{{ productoError }}</p>
+      <div v-else-if="producto" class="mk-card mt-2 flex items-center gap-3 p-3">
+        <img
+          v-if="producto.imagenUrl"
+          :src="resolverImagenUrl(producto.imagenUrl)"
+          alt=""
+          class="h-12 w-12 rounded border border-mk-border object-cover"
+        />
+        <div>
+          <p class="font-semibold">{{ producto.nombre }}</p>
+          <p class="text-sm text-mk-text/70">Código: {{ producto.codigoInterno }}</p>
+        </div>
+      </div>
     </header>
 
     <div class="flex items-center justify-end">

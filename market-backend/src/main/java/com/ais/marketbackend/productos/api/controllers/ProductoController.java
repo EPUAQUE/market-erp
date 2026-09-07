@@ -50,6 +50,12 @@ public class ProductoController {
         return ResponseEntity.ok(PaginaResponse.de(pagina, mapper::toResponse));
     }
 
+    @GetMapping("/{id}")
+    @RequiresPermission("PRODUCTOS_VER")
+    public ResponseEntity<ProductoResponse> obtener(@PathVariable Long id) {
+        return ResponseEntity.ok(mapper.toResponse(productoService.obtener(id)));
+    }
+
     @PostMapping
     @RequiresPermission("PRODUCTOS_CREAR")
     public ResponseEntity<ProductoResponse> crear(@Valid @RequestBody CrearProductoRequest request) {

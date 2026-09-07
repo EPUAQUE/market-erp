@@ -42,6 +42,23 @@ class ProductoServiceImplTest {
     }
 
     @Test
+    void obtenerDevuelveElResumenDelProducto() {
+        Producto producto = Producto.nuevo("P001", null, "Leche", null, null, 1L, 2L, 3L, null);
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+
+        ProductoResumen resumen = productoService.obtener(1L);
+
+        assertThat(resumen.codigoInterno()).isEqualTo("P001");
+    }
+
+    @Test
+    void obtenerConIdInexistenteLanzaNoEncontrado() {
+        when(productoRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productoService.obtener(99L)).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void crearDevuelveElResumenCreado() {
         when(productoRepository.existsByCodigoInterno("P001")).thenReturn(false);
 

@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface ProductoService {
 
+    ProductoResumen obtener(Long id);
+
     ProductoResumen crear(
             String codigoInterno, String codigoBarras, String nombre, String descripcion, String descripcionCorta,
             Long categoriaId, Long marcaId, Long unidadMedidaId, String imagenUrl);

@@ -30,6 +30,10 @@ class ProductosService {
     })
   }
 
+  obtener(id: number, signal?: AbortSignal) {
+    return apiClient.get<Producto>(API_ENDPOINTS.productos.porId(id), { signal })
+  }
+
   crear(codigoInterno: string, datos: DatosProducto) {
     return apiClient.post<Producto>(API_ENDPOINTS.productos.base, { codigoInterno, ...datos })
   }

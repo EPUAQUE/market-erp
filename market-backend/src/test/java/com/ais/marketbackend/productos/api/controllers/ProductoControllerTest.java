@@ -74,6 +74,16 @@ class ProductoControllerTest {
     }
 
     @Test
+    void obtenerDevuelveElProducto() throws Exception {
+        when(productoService.obtener(1L))
+                .thenReturn(new ProductoResumen(1L, "P001", null, "Leche", null, null, 1L, 2L, 3L, null, true));
+
+        mockMvc.perform(get("/api/v1/productos/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.codigoInterno").value("P001"));
+    }
+
+    @Test
     void crearDevuelve201() throws Exception {
         when(productoService.crear(anyString(), any(), anyString(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new ProductoResumen(2L, "P002", null, "Azúcar", null, null, 1L, 2L, 3L, null, true));

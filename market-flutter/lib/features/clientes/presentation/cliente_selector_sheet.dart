@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/connectivity/backend_reachability_provider.dart';
 import '../../../core/db/local_store_provider.dart';
 import '../../../core/util/correlation_id.dart';
+import '../../../core/util/decimal_input.dart';
 import '../application/clientes_provider.dart';
 import '../data/cliente.dart';
 import '../data/cliente_pendiente_local.dart';
@@ -58,9 +59,7 @@ class _ClienteSelectorSheetState extends ConsumerState<ClienteSelectorSheet> {
     final nit = _nitController.text.trim().isEmpty
         ? null
         : _nitController.text.trim();
-    final limiteCredito = Decimal.tryParse(
-      _limiteCreditoController.text.trim(),
-    );
+    final limiteCredito = parseDecimalInput(_limiteCreditoController.text);
 
     final correlationId = nuevoCorrelationId();
     final hayRed = ref.read(backendAlcanzableProvider).value ?? true;

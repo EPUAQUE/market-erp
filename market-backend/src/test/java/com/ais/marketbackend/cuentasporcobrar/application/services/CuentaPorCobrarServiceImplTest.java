@@ -85,7 +85,7 @@ class CuentaPorCobrarServiceImplTest {
 
         org.mockito.Mockito.verify(cajaService).registrarMovimientoSiHayAbierta(
                 3L, com.ais.marketbackend.caja.domain.model.TipoMovimientoCaja.INGRESO,
-                "Cobro cuenta por cobrar #9", new BigDecimal("30.00"));
+                "Cobro cuenta por cobrar #9 (EFECTIVO)", new BigDecimal("30.00"));
     }
 
     @Test

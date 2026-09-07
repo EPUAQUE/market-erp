@@ -7,6 +7,7 @@ import '../application/checkout_notifier.dart';
 import '../data/venta_api.dart';
 import '../domain/carrito.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/util/decimal_input.dart';
 
 class CobroSheet extends ConsumerStatefulWidget {
   const CobroSheet({super.key, required this.tiendaId, required this.total});
@@ -48,11 +49,11 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
     super.dispose();
   }
 
-  Decimal? get _montoRecibido => Decimal.tryParse(_montoController.text.trim());
+  Decimal? get _montoRecibido => parseDecimalInput(_montoController.text);
 
   Map<MetodoPago, Decimal> get _desgloseMixto => {
     for (final entry in _montoMixtoControllers.entries)
-      entry.key: Decimal.tryParse(entry.value.text.trim()) ?? Decimal.zero,
+      entry.key: parseDecimalInput(entry.value.text) ?? Decimal.zero,
   };
 
   Decimal get _sumaMixto =>

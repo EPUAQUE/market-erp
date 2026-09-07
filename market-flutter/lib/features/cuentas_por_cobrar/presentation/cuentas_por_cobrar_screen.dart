@@ -2,6 +2,7 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/util/decimal_input.dart';
 import '../../auth/application/auth_notifier.dart';
 import '../../clientes/application/clientes_provider.dart';
 import '../../clientes/data/cliente.dart';
@@ -299,7 +300,7 @@ class _RegistrarAbonoSheetState extends ConsumerState<RegistrarAbonoSheet> {
     super.dispose();
   }
 
-  Decimal? get _monto => Decimal.tryParse(_montoController.text.trim());
+  Decimal? get _monto => parseDecimalInput(_montoController.text);
 
   bool get _puedeConfirmar {
     final monto = _monto;

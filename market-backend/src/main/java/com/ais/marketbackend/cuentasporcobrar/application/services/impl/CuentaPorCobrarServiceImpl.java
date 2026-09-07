@@ -47,7 +47,8 @@ public class CuentaPorCobrarServiceImpl implements CuentaPorCobrarService {
         cuenta.registrarCobro(monto, metodoPago);
         CuentaPorCobrarResumen resumen = toResumen(cuentaPorCobrarRepository.save(cuenta));
         cajaService.registrarMovimientoSiHayAbierta(
-                tiendaId, TipoMovimientoCaja.INGRESO, "Cobro cuenta por cobrar #" + id, monto);
+                tiendaId, TipoMovimientoCaja.INGRESO,
+                "Cobro cuenta por cobrar #" + id + " (" + metodoPago + ")", monto);
         return resumen;
     }
 

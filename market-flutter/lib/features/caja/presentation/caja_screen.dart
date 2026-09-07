@@ -2,9 +2,11 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/util/decimal_input.dart';
 import '../../auth/application/auth_notifier.dart';
 import '../application/caja_provider.dart';
 import '../data/caja.dart';
+import '../domain/movimiento_caja_clasificado.dart';
 
 class CajaScreen extends ConsumerWidget {
   const CajaScreen({super.key});
@@ -47,6 +49,7 @@ class _AbrirCajaForm extends ConsumerStatefulWidget {
 
 class _AbrirCajaFormState extends ConsumerState<_AbrirCajaForm> {
   final _montoController = TextEditingController(text: '0');
+  String? _errorValidacion;
 
   @override
   void dispose() {
@@ -55,8 +58,12 @@ class _AbrirCajaFormState extends ConsumerState<_AbrirCajaForm> {
   }
 
   Future<void> _abrir() async {
-    final monto = Decimal.tryParse(_montoController.text.trim());
-    if (monto == null || monto < Decimal.zero) return;
+    final monto = parseDecimalInput(_montoController.text);
+    if (monto == null || monto < Decimal.zero) {
+      setState(() => _errorValidacion = 'Ingresa un monto válido, ej. 100.00');
+      return;
+    }
+    setState(() => _errorValidacion = null);
     await ref
         .read(cajaActionsProvider.notifier)
         .abrir(tiendaId: widget.tiendaId, montoInicial: monto);
@@ -93,6 +100,13 @@ class _AbrirCajaFormState extends ConsumerState<_AbrirCajaForm> {
                     border: OutlineInputBorder(),
                   ),
                 ),
+                if (_errorValidacion != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _errorValidacion!,
+                    style: TextStyle(color: colors.danger),
+                  ),
+                ],
                 if (actions.error != null) ...[
                   const SizedBox(height: 8),
                   Text(actions.error!, style: TextStyle(color: colors.danger)),
@@ -208,6 +222,8 @@ class _CajaAbiertaView extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
+          _VentasEfectivoCard(movimientos: sesion.movimientos),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -305,6 +321,84 @@ class _CajaAbiertaView extends ConsumerWidget {
   }
 }
 
+/// Ventas y cobros de cuenta por cobrar cobrados en efectivo durante esta
+/// sesión — lo que hay que ver reflejado en la gaveta al cerrar. Un pago
+/// mixto solo aporta la porción de su canal en efectivo (ver
+/// `movimiento_caja_clasificado.dart`); tarjeta/transferencia no cuentan acá
+/// aunque sí sumen al saldo esperado de caja.
+class _VentasEfectivoCard extends StatelessWidget {
+  const _VentasEfectivoCard({required this.movimientos});
+
+  final List<MovimientoCaja> movimientos;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final items = ventasYCobrosEnEfectivo(movimientos);
+    final total = totalVentasYCobrosEnEfectivo(movimientos);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Ventas del día (efectivo)',
+                  style: TextStyle(color: Colors.black54),
+                ),
+                Text(
+                  'Q $total',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colors.primary,
+                  ),
+                ),
+              ],
+            ),
+            if (items.isEmpty) ...[
+              const SizedBox(height: 6),
+              const Text(
+                'Sin ventas en efectivo todavía.',
+                style: TextStyle(color: Colors.black45),
+              ),
+            ] else ...[
+              const Divider(height: 20),
+              ...items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.movimiento.concepto,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        '+ Q ${item.movimiento.monto}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MovimientoDialog extends StatefulWidget {
   const _MovimientoDialog({required this.tipo});
 
@@ -317,6 +411,7 @@ class _MovimientoDialog extends StatefulWidget {
 class _MovimientoDialogState extends State<_MovimientoDialog> {
   final _conceptoController = TextEditingController();
   final _montoController = TextEditingController();
+  String? _error;
 
   @override
   void dispose() {
@@ -351,6 +446,10 @@ class _MovimientoDialogState extends State<_MovimientoDialog> {
               border: OutlineInputBorder(),
             ),
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: TextStyle(color: colors.danger)),
+          ],
         ],
       ),
       actions: [
@@ -364,8 +463,13 @@ class _MovimientoDialogState extends State<_MovimientoDialog> {
           ),
           onPressed: () {
             final concepto = _conceptoController.text.trim();
-            final monto = Decimal.tryParse(_montoController.text.trim());
-            if (concepto.isEmpty || monto == null || monto <= Decimal.zero) {
+            final monto = parseDecimalInput(_montoController.text);
+            if (concepto.isEmpty) {
+              setState(() => _error = 'El concepto es obligatorio.');
+              return;
+            }
+            if (monto == null || monto <= Decimal.zero) {
+              setState(() => _error = 'Ingresa un monto válido, ej. 50.00');
               return;
             }
             Navigator.of(context).pop((concepto, monto));
@@ -397,7 +501,7 @@ class _CerrarCajaDialogState extends State<_CerrarCajaDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final contado = Decimal.tryParse(_montoController.text.trim());
+    final contado = parseDecimalInput(_montoController.text);
     final diferencia = contado != null ? contado - widget.saldoEsperado : null;
     final colors = AppColors.of(context);
     return AlertDialog(

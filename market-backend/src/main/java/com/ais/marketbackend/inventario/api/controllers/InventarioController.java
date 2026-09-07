@@ -2,6 +2,7 @@ package com.ais.marketbackend.inventario.api.controllers;
 
 import com.ais.marketbackend.inventario.api.dtos.requests.RegistrarMovimientoRequest;
 import com.ais.marketbackend.inventario.api.dtos.responses.ExistenciaTiendaResponse;
+import com.ais.marketbackend.inventario.api.dtos.responses.IngresoTiendaResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.InventarioResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.MovimientoInventarioResponse;
 import com.ais.marketbackend.inventario.api.mappers.InventarioApiMapper;
@@ -66,6 +67,23 @@ public class InventarioController {
                 .map(mapper::toResponse)
                 .toList();
         return ResponseEntity.ok(existencias);
+    }
+
+    /**
+     * Para el POS (market-flutter): últimos ingresos (compras) de un producto en
+     * cada tienda del grupo, con costo y proveedor — gateado por un permiso
+     * distinto de {@code INVENTARIO_VER_GRUPO} porque expone costo/proveedor
+     * (dato sensible), no solo existencia.
+     */
+    @GetMapping("/productos/{productoId}/ingresos/grupo")
+    @RequiresPermission("INVENTARIO_INGRESOS_VER_GRUPO")
+    public ResponseEntity<List<IngresoTiendaResponse>> obtenerUltimosIngresosPorGrupo(
+            @PathVariable Long tiendaId, @PathVariable Long productoId) {
+        List<IngresoTiendaResponse> ingresos = inventarioService.listarUltimosIngresosPorGrupo(tiendaId, productoId)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(ingresos);
     }
 
     @GetMapping("/productos/{productoId}/movimientos")

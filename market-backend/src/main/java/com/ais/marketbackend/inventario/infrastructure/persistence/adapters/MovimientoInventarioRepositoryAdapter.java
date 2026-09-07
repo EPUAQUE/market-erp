@@ -2,6 +2,7 @@ package com.ais.marketbackend.inventario.infrastructure.persistence.adapters;
 
 import com.ais.marketbackend.inventario.domain.exception.ReferenciaInvalidaException;
 import com.ais.marketbackend.inventario.domain.model.MovimientoInventario;
+import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
 import com.ais.marketbackend.inventario.domain.repository.MovimientoInventarioRepository;
 import com.ais.marketbackend.inventario.infrastructure.persistence.mappers.MovimientoInventarioEntityMapper;
 import com.ais.marketbackend.inventario.infrastructure.persistence.repositories.MovimientoInventarioJpaRepository;
@@ -46,5 +47,16 @@ public class MovimientoInventarioRepositoryAdapter implements MovimientoInventar
         return PaginaMapper.desde(jpaRepository
                 .findByTiendaIdAndProductoIdOrderByFechaDesc(tiendaId, productoId, PageRequest.of(pagina, tamano))
                 .map(mapper::toDomain));
+    }
+
+    @Override
+    public List<MovimientoInventario> findUltimosPorTiendaIdAndProductoIdAndTipo(
+            Long tiendaId, Long productoId, TipoMovimiento tipo, int limite) {
+        return jpaRepository
+                .findByTiendaIdAndProductoIdAndTipoMovimientoOrderByFechaDesc(
+                        tiendaId, productoId, tipo, PageRequest.of(0, limite))
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }

@@ -1,6 +1,7 @@
 package com.ais.marketbackend.inventario.domain.repository;
 
 import com.ais.marketbackend.inventario.domain.model.MovimientoInventario;
+import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
 import com.ais.marketbackend.shared.domain.Pagina;
 import java.util.List;
 
@@ -17,4 +18,8 @@ public interface MovimientoInventarioRepository {
 
     Pagina<MovimientoInventario> findByTiendaIdAndProductoIdOrderByFechaDesc(
             Long tiendaId, Long productoId, int pagina, int tamano);
+
+    /** Los {@code limite} movimientos más recientes de un tipo dado — usado para "últimos ingresos". */
+    List<MovimientoInventario> findUltimosPorTiendaIdAndProductoIdAndTipo(
+            Long tiendaId, Long productoId, TipoMovimiento tipo, int limite);
 }

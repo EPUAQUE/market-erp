@@ -13,6 +13,7 @@ import com.ais.marketbackend.compras.application.services.interfaces.CompraServi
 import com.ais.marketbackend.compras.domain.model.EstadoCompra;
 import com.ais.marketbackend.inventario.api.mappers.InventarioApiMapper;
 import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
+import com.ais.marketbackend.inventario.application.dtos.IngresoTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
@@ -77,6 +78,33 @@ class InventarioControllerTest {
                 .andExpect(jsonPath("$[0].existenciaActual").value("10.000"))
                 .andExpect(jsonPath("$[1].tiendaNombre").value("Tienda Norte"))
                 .andExpect(jsonPath("$[1].existenciaActual").value("0"));
+    }
+
+    @Test
+    void obtenerUltimosIngresosPorGrupoResuelveProveedorPorCadaIngreso() throws Exception {
+        when(inventarioService.listarUltimosIngresosPorGrupo(1L, 2L)).thenReturn(List.of(
+                new IngresoTiendaResumen(
+                        2L, "Tienda Norte", Instant.parse("2026-02-01T00:00:00Z"), new BigDecimal("20"),
+                        new BigDecimal("4.50"), 200L),
+                new IngresoTiendaResumen(
+                        1L, "Tienda Central", Instant.parse("2026-01-01T00:00:00Z"), new BigDecimal("10"),
+                        new BigDecimal("3.00"), 100L)));
+        when(compraService.obtener(2L, 200L)).thenReturn(
+                new CompraResumen(200L, 3L, 2L, Instant.now(), EstadoCompra.RECIBIDA, List.of(), BigDecimal.TEN));
+        when(compraService.obtener(1L, 100L)).thenReturn(
+                new CompraResumen(100L, 4L, 1L, Instant.now(), EstadoCompra.RECIBIDA, List.of(), BigDecimal.TEN));
+        when(proveedorService.obtener(3L)).thenReturn(Optional.of(
+                new ProveedorResumen(3L, "NIT1", "Distribuidora Norte", null, null, null, EstadoProveedor.ACTIVO)));
+        when(proveedorService.obtener(4L)).thenReturn(Optional.of(
+                new ProveedorResumen(4L, "NIT2", "Distribuidora Central", null, null, null, EstadoProveedor.ACTIVO)));
+
+        mockMvc.perform(get("/api/v1/inventario/tiendas/1/productos/2/ingresos/grupo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tiendaNombre").value("Tienda Norte"))
+                .andExpect(jsonPath("$[0].costoUnitario").value("4.50"))
+                .andExpect(jsonPath("$[0].proveedorNombre").value("Distribuidora Norte"))
+                .andExpect(jsonPath("$[1].tiendaNombre").value("Tienda Central"))
+                .andExpect(jsonPath("$[1].proveedorNombre").value("Distribuidora Central"));
     }
 
     @Test

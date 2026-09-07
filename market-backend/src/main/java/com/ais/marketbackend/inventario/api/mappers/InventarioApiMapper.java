@@ -2,9 +2,11 @@ package com.ais.marketbackend.inventario.api.mappers;
 
 import com.ais.marketbackend.compras.application.services.interfaces.CompraService;
 import com.ais.marketbackend.inventario.api.dtos.responses.ExistenciaTiendaResponse;
+import com.ais.marketbackend.inventario.api.dtos.responses.IngresoTiendaResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.InventarioResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.MovimientoInventarioResponse;
 import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
+import com.ais.marketbackend.inventario.application.dtos.IngresoTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
@@ -50,6 +52,9 @@ public class InventarioApiMapper {
     }
 
     public MovimientoInventarioResponse toResponse(MovimientoInventarioResumen resumen) {
+        String proveedorNombre = resumen.tipoMovimiento() == TipoMovimiento.COMPRA
+                ? resolverProveedorNombre(resumen.tiendaId(), resumen.origenId())
+                : null;
         return MovimientoInventarioResponse.builder()
                 .id(resumen.id())
                 .fecha(resumen.fecha())
@@ -58,17 +63,29 @@ public class InventarioApiMapper {
                 .cantidad(toPlainString(resumen.cantidad()))
                 .costoUnitario(toPlainString(resumen.costoUnitario()))
                 .tipoMovimiento(resumen.tipoMovimiento().name())
-                .proveedorNombre(resolverProveedorNombre(resumen))
+                .proveedorNombre(proveedorNombre)
                 .build();
     }
 
-    /** Solo movimientos COMPRA con origen conocido resuelven proveedor — cualquier otro caso queda en null. */
-    private String resolverProveedorNombre(MovimientoInventarioResumen resumen) {
-        if (resumen.tipoMovimiento() != TipoMovimiento.COMPRA || resumen.origenId() == null) {
+    /** {@code resumen.compraId()} es siempre un movimiento COMPRA (ver {@code InventarioServiceImpl.listarUltimosIngresosPorGrupo}). */
+    public IngresoTiendaResponse toResponse(IngresoTiendaResumen resumen) {
+        return IngresoTiendaResponse.builder()
+                .tiendaId(resumen.tiendaId())
+                .tiendaNombre(resumen.tiendaNombre())
+                .fecha(resumen.fecha())
+                .cantidad(toPlainString(resumen.cantidad()))
+                .costoUnitario(toPlainString(resumen.costoUnitario()))
+                .proveedorNombre(resolverProveedorNombre(resumen.tiendaId(), resumen.compraId()))
+                .build();
+    }
+
+    /** Solo resuelve si hay un origen (id de compra) conocido — cualquier otro caso queda en null. */
+    private String resolverProveedorNombre(Long tiendaId, Long compraId) {
+        if (compraId == null) {
             return null;
         }
         try {
-            Long proveedorId = compraService.obtener(resumen.tiendaId(), resumen.origenId()).proveedorId();
+            Long proveedorId = compraService.obtener(tiendaId, compraId).proveedorId();
             return proveedorService.obtener(proveedorId).map(p -> p.nombre()).orElse(null);
         } catch (ResourceNotFoundException compraOProveedorYaNoExiste) {
             return null;

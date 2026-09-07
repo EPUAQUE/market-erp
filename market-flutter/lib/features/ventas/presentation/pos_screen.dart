@@ -46,6 +46,8 @@ class PosScreen extends ConsumerWidget {
         sesion?.can('CUENTAS_POR_PAGAR_VER') ?? false;
     final puedeVerInventarioGrupo =
         sesion?.can('INVENTARIO_VER_GRUPO') ?? false;
+    final puedeVerIngresosGrupo =
+        sesion?.can('INVENTARIO_INGRESOS_VER_GRUPO') ?? false;
     final modoRapido = ref.watch(modoVentaRapidaProvider);
     final modoOscuro = ref.watch(themeModeProvider) == ThemeMode.dark;
     final colors = AppColors.of(context);
@@ -86,6 +88,12 @@ class PosScreen extends ConsumerWidget {
           icono: Icons.store_outlined,
           etiqueta: 'Existencias por tienda',
           onTap: () => context.push('/inventario-grupo'),
+        ),
+      if (puedeVerIngresosGrupo)
+        _AccionPos(
+          icono: Icons.local_shipping_outlined,
+          etiqueta: 'Últimos ingresos',
+          onTap: () => context.push('/inventario-ingresos'),
         ),
       _AccionPos(
         icono: Icons.logout,

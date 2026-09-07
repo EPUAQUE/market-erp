@@ -1,6 +1,7 @@
 package com.ais.marketbackend.inventario.application.services.interfaces;
 
 import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
+import com.ais.marketbackend.inventario.application.dtos.IngresoTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
@@ -32,6 +33,17 @@ public interface InventarioService {
      * el alcance normal del usuario vía {@code PermissionInterceptor} al ir en la ruta.
      */
     List<ExistenciaTiendaResumen> listarExistenciaPorGrupo(Long tiendaId, Long productoId);
+
+    /**
+     * Últimos ingresos (movimientos COMPRA, con costo y proveedor) de un producto
+     * en todas las tiendas del grupo al que pertenece {@code tiendaId} — mismo
+     * alcance sin filtro que {@link #listarExistenciaPorGrupo}. Se toman los más
+     * recientes de cada tienda y se combinan en una sola lista ordenada por fecha
+     * descendente, recortada a un máximo total (ver
+     * {@code InventarioServiceImpl.LIMITE_ULTIMOS_INGRESOS}) — no es una lista por
+     * tienda, es un feed cronológico único de todo el grupo.
+     */
+    List<IngresoTiendaResumen> listarUltimosIngresosPorGrupo(Long tiendaId, Long productoId);
 
     /** Sin paginar — uso interno (ej. agregados del dashboard). El endpoint público usa la variante paginada. */
     List<InventarioResumen> listarPorTienda(Long tiendaId);

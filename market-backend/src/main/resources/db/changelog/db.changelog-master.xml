@@ -110,4 +110,5 @@
     <include file="db/changelog/modules/seguridad/018-seed-inventario-ver-grupo.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/019-seed-productos-ver-encargado.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/modules/seguridad/020-seed-admin-grupo-permisos-faltantes.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/modules/seguridad/021-seed-inventario-ingresos-ver-grupo.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

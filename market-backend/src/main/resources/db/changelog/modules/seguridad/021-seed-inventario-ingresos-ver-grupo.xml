@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Permiso nuevo para GET /inventario/tiendas/{tiendaId}/productos/{productoId}/ingresos/grupo
+         (POS, market-flutter): últimos ingresos (compras) de un producto en todas
+         las tiendas del grupo, con costo unitario y proveedor. Deliberadamente
+         separado de INVENTARIO_VER_GRUPO (018-seed-inventario-ver-grupo.xml) —
+         esa pantalla solo expone existencia (no sensible), esta expone costo y
+         proveedor (sí sensible, ver CLAUDE.md de market-flutter: "consultar
+         inventario (existencias, no costos)" para el rol vendedor/cajero).
+         Mismo alcance de audiencia que INVENTARIO_VER_GRUPO por decisión
+         explícita del cliente: solo el administrador de grupo (ADMIN_GRUPO) y el
+         administrador global — ni CAJERO ni ENCARGADO_TIENDA individual. -->
+    <changeSet id="seguridad-021-seed-inventario-ingresos-ver-grupo" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="INVENTARIO_INGRESOS_VER_GRUPO"/>
+            <column name="descripcion"
+                    value="Ver últimos ingresos (compras), costo y proveedor de un producto en todas las tiendas del grupo"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'INVENTARIO_INGRESOS_VER_GRUPO')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN_GRUPO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'INVENTARIO_INGRESOS_VER_GRUPO')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

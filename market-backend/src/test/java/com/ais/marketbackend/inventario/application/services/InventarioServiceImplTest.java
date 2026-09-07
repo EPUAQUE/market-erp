@@ -191,6 +191,34 @@ class InventarioServiceImplTest {
         assertThat(resultado.get(1).existenciaActual()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
+    @Test
+    void listarUltimosIngresosPorGrupoCombinaTiendasDelGrupoOrdenaPorFechaYRecorta() {
+        when(tiendaService.obtener(1L)).thenReturn(tienda(1L, 9L));
+        when(tiendaService.listarPorGrupo(9L)).thenReturn(List.of(tienda(1L, 9L), tienda(2L, 9L)));
+
+        MovimientoInventario mAntiguo = new MovimientoInventario(
+                null, java.time.Instant.parse("2026-01-01T00:00:00Z"), 1L, 5L, new BigDecimal("10"),
+                new BigDecimal("3.00"), TipoMovimiento.COMPRA, 100L);
+        MovimientoInventario mReciente = new MovimientoInventario(
+                null, java.time.Instant.parse("2026-02-01T00:00:00Z"), 2L, 5L, new BigDecimal("20"),
+                new BigDecimal("4.50"), TipoMovimiento.COMPRA, 200L);
+
+        when(movimientoInventarioRepository
+                .findUltimosPorTiendaIdAndProductoIdAndTipo(1L, 5L, TipoMovimiento.COMPRA, 20))
+                .thenReturn(List.of(mAntiguo));
+        when(movimientoInventarioRepository
+                .findUltimosPorTiendaIdAndProductoIdAndTipo(2L, 5L, TipoMovimiento.COMPRA, 20))
+                .thenReturn(List.of(mReciente));
+
+        var resultado = service.listarUltimosIngresosPorGrupo(1L, 5L);
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado.get(0).tiendaId()).isEqualTo(2L);
+        assertThat(resultado.get(0).compraId()).isEqualTo(200L);
+        assertThat(resultado.get(1).tiendaId()).isEqualTo(1L);
+        assertThat(resultado.get(1).compraId()).isEqualTo(100L);
+    }
+
     private TiendaResumen tienda(Long id, Long grupoId) {
         return new TiendaResumen(id, "T" + id, "Tienda " + id, null, null, null, EstadoTienda.ACTIVA, grupoId);
     }

@@ -2,6 +2,7 @@ package com.ais.marketbackend.inventario.application.services.impl;
 
 import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
 import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
+import com.ais.marketbackend.inventario.application.dtos.IngresoTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
@@ -19,6 +20,7 @@ import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
 import com.ais.marketbackend.tiendas.application.dtos.TiendaResumen;
 import com.ais.marketbackend.tiendas.application.services.interfaces.TiendaService;
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -37,6 +39,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @Service
 public class InventarioServiceImpl implements InventarioService {
+
+    /** Máximo total (combinando todas las tiendas del grupo) que devuelve {@link #listarUltimosIngresosPorGrupo}. */
+    private static final int LIMITE_ULTIMOS_INGRESOS = 20;
 
     private final InventarioRepository inventarioRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
@@ -136,6 +141,23 @@ public class InventarioServiceImpl implements InventarioService {
         return tiendaService.listarPorGrupo(tienda.grupoId()).stream()
                 .map(t -> new ExistenciaTiendaResumen(
                         t.id(), t.nombre(), obtener(t.id(), productoId).existenciaActual()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IngresoTiendaResumen> listarUltimosIngresosPorGrupo(Long tiendaId, Long productoId) {
+        TiendaResumen tienda = tiendaService.obtener(tiendaId);
+        return tiendaService.listarPorGrupo(tienda.grupoId()).stream()
+                .flatMap(t -> movimientoInventarioRepository
+                        .findUltimosPorTiendaIdAndProductoIdAndTipo(
+                                t.id(), productoId, TipoMovimiento.COMPRA, LIMITE_ULTIMOS_INGRESOS)
+                        .stream()
+                        .map(m -> new IngresoTiendaResumen(
+                                t.id(), t.nombre(), m.getFecha(), m.getCantidad(), m.getCostoUnitario(),
+                                m.getOrigenId())))
+                .sorted(Comparator.comparing(IngresoTiendaResumen::fecha).reversed())
+                .limit(LIMITE_ULTIMOS_INGRESOS)
                 .toList();
     }
 

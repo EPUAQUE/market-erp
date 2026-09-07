@@ -135,7 +135,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-6 p-6">
+  <div class="w-full space-y-6 p-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Gastos programados</h1>
       <p class="text-sm text-mk-text/70">

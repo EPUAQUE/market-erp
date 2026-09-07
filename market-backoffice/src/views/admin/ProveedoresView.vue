@@ -83,7 +83,7 @@ onMounted(cargar)
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl space-y-6 p-6">
+  <div class="w-full space-y-6 p-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">Proveedores</h1>
       <p class="text-sm text-mk-text/70">Catálogo de proveedores de Inven365.</p>

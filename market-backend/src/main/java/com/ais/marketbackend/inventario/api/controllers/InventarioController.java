@@ -1,6 +1,7 @@
 package com.ais.marketbackend.inventario.api.controllers;
 
 import com.ais.marketbackend.inventario.api.dtos.requests.RegistrarMovimientoRequest;
+import com.ais.marketbackend.inventario.api.dtos.responses.ExistenciaTiendaResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.InventarioResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.MovimientoInventarioResponse;
 import com.ais.marketbackend.inventario.api.mappers.InventarioApiMapper;
@@ -9,6 +10,7 @@ import com.ais.marketbackend.seguridad.infrastructure.security.RequiresPermissio
 import com.ais.marketbackend.shared.api.PaginacionParams;
 import com.ais.marketbackend.shared.responses.PaginaResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +50,22 @@ public class InventarioController {
     @RequiresPermission("INVENTARIO_VER")
     public ResponseEntity<InventarioResponse> obtener(@PathVariable Long tiendaId, @PathVariable Long productoId) {
         return ResponseEntity.ok(mapper.toResponse(inventarioService.obtener(tiendaId, productoId)));
+    }
+
+    /**
+     * Para el POS (market-flutter): consultar cuánto hay de un producto en cada
+     * tienda del grupo al que pertenece {@code tiendaId} (la propia del usuario,
+     * ya validada por {@code PermissionInterceptor}) — no solo en esa tienda.
+     */
+    @GetMapping("/productos/{productoId}/grupo")
+    @RequiresPermission("INVENTARIO_VER_GRUPO")
+    public ResponseEntity<List<ExistenciaTiendaResponse>> obtenerPorGrupo(
+            @PathVariable Long tiendaId, @PathVariable Long productoId) {
+        List<ExistenciaTiendaResponse> existencias = inventarioService.listarExistenciaPorGrupo(tiendaId, productoId)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(existencias);
     }
 
     @GetMapping("/productos/{productoId}/movimientos")

@@ -10,6 +10,7 @@ import '../features/caja/presentation/caja_screen.dart';
 import '../features/cuentas_por_cobrar/presentation/cuentas_por_cobrar_screen.dart';
 import '../features/cuentas_por_pagar/presentation/cuentas_por_pagar_screen.dart';
 import '../features/dashboard/presentation/dashboard_router_screen.dart';
+import '../features/inventario/presentation/inventario_grupo_screen.dart';
 import '../features/sync/presentation/pendientes_error_screen.dart';
 import '../features/ventas/presentation/pos_screen.dart';
 
@@ -70,6 +71,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/pos';
       }
 
+      if (state.matchedLocation == '/inventario-grupo' &&
+          !sesion.can('INVENTARIO_VER_GRUPO')) {
+        return '/pos';
+      }
+
       return null;
     },
     routes: [
@@ -99,6 +105,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/cuentas-por-pagar',
         builder: (context, state) => const CuentasPorPagarScreen(),
+      ),
+      GoRoute(
+        path: '/inventario-grupo',
+        builder: (context, state) => const InventarioGrupoScreen(),
       ),
       GoRoute(
         path: '/pendientes-error',

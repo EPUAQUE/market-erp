@@ -113,4 +113,38 @@ class TiendaServiceImplTest {
         assertThat(resultado).hasSize(1);
         assertThat(resultado.get(0).codigo()).isEqualTo("CENTRAL");
     }
+
+    @Test
+    void obtenerConIdInexistenteLanzaNoEncontrado() {
+        when(tiendaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> tiendaService.obtener(99L)).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void obtenerNoAplicaElFiltroDeAlcanceDelUsuarioActual() {
+        Tienda tienda = Tienda.nueva("CENTRAL", "Tienda Central", null, null, null, 1L);
+        when(tiendaRepository.findById(1L)).thenReturn(Optional.of(tienda));
+        when(autorizacionTiendaService.tiendaIdsPermitidas())
+                .thenReturn(Optional.of(java.util.Set.of(999L)));
+
+        TiendaResumen resumen = tiendaService.obtener(1L);
+
+        assertThat(resumen.codigo()).isEqualTo("CENTRAL");
+    }
+
+    @Test
+    void listarPorGrupoDevuelveSoloLasTiendasDeEseGrupoSinFiltrarPorAlcance() {
+        when(tiendaRepository.findAll()).thenReturn(java.util.List.of(
+                Tienda.nueva("CENTRAL", "Tienda Central", null, null, null, 1L),
+                Tienda.nueva("NORTE", "Tienda Norte", null, null, null, 1L),
+                Tienda.nueva("SUR", "Tienda Sur", null, null, null, 2L)));
+        when(autorizacionTiendaService.tiendaIdsPermitidas())
+                .thenReturn(Optional.of(java.util.Set.of(999L)));
+
+        var resultado = tiendaService.listarPorGrupo(1L);
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado).extracting(TiendaResumen::codigo).containsExactly("CENTRAL", "NORTE");
+    }
 }

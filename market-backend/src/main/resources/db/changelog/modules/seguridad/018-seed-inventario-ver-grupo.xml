@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Permiso nuevo para GET /inventario/tiendas/{tiendaId}/productos/{productoId}/grupo
+         (POS, market-flutter): consultar existencias de un producto en todas las
+         tiendas del grupo de la tienda propia, no solo la propia. Deliberadamente
+         separado de INVENTARIO_VER (que ya tiene CAJERO) — decisión explícita del
+         cliente: el cajero NO debe poder hacer esta consulta. Tampoco cualquier
+         encargado de tienda individual — decisión posterior del cliente: solo el
+         encargado DEL GRUPO (rol ADMIN_GRUPO, ver 011-usuario-grupo-tienda.xml) y
+         el administrador global. -->
+    <changeSet id="seguridad-018-seed-inventario-ver-grupo" author="market-backend">
+        <insert tableName="permiso">
+            <column name="codigo" value="INVENTARIO_VER_GRUPO"/>
+            <column name="descripcion"
+                    value="Ver existencia de un producto en todas las tiendas del grupo (no solo la propia)"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_VER_GRUPO')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN_GRUPO')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'INVENTARIO_VER_GRUPO')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

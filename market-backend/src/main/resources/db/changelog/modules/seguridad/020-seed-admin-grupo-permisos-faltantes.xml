@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Bug real encontrado verificando "que el administrador de grupo tenga
+         todos los permisos operativos de tienda": ADMIN_GRUPO (011-usuario-grupo-tienda.xml)
+         se calcula UNA SOLA VEZ, como un SELECT DISTINCT de los permisos que
+         ENCARGADO_TIENDA + CAJERO + AUDITOR tenían en el momento exacto en que
+         corrió ese changeset — no es una vista ni un trigger, así que cualquier
+         permiso otorgado a esos 3 roles DESPUÉS de esa fila del changelog (por
+         un changeset con número más alto) nunca se propaga a ADMIN_GRUPO.
+         Confirmado por consulta directa a rol_permiso: ENCARGADO_TIENDA ya tiene
+         CUENTAS_POR_PAGAR_ANULAR/CUENTAS_POR_PAGAR_PAGAR (017-seed-cuentas-por-pagar-encargado.xml)
+         y GASTOS_PROGRAMADOS_CREAR/GASTOS_PROGRAMADOS_EDITAR/GASTOS_PROGRAMADOS_GENERAR_PAGO
+         (015-seed-gastos-programados-encargado.xml) — ambos corren después de 011 —
+         pero ADMIN_GRUPO no los tenía.
+
+         Deliberadamente NO se incluyen aquí permisos de catálogo/compras/FEL/
+         proveedores/marcas/unidades de medida (crear o editar) — ninguno de
+         ENCARGADO_TIENDA, CAJERO ni AUDITOR los tiene hoy tampoco, así que no
+         es parte de este bug de desincronización; darlos sería una expansión
+         nueva de alcance, no una corrección, y no se hizo sin que el cliente
+         lo pida explícitamente. Tampoco se incluye nada de gestión de
+         usuarios/tiendas/grupos de tiendas — eso sigue siendo exclusivo de
+         ADMIN por decisión explícita del cliente. -->
+    <changeSet id="seguridad-020-admin-grupo-permisos-faltantes" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN_GRUPO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_ANULAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN_GRUPO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'CUENTAS_POR_PAGAR_PAGAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN_GRUPO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_CREAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN_GRUPO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_EDITAR')"/>
+        </insert>
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ADMIN_GRUPO')"/>
+            <column name="permiso_id"
+                    valueComputed="(select id from permiso where codigo = 'GASTOS_PROGRAMADOS_GENERAR_PAGO')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

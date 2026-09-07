@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Bug real encontrado probando "Existencias por tienda" (INVENTARIO_VER_GRUPO,
+         ver 018-seed-inventario-ver-grupo.xml): ENCARGADO_TIENDA nunca tuvo
+         PRODUCTOS_VER (el comentario de 006-seed-roles-operativos.xml decía que ya
+         lo tenía, pero ningún changelog se lo otorgó — solo ADMIN lo tiene desde
+         productos/001-producto.xml y CAJERO desde 006). Sin este permiso,
+         GET /productos y /productos/tiendas/{id} devuelven 403 para todo
+         ENCARGADO_TIENDA real, y el catálogo completo del POS (market-flutter)
+         nunca carga — no solo esta pantalla nueva, la venta normal tampoco puede
+         buscar productos. Confirmado con curl y con un login real
+         (encargado_qa) antes de este fix. -->
+    <changeSet id="seguridad-019-productos-ver-encargado" author="market-backend">
+        <insert tableName="rol_permiso">
+            <column name="rol_id" valueComputed="(select id from rol where nombre = 'ENCARGADO_TIENDA')"/>
+            <column name="permiso_id" valueComputed="(select id from permiso where codigo = 'PRODUCTOS_VER')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

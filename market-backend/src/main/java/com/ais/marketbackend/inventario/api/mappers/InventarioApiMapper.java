@@ -1,8 +1,10 @@
 package com.ais.marketbackend.inventario.api.mappers;
 
 import com.ais.marketbackend.compras.application.services.interfaces.CompraService;
+import com.ais.marketbackend.inventario.api.dtos.responses.ExistenciaTiendaResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.InventarioResponse;
 import com.ais.marketbackend.inventario.api.dtos.responses.MovimientoInventarioResponse;
+import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
@@ -36,6 +38,14 @@ public class InventarioApiMapper {
                 .productoId(resumen.productoId())
                 .existenciaActual(toPlainString(resumen.existenciaActual()))
                 .costoPromedioActual(toPlainString(resumen.costoPromedioActual()))
+                .build();
+    }
+
+    public ExistenciaTiendaResponse toResponse(ExistenciaTiendaResumen resumen) {
+        return ExistenciaTiendaResponse.builder()
+                .tiendaId(resumen.tiendaId())
+                .tiendaNombre(resumen.tiendaNombre())
+                .existenciaActual(toPlainString(resumen.existenciaActual()))
                 .build();
     }
 

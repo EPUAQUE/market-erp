@@ -22,6 +22,9 @@ import com.ais.marketbackend.productos.application.dtos.ProductoTiendaResumen;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoTiendaService;
 import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
+import com.ais.marketbackend.tiendas.application.dtos.TiendaResumen;
+import com.ais.marketbackend.tiendas.application.services.interfaces.TiendaService;
+import com.ais.marketbackend.tiendas.domain.model.EstadoTienda;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +38,7 @@ class InventarioServiceImplTest {
     private InventarioRepository inventarioRepository;
     private MovimientoInventarioRepository movimientoInventarioRepository;
     private ProductoTiendaService productoTiendaService;
+    private TiendaService tiendaService;
     private InventarioServiceImpl service;
 
     @BeforeEach
@@ -42,10 +46,12 @@ class InventarioServiceImplTest {
         inventarioRepository = mock(InventarioRepository.class);
         movimientoInventarioRepository = mock(MovimientoInventarioRepository.class);
         productoTiendaService = mock(ProductoTiendaService.class);
+        tiendaService = mock(TiendaService.class);
         PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
         service = new InventarioServiceImpl(
-                inventarioRepository, movimientoInventarioRepository, productoTiendaService, transactionManager);
+                inventarioRepository, movimientoInventarioRepository, productoTiendaService, tiendaService,
+                transactionManager);
 
         when(inventarioRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -166,6 +172,35 @@ class InventarioServiceImplTest {
         Pagina<MovimientoInventarioResumen> resultado = service.listarMovimientos(1L, 2L, 0, 20);
 
         assertThat(resultado.contenido()).hasSize(1);
+    }
+
+    @Test
+    void listarExistenciaPorGrupoResuelveElGrupoDeLaTiendaPropiaYSumaCadaHermana() {
+        when(tiendaService.obtener(1L)).thenReturn(tienda(1L, 9L));
+        when(tiendaService.listarPorGrupo(9L)).thenReturn(List.of(tienda(1L, 9L), tienda(2L, 9L)));
+        when(inventarioRepository.findByTiendaIdAndProductoId(1L, 5L))
+                .thenReturn(Optional.of(inventarioConExistencia(1L, 5L, "10")));
+        when(inventarioRepository.findByTiendaIdAndProductoId(2L, 5L)).thenReturn(Optional.empty());
+
+        var resultado = service.listarExistenciaPorGrupo(1L, 5L);
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado.get(0).tiendaId()).isEqualTo(1L);
+        assertThat(resultado.get(0).existenciaActual()).isEqualByComparingTo(new BigDecimal("10"));
+        assertThat(resultado.get(1).tiendaId()).isEqualTo(2L);
+        assertThat(resultado.get(1).existenciaActual()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    private TiendaResumen tienda(Long id, Long grupoId) {
+        return new TiendaResumen(id, "T" + id, "Tienda " + id, null, null, null, EstadoTienda.ACTIVA, grupoId);
+    }
+
+    private Inventario inventarioConExistencia(Long tiendaId, Long productoId, String existencia) {
+        Inventario inventario = Inventario.nuevo(tiendaId, productoId);
+        inventario.aplicar(MovimientoInventario.nuevo(
+                tiendaId, productoId, new BigDecimal(existencia), BigDecimal.ZERO, TipoMovimiento.AJUSTE_POSITIVO,
+                null));
+        return inventario;
     }
 
     private ProductoTiendaResumen configuracion(boolean permitirVenta, boolean permitirIngreso) {

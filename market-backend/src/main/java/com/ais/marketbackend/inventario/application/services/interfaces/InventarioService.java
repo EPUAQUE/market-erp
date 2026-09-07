@@ -1,5 +1,6 @@
 package com.ais.marketbackend.inventario.application.services.interfaces;
 
+import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.domain.model.TipoMovimiento;
@@ -23,6 +24,14 @@ public interface InventarioService {
             TipoMovimiento tipoMovimiento, Long origenId);
 
     InventarioResumen obtener(Long tiendaId, Long productoId);
+
+    /**
+     * Existencia de un producto en cada tienda del mismo grupo al que pertenece
+     * {@code tiendaId} — incluye tiendas fuera del alcance individual del usuario
+     * (ver {@code TiendaService.listarPorGrupo}); {@code tiendaId} sí se valida por
+     * el alcance normal del usuario vía {@code PermissionInterceptor} al ir en la ruta.
+     */
+    List<ExistenciaTiendaResumen> listarExistenciaPorGrupo(Long tiendaId, Long productoId);
 
     /** Sin paginar — uso interno (ej. agregados del dashboard). El endpoint público usa la variante paginada. */
     List<InventarioResumen> listarPorTienda(Long tiendaId);

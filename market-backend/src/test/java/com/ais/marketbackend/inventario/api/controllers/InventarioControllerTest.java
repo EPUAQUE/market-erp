@@ -12,6 +12,7 @@ import com.ais.marketbackend.compras.application.dtos.CompraResumen;
 import com.ais.marketbackend.compras.application.services.interfaces.CompraService;
 import com.ais.marketbackend.compras.domain.model.EstadoCompra;
 import com.ais.marketbackend.inventario.api.mappers.InventarioApiMapper;
+import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
@@ -62,6 +63,20 @@ class InventarioControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.contenido[0].existenciaActual").value("10.000"))
                 .andExpect(jsonPath("$.contenido[0].costoPromedioActual").value("5.0000"));
+    }
+
+    @Test
+    void obtenerPorGrupoDevuelveExistenciaDeCadaTiendaDelGrupo() throws Exception {
+        when(inventarioService.listarExistenciaPorGrupo(1L, 2L)).thenReturn(List.of(
+                new ExistenciaTiendaResumen(1L, "Tienda Central", new BigDecimal("10.000")),
+                new ExistenciaTiendaResumen(2L, "Tienda Norte", BigDecimal.ZERO)));
+
+        mockMvc.perform(get("/api/v1/inventario/tiendas/1/productos/2/grupo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tiendaNombre").value("Tienda Central"))
+                .andExpect(jsonPath("$[0].existenciaActual").value("10.000"))
+                .andExpect(jsonPath("$[1].tiendaNombre").value("Tienda Norte"))
+                .andExpect(jsonPath("$[1].existenciaActual").value("0"));
     }
 
     @Test

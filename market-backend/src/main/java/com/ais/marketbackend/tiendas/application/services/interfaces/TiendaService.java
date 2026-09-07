@@ -14,4 +14,15 @@ public interface TiendaService {
     void desactivar(Long id);
 
     List<TiendaResumen> listar();
+
+    /**
+     * Sin filtro por {@code tiendaIdsPermitidas()} del usuario actual (a diferencia
+     * de {@link #listar()}) — uso interno entre módulos, ver {@code InventarioServiceImpl}
+     * (consulta de existencias del grupo de la tienda propia del usuario, que sí incluye
+     * tiendas hermanas fuera de su alcance individual).
+     */
+    TiendaResumen obtener(Long id);
+
+    /** Mismo criterio sin filtro de alcance que {@link #obtener(Long)} — ver ahí. */
+    List<TiendaResumen> listarPorGrupo(Long grupoId);
 }

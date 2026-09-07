@@ -84,6 +84,19 @@ public class TiendaServiceImpl implements TiendaService {
                 .toList();
     }
 
+    @Override
+    public TiendaResumen obtener(Long id) {
+        return toResumen(obtenerORequerido(id));
+    }
+
+    @Override
+    public List<TiendaResumen> listarPorGrupo(Long grupoId) {
+        return tiendaRepository.findAll().stream()
+                .filter(tienda -> grupoId.equals(tienda.getGrupoId()))
+                .map(this::toResumen)
+                .toList();
+    }
+
     private Tienda obtenerORequerido(Long id) {
         return tiendaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tienda no encontrada: " + id));

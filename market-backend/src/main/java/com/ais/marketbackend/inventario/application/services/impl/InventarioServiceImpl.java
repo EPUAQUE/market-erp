@@ -1,6 +1,7 @@
 package com.ais.marketbackend.inventario.application.services.impl;
 
 import com.ais.marketbackend.auditoria.infrastructure.aop.Auditable;
+import com.ais.marketbackend.inventario.application.dtos.ExistenciaTiendaResumen;
 import com.ais.marketbackend.inventario.application.dtos.InventarioResumen;
 import com.ais.marketbackend.inventario.application.dtos.MovimientoInventarioResumen;
 import com.ais.marketbackend.inventario.application.services.interfaces.InventarioService;
@@ -15,6 +16,8 @@ import com.ais.marketbackend.productos.application.dtos.ProductoTiendaResumen;
 import com.ais.marketbackend.productos.application.services.interfaces.ProductoTiendaService;
 import com.ais.marketbackend.shared.domain.Pagina;
 import com.ais.marketbackend.shared.exceptions.ResourceNotFoundException;
+import com.ais.marketbackend.tiendas.application.dtos.TiendaResumen;
+import com.ais.marketbackend.tiendas.application.services.interfaces.TiendaService;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -23,13 +26,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * {@code productoTiendaService} es una dependencia cruzada de módulo permitida:
- * solo se usa el puerto {@code application.services.interfaces} de Productos, sin
- * tocar sus entidades JPA ni su capa de persistencia. Nótese que este servicio NO
- * depende de {@code CompraService} (ni de {@code ProveedorService}) a propósito:
- * {@code CompraServiceImpl} ya depende de {@code InventarioService}, así que hacerlo
- * al revés crearía un ciclo de beans — la resolución del nombre de proveedor para el
- * kardex vive en {@code InventarioApiMapper} (capa API), no aquí.
+ * {@code productoTiendaService}/{@code tiendaService} son dependencias cruzadas de
+ * módulo permitidas: solo se usa el puerto {@code application.services.interfaces}
+ * de Productos/Tiendas, sin tocar sus entidades JPA ni su capa de persistencia.
+ * Nótese que este servicio NO depende de {@code CompraService} (ni de
+ * {@code ProveedorService}) a propósito: {@code CompraServiceImpl} ya depende de
+ * {@code InventarioService}, así que hacerlo al revés crearía un ciclo de beans — la
+ * resolución del nombre de proveedor para el kardex vive en {@code InventarioApiMapper}
+ * (capa API), no aquí.
  */
 @Service
 public class InventarioServiceImpl implements InventarioService {
@@ -37,14 +41,17 @@ public class InventarioServiceImpl implements InventarioService {
     private final InventarioRepository inventarioRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final ProductoTiendaService productoTiendaService;
+    private final TiendaService tiendaService;
     private final TransactionTemplate transactionTemplate;
 
     public InventarioServiceImpl(
             InventarioRepository inventarioRepository, MovimientoInventarioRepository movimientoInventarioRepository,
-            ProductoTiendaService productoTiendaService, PlatformTransactionManager transactionManager) {
+            ProductoTiendaService productoTiendaService, TiendaService tiendaService,
+            PlatformTransactionManager transactionManager) {
         this.inventarioRepository = inventarioRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.productoTiendaService = productoTiendaService;
+        this.tiendaService = tiendaService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
@@ -120,6 +127,16 @@ public class InventarioServiceImpl implements InventarioService {
         return inventarioRepository.findByTiendaIdAndProductoId(tiendaId, productoId)
                 .map(this::toResumen)
                 .orElseGet(() -> toResumen(Inventario.nuevo(tiendaId, productoId)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExistenciaTiendaResumen> listarExistenciaPorGrupo(Long tiendaId, Long productoId) {
+        TiendaResumen tienda = tiendaService.obtener(tiendaId);
+        return tiendaService.listarPorGrupo(tienda.grupoId()).stream()
+                .map(t -> new ExistenciaTiendaResumen(
+                        t.id(), t.nombre(), obtener(t.id(), productoId).existenciaActual()))
+                .toList();
     }
 
     @Override

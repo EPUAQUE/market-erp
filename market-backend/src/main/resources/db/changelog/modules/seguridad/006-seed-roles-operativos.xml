@@ -5,13 +5,15 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- Hasta ahora ENCARGADO_TIENDA y CAJERO solo tenían DASHBOARD_VER (y
-         ENCARGADO_TIENDA, PRODUCTOS_VER) — cada módulo seedeaba permisos para
-         ADMIN pero ninguno completó el resto de roles operativos. Este
-         changelog corrige eso de una vez para ambos roles, siguiendo la
-         matriz de permisos documentada en market-flutter (POS): CAJERO es hoy
-         el rol funcional del "Vendedor" del brief (no existe un rol VENDEDOR
-         separado todavía), ENCARGADO_TIENDA es superset de CAJERO. -->
+    <!-- Hasta ahora ENCARGADO_TIENDA y CAJERO solo tenían DASHBOARD_VER — cada
+         módulo seedeaba permisos para ADMIN pero ninguno completó el resto de
+         roles operativos. Este changelog corrige eso de una vez para ambos
+         roles, siguiendo la matriz de permisos documentada en market-flutter
+         (POS): CAJERO es hoy el rol funcional del "Vendedor" del brief (no
+         existe un rol VENDEDOR separado todavía), ENCARGADO_TIENDA es
+         superset de CAJERO. NOTA: este changelog nunca le dio PRODUCTOS_VER a
+         ENCARGADO_TIENDA pese a lo que decía antes este comentario — bug real
+         corregido en 019-seed-productos-ver-encargado.xml. -->
 
     <changeSet id="seguridad-006-cajero-operativo" author="market-backend">
         <insert tableName="rol_permiso">

@@ -57,6 +57,12 @@ class ApiClient {
   /// dispositivo. No-op en web (el navegador controla su propia cookie).
   Future<void> clearCookies() => cookie_manager.limpiarCookies();
 
+  /// Fuerza un refresh de sesión usando la cookie de refresh ya guardada —
+  /// lo usa el login con huella para reanudar sin pedir contraseña. `false`
+  /// si no hay cookie válida (sesión expirada, o nunca hubo login en este
+  /// dispositivo).
+  Future<bool> refrescarSesion() => _refresh();
+
   Interceptor _authInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) {

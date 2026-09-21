@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/auth/biometric_service.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../application/auth_notifier.dart';
+import '../data/biometria_prefs.dart';
 import 'auth_brand_mark.dart';
 import 'auth_pill_decoration.dart';
 
@@ -25,11 +27,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   String? _errorMessage;
   bool _recordarme = false;
+  bool _biometriaDisponible = false;
+  bool _usarHuella = false;
+  bool _mostrarBotonHuella = false;
 
   @override
   void initState() {
     super.initState();
     _cargarUsuarioRecordado();
+    _inicializarBiometria();
   }
 
   Future<void> _cargarUsuarioRecordado() async {
@@ -41,6 +47,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _recordarme = true;
       });
     }
+  }
+
+  Future<void> _inicializarBiometria() async {
+    final disponible = await BiometricService.instance.disponible();
+    final habilitada = await leerHuellaHabilitada();
+    if (!mounted) return;
+    setState(() {
+      _biometriaDisponible = disponible;
+      _usarHuella = disponible && habilitada;
+      _mostrarBotonHuella = disponible && habilitada;
+    });
   }
 
   @override
@@ -73,6 +90,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await prefs.setString(_usuarioRecordadoKey, username);
     } else {
       await prefs.remove(_usuarioRecordadoKey);
+    }
+    await guardarHuellaHabilitada(_biometriaDisponible && _usarHuella);
+  }
+
+  Future<void> _onHuellaTap() async {
+    setState(() => _errorMessage = null);
+    final autenticado = await BiometricService.instance.autenticar();
+    if (!autenticado || !mounted) return;
+    final ok = await ref
+        .read(authNotifierProvider.notifier)
+        .reanudarConHuella();
+    if (!mounted) return;
+    if (!ok) {
+      setState(() {
+        _mostrarBotonHuella = false;
+        _errorMessage = 'Tu sesión guardada expiró. Ingresa con tu contraseña.';
+      });
     }
   }
 
@@ -115,6 +149,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           style: TextStyle(color: colors.textMuted),
                         ),
                         const SizedBox(height: 28),
+                        if (_mostrarBotonHuella) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: loading ? null : _onHuellaTap,
+                              icon: const Icon(Icons.fingerprint),
+                              label: const Text('Ingresar con huella'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: colors.primary,
+                                side: BorderSide(color: colors.primary),
+                                shape: const StadiumBorder(),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: colors.textMuted.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                child: Text(
+                                  'o ingresa con tu contraseña',
+                                  style: TextStyle(
+                                    color: colors.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: colors.textMuted.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                        ],
                         TextField(
                           controller: _usernameController,
                           decoration: authPillDecoration(context, 'Usuario'),
@@ -185,6 +269,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ],
                         ),
+                        if (_biometriaDisponible) ...[
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _usarHuella = !_usarHuella),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: Checkbox(
+                                    value: _usarHuella,
+                                    activeColor: colors.primary,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    onChanged: (value) => setState(
+                                      () => _usarHuella = value ?? false,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Usar huella la próxima vez',
+                                  style: TextStyle(color: colors.textMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         if (_errorMessage != null) ...[
                           const SizedBox(height: 14),
                           Container(

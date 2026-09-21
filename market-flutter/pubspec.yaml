@@ -39,7 +39,7 @@ dependencies:
   go_router: ^17.5.0
   flutter_secure_storage: ^9.2.4
   decimal: ^3.2.6
-  mobile_scanner: ^7.4.0
+  mobile_scanner: ^7.4.2
   connectivity_plus: ^7.3.1
   isar_community: ^3.3.2
   isar_community_flutter_libs: ^3.3.2

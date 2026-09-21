@@ -170,6 +170,10 @@ drops its "Q x c/u" subtitle.
 - **dio_cookie_manager** + **cookie_jar** — native-only refresh-token cookie
   handling (see Auth below); never imported on web (conditional export).
 - **mobile_scanner** for barcode scanning (código de barras del producto).
+- **local_auth** for fingerprint/Face ID login — gates the existing
+  refresh-token session, never stores a new credential (see "Login con
+  huella digital" below). No web support; requires `MainActivity` to be a
+  `FlutterFragmentActivity` (already the case).
 - **decimal** package for all monetary values — never `double`.
 
 ## Commands
@@ -1750,4 +1754,67 @@ backend nunca genera token ni envía correo para él (mismo diseño no-op que
 usa para no filtrar qué usuarios existen) — probarlo de verdad requeriría un
 usuario con correo real, lo que dispararía un envío de correo real por el
 SMTP configurado; no se hizo sin que el cliente lo pida explícitamente.
+
+### Login con huella digital — built this phase
+
+Pedido explícito: identificación con huella en el login. **Decisión de
+diseño clave**: la app ya tenía la política de nunca guardar contraseña en
+disco (ver "Recordarme" arriba) — huella digital no cambia eso. En vez de
+guardar una credencial nueva atada a la huella, la huella **gatea la sesión
+que ya existe**: reutiliza la cookie de refresh `HttpOnly` que
+`SecureCookieStorage` ya persiste en Keystore/Keychain nativo (ver "Auth &
+permissions" arriba) — el mismo mecanismo que ya sobrevive un reinicio de la
+app, ahora también reanudable con huella en vez de con contraseña. Huella
+verifica identidad del dueño del dispositivo, no valida contra el backend
+por sí sola: quien realmente autoriza el acceso sigue siendo el backend, vía
+`POST /auth/refresh` con la cookie ya guardada.
+
+- **`local_auth`** (nueva dependencia) — wrapper delgado en
+  `core/auth/biometric_service.dart` (`BiometricService.disponible()` /
+  `.autenticar()`). Corta antes de llamar al plugin si `kIsWeb` — `local_auth`
+  no tiene implementación web, y llamarlo ahí lanzaría
+  `MissingPluginException`; en cualquier error también degrada a "no
+  disponible"/"no autenticado" en vez de propagar la excepción.
+- **`MainActivity.kt`**: `FlutterActivity` → `FlutterFragmentActivity` —
+  requisito de `local_auth` para mostrar el `BiometricPrompt` nativo de
+  Android (una `FlutterActivity` plana no puede alojarlo). Manifest principal
+  (`android/app/src/main/AndroidManifest.xml`, el único que merge-ea en
+  release — ver el hallazgo de `INTERNET` en Fase 9 más abajo) ganó
+  `android.permission.USE_BIOMETRIC`.
+- **`ApiClient.refrescarSesion()`** (`core/network/api_client.dart`) — expone
+  públicamente el `_refresh()` privado que ya usaba el interceptor de 401.
+  `AuthNotifier.reanudarConHuella()` (`application/auth_notifier.dart`) lo
+  llama, y si hay cookie válida sigue con `AuthApi.me()` — igual que
+  `login()`, pero sin tocar usuario/contraseña en ningún punto. `false` si la
+  cookie ya expiró o nunca hubo login en ese dispositivo; quien llama cae de
+  vuelta al formulario normal.
+- **Bandera de opt-in**: `features/auth/data/biometria_prefs.dart`,
+  `SharedPreferences` clave `inven365-huella-habilitada` — solo un booleano
+  "el usuario pidió usar huella la próxima vez", nunca contraseña ni token.
+  `LoginScreen` ofrece un checkbox "Usar huella la próxima vez" (mismo patrón
+  visual que "Recordarme", independiente de él) junto al campo de contraseña;
+  si el dispositivo soporta biometría y la bandera está activa, la próxima
+  vez que se abre el login aparece un botón "Ingresar con huella" arriba del
+  formulario, con un divisor "o ingresa con tu contraseña" — el formulario
+  normal sigue siempre disponible como fallback, nunca se oculta.
+- **Tablet compartida entre vendedores**: `AuthNotifier.logout()` ahora
+  también borra la bandera de huella, además de limpiar `TokenService` y las
+  cookies — sin esto, el botón de huella seguiría ofreciendo "reanudar" la
+  sesión de quien acaba de cerrarla explícitamente para el siguiente
+  vendedor que tome el tablet. (Si la cookie ya fue limpiada por el propio
+  logout, un intento de reanudar de todos modos fallaría limpio —
+  `refrescarSesion()` devuelve `false` — pero dejar el botón visible ahí
+  sería mala UX, no solo redundante.)
+
+Verificado: `flutter analyze` limpio, `dart format --set-exit-if-changed .`
+limpio, `flutter test` 96/96 (sin tests nuevos — `login_screen_test.dart`
+sigue pasando tal cual, ya que en el entorno de test no hay plugin nativo de
+`local_auth` registrado y `BiometricService.disponible()` degrada a `false`,
+dejando el flujo existente intacto). **No verificado en dispositivo real**:
+esta sesión no tuvo un emulador/dispositivo Android funcional con huella
+enrolada (mismo gap de entorno que el resto de este archivo — ver "Android
+emulator — finally working, then died" arriba); el botón de huella, el
+`BiometricPrompt` nativo real, y el reanudar de sesión tras un reinicio de
+app con huella siguen sin click-test real. Priorizar esto la próxima vez que
+haya un emulador/dispositivo estable.
 

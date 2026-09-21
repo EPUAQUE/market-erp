@@ -170,9 +170,11 @@ drops its "Q x c/u" subtitle.
 - **dio_cookie_manager** + **cookie_jar** — native-only refresh-token cookie
   handling (see Auth below); never imported on web (conditional export).
 - **mobile_scanner** for barcode scanning (código de barras del producto).
-- **local_auth** for fingerprint/Face ID login — gates the existing
-  refresh-token session, never stores a new credential (see "Login con
-  huella digital" below). No web support; requires `MainActivity` to be a
+- **local_auth** for fingerprint/Face ID login. Originally only gated the
+  existing refresh-token session; as of 2026-09-21 it also gates a real
+  stored password (`flutter_secure_storage`) so login-with-fingerprint keeps
+  working even if the refresh token expired (see "Login con huella digital"
+  below). No web support; requires `MainActivity` to be a
   `FlutterFragmentActivity` (already the case).
 - **decimal** package for all monetary values — never `double`.
 
@@ -1817,4 +1819,52 @@ emulator — finally working, then died" arriba); el botón de huella, el
 `BiometricPrompt` nativo real, y el reanudar de sesión tras un reinicio de
 app con huella siguen sin click-test real. Priorizar esto la próxima vez que
 haya un emulador/dispositivo estable.
+
+### Login con huella digital — contraseña guardada en dispositivo (actualización 2026-09-21)
+
+Pedido explícito del cliente: la huella debe ser un login independiente, no
+solo un acceso rápido a una sesión ya abierta. El diseño original de arriba
+(huella = solo gatear el refresh token) dejaba de funcionar en cuanto ese
+refresh token expiraba o nunca existió en el dispositivo (instalación nueva,
+logout previo), obligando a teclear la contraseña otra vez — inaceptable
+para el caso de uso que pide el cliente. **Decisión del cliente, aceptando
+el trade-off de seguridad**: guardar la contraseña real en el dispositivo,
+cifrada en el almacén seguro del SO. Esto reemplaza la política anterior de
+"nunca contraseña en disco" *solo* para el flujo de huella — "Recordarme"
+(arriba) sigue sin guardar contraseña, sigue guardando solo el usuario.
+
+- `features/auth/data/biometria_prefs.dart` ganó
+  `guardarCredencialHuella`/`leerCredencialHuella`/`borrarCredencialHuella`,
+  usando `flutter_secure_storage` directamente — la misma capa (Android
+  Keystore / iOS Keychain) que ya respalda la cookie de refresh vía
+  `SecureCookieStorage`, no un mecanismo nuevo.
+- `LoginScreen._onSubmit`: si el checkbox "Usar huella la próxima vez" está
+  marcado tras un login exitoso, pide una confirmación biométrica adicional
+  (`BiometricService.autenticar()`) antes de guardar usuario+contraseña —
+  evita que alguien con el tablet ya desbloqueado active
+  login-solo-con-huella a nombre de otra persona sin que esa persona
+  confirme con su propia huella.
+- `AuthNotifier.reanudarConHuella()`: ahora intenta primero el refresh de
+  cookie (camino rápido, no vuelve a golpear `/auth/login` si la sesión
+  sigue viva); si falla o no hay cookie, cae a la contraseña guardada y hace
+  un login real (`AuthApi.login`) con ella. Si esa contraseña ya no es
+  válida (la cambiaron, cuenta bloqueada), la borra junto con la bandera de
+  huella en vez de seguir insistiendo con ella en el próximo intento.
+- `AuthNotifier.logout()` borra la contraseña guardada además de la
+  bandera de huella — mismo cuidado de tablet compartida entre vendedores
+  que ya tenía.
+
+**Riesgo aceptado explícitamente por el cliente**: una contraseña cifrada en
+Keystore/Keychain es buena práctica frente a texto plano, pero sigue siendo
+recuperable si el dispositivo está rooteado/jailbreak o su backup de SO no
+está bien protegido — a diferencia del diseño anterior, que no tenía ninguna
+credencial persistente que robar. No se agregó ninguna dependencia nueva
+(`flutter_secure_storage` ya estaba en el proyecto).
+
+Verificado: `flutter analyze` limpio, `flutter test` 96/96 (sin tests
+nuevos — mismo motivo que arriba, `local_auth` degrada a no-disponible en
+el entorno de test). **No verificado en dispositivo real** — mismo gap de
+entorno que la sección anterior; sigue pendiente el primer click-test real
+de huella con contraseña guardada, tanto guardando la credencial como
+reanudando sesión con el refresh token ya vencido.
 

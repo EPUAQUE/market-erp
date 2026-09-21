@@ -38,20 +38,40 @@ class AuthNotifier extends AsyncNotifier<SesionUsuario?> {
     });
   }
 
-  /// Reanuda la sesión guardada usando la cookie de refresh, gatillado tras
-  /// una verificación biométrica exitosa (`LoginScreen`) — nunca envía
-  /// usuario ni contraseña. `false` si la cookie ya no es válida (sesión
-  /// expirada o nunca hubo login en este dispositivo); quien llama cae de
-  /// vuelta al formulario normal en ese caso.
+  /// Reanuda la sesión gatillado tras una verificación biométrica exitosa
+  /// (`LoginScreen`). Primero intenta la cookie de refresh (rápido, no
+  /// requiere red al backend de login); si ya expiró o nunca existió, cae a
+  /// la contraseña guardada en el almacén seguro (`biometria_prefs.dart`) y
+  /// hace un login real con ella — así la huella sigue funcionando aunque el
+  /// refresh token haya vencido, pedido explícito del cliente. `false` si
+  /// tampoco hay contraseña guardada o esta ya no es válida (p. ej. la
+  /// cambiaron); quien llama cae de vuelta al formulario normal en ese caso.
   Future<bool> reanudarConHuella() async {
     state = const AsyncLoading();
     final refrescado = await ApiClient.instance.refrescarSesion();
-    if (!refrescado) {
+    if (refrescado) {
+      state = await AsyncValue.guard(() async {
+        final api = ref.read(authApiProvider);
+        final sesion = await api.me();
+        if (sesion.tiendaIds.length == 1) {
+          ref
+              .read(tiendaActivaProvider.notifier)
+              .seleccionar(sesion.tiendaIds.first);
+        }
+        return sesion;
+      });
+      if (!state.hasError) return true;
+    }
+
+    final credencial = await leerCredencialHuella();
+    if (credencial == null) {
       state = const AsyncData(null);
       return false;
     }
     state = await AsyncValue.guard(() async {
       final api = ref.read(authApiProvider);
+      final token = await api.login(credencial.usuario, credencial.password);
+      TokenService.instance.set(token);
       final sesion = await api.me();
       if (sesion.tiendaIds.length == 1) {
         ref
@@ -60,7 +80,14 @@ class AuthNotifier extends AsyncNotifier<SesionUsuario?> {
       }
       return sesion;
     });
-    return !state.hasError;
+    if (state.hasError) {
+      // Contraseña guardada ya no sirve (la cambiaron, cuenta bloqueada,
+      // etc.) — no insistir con ella en el próximo intento.
+      await borrarCredencialHuella();
+      await guardarHuellaHabilitada(false);
+      return false;
+    }
+    return true;
   }
 
   /// No limpia sola sin más: quien la llama (`cerrarSesionConConfirmacion`)
@@ -75,8 +102,10 @@ class AuthNotifier extends AsyncNotifier<SesionUsuario?> {
       TokenService.instance.clear();
       await ApiClient.instance.clearCookies();
       // Tablet compartida entre vendedores: no dejar el botón de huella
-      // ofreciendo reanudar la sesión de quien acaba de cerrarla.
+      // ofreciendo reanudar la sesión de quien acaba de cerrarla, ni la
+      // contraseña guardada disponible para el siguiente que tome el tablet.
       await guardarHuellaHabilitada(false);
+      await borrarCredencialHuella();
       final store = await ref.read(localStoreProvider.future);
       await store.limpiarTodo();
       ref.read(tiendaActivaProvider.notifier).seleccionar(null);

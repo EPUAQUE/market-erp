@@ -91,7 +91,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } else {
       await prefs.remove(_usuarioRecordadoKey);
     }
-    await guardarHuellaHabilitada(_biometriaDisponible && _usarHuella);
+    final habilitarHuella = _biometriaDisponible && _usarHuella;
+    if (habilitarHuella) {
+      // Confirma huella antes de guardar la contraseña — no basta con haber
+      // tecleado la contraseña correcta, evita que cualquiera que tome el
+      // tablet ya desbloqueado active login-solo-con-huella por otra persona.
+      final confirmado = await BiometricService.instance.autenticar();
+      if (confirmado) {
+        await guardarCredencialHuella(username, password);
+        await guardarHuellaHabilitada(true);
+      } else {
+        await guardarHuellaHabilitada(false);
+        await borrarCredencialHuella();
+      }
+    } else {
+      await guardarHuellaHabilitada(false);
+      await borrarCredencialHuella();
+    }
   }
 
   Future<void> _onHuellaTap() async {
